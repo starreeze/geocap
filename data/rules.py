@@ -1,5 +1,5 @@
 "generate rules for producing geometry shapes"
-import os, json
+import os, json, json_fix
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 from typing import Any
@@ -9,14 +9,17 @@ from common.args import data_args
 @dataclass
 class GSRule(ABC):
     @abstractmethod
-    def __dict__(self) -> dict[str, Any]: ...
+    def to_dict(self) -> dict[str, Any]: ...
+
+    def __json__(self):
+        return self.to_dict()
 
 
 @dataclass
 class Polygon(GSRule):
     points: list[tuple[float, float]]
 
-    def __dict__(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "polygon"} | asdict(self)
 
 
@@ -25,7 +28,7 @@ class Line(GSRule):
     type: str  # line, segment, ray
     points: list[tuple[float, float]]  # two points determine the line
 
-    def __dict__(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -36,7 +39,7 @@ class Ellipse(GSRule):
     minor_axis: float
     rotation: float  # e.g., pi/3
 
-    def __dict__(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "ellipse"} | asdict(self)
 
 
@@ -60,7 +63,7 @@ def generate_rules(num_samples=1000) -> list[list[GSRule]]:
 
 def save_rules(rules: list[list[GSRule]], output_file: str):
     with open(output_file, "w") as f:
-        json.dump(rules, f)
+        json.dump(rules, f, default=vars)
 
 
 def main():
