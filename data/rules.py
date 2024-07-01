@@ -1,5 +1,5 @@
 "generate rules for producing geometry shapes"
-import os, json, json_fix
+import json, json_fix
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 from typing import Any
@@ -9,10 +9,10 @@ from common.args import data_args
 @dataclass
 class GSRule(ABC):
     @abstractmethod
-    def to_dict(self) -> dict[str, Any]: ...
+    def to_dict(self) -> dict[str, Any]:
+        ...
 
-    def __json__(self):
-        return self.to_dict()
+    __json__ = to_dict
 
 
 @dataclass
