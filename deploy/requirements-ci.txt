@@ -1,9 +1,0 @@
-tqdm
-json-fix
-transformers==4.31.0
-wandb
-torchmetrics
-peft
-
-pyright
-black

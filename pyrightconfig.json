@@ -4,5 +4,7 @@
         "**/node_modules",
         "**/__pycache__",
         "models"
-    ]
+    ],
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false
 }
