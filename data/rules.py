@@ -66,7 +66,7 @@ def save_rules(rules: list[list[GSRule]], output_file: str):
 
 
 def main():
-    samples = generate_rules(data_args.num_basic_gep_samples)
+    samples = generate_rules(data_args.num_basic_geo_samples)
     save_rules(samples, data_args.rules_path)
 
 

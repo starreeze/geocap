@@ -13,7 +13,7 @@ class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
     captions_path: str = field(default="dataset/captions.json")
-    num_basic_gep_samples: int = field(default=1000)
+    num_basic_geo_samples: int = field(default=1000)
 
     llava_data_path: str = field(default="dataset/llava-data.json")
 
