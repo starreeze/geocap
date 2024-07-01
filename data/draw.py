@@ -9,6 +9,7 @@ from common.args import data_args
 def draw_figure(rules: list[dict[str, Any]], index: int):
     # TODO apply rules to draw shapes
     # TODO control their line weight and curves
+    # NOTE below is an example for drawing shapes
     fig, ax = plt.subplots()
 
     # Draw polygon
@@ -31,8 +32,8 @@ def draw_figure(rules: list[dict[str, Any]], index: int):
 
     # TODO add various backgrounds and noise
 
-    plt.xlim(0, 1.2)
-    plt.ylim(0, 1.2)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
     ax.set_aspect("equal", "box")
     plt.axis("off")
     plt.savefig(os.path.join(data_args.figure_dir, f"{index}.jpg"))

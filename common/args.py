@@ -15,6 +15,8 @@ class DataArgs:
     captions_path: str = field(default="dataset/captions.json")
     num_basic_gep_samples: int = field(default=1000)
 
+    llava_data_path: str = field(default="dataset/llava-data.json")
+
 
 @dataclass
 class RunArgs:
