@@ -28,4 +28,4 @@ jobs:
 
       - name: Run Pylance (Pyright) lint
         run: |
-          npx pyright --level basic && black * --line-length 120
+          npx pyright --level warning && black * --line-length 120
