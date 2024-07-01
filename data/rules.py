@@ -9,8 +9,7 @@ from common.args import data_args
 @dataclass
 class GSRule(ABC):
     @abstractmethod
-    def to_dict(self) -> dict[str, Any]:
-        ...
+    def to_dict(self) -> dict[str, Any]: ...
 
     __json__ = to_dict
 
