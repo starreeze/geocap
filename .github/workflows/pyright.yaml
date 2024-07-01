@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  lint & format:
+  lint_format:
     runs-on: ubuntu-latest
 
     steps:
