@@ -2,6 +2,7 @@
     "typeCheckingMode": "basic",
     "exclude": [
         "**/node_modules",
-        "**/__pycache__"
+        "**/__pycache__",
+        "models"
     ]
 }

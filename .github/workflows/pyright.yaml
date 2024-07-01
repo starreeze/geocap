@@ -14,19 +14,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@latest
+        uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@latest
+        uses: actions/setup-python@v2
         with:
           python-version: "3.x"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyright black
-          pip install deploy/requirements.txt
+          pip install deploy/requirements-ci.txt
 
       - name: Run Pyright lint
         run: |
-          npx pyright --level warning && black * --line-length 120
+          npx pyright --level warning && black * --line-length 120 --extend-exclude models
