@@ -2,11 +2,11 @@
 
 geometry caption & geography fossil caption
 
-## install
+## Install
 
 Requirements are provided in `deploy/requirements.txt`. It's recommended to use python 3.10.
 
-## running a module
+## Running a module
 
 A `run.py` is provided for running a module. This is an elegant workaround for importing errors from different packages. Examples:
 
