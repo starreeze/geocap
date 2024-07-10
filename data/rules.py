@@ -3,6 +3,10 @@ import json, json_fix
 from dataclasses import dataclass, asdict
 from abc import ABC, abstractmethod
 from typing import Any
+import os, sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 from common.args import data_args
 
 
@@ -11,7 +15,8 @@ class GSRule(ABC):
     @abstractmethod
     def to_dict(self) -> dict[str, Any]: ...
 
-    __json__ = to_dict
+    def __json__(self):
+        return self.to_dict()
 
 
 @dataclass
@@ -54,7 +59,9 @@ def generate_rules(num_samples=1000) -> list[list[GSRule]]:
     # TODO: generate different types and shapes
     # TODO: how to mix them to form a sample
 
-    results: list[list[GSRule]] = [[Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])] for _ in range(num_samples)]
+    results: list[list[GSRule]] = [
+        [Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])] for _ in range(num_samples)
+    ]
 
     assert len(results) == num_samples
     return results
