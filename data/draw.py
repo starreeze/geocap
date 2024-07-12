@@ -52,10 +52,7 @@ class Figure(object):
                 self.height,
             )
 
-        if (
-            line_k * self.width + line_b >= 0
-            and line_k * self.width + line_b <= self.height
-        ):
+        if line_k * self.width + line_b >= 0 and line_k * self.width + line_b <= self.height:
             rightwise_endpoint = (self.width, line_k * self.width + line_b)
         elif line_k * self.width + line_b < 0:
             rightwise_endpoint = (-line_b / line_k, 0)
@@ -71,12 +68,8 @@ class Figure(object):
         match rule["type"]:
             case "polygon":
                 points: list = [self.__translate(point) for point in rule["points"]]
-                assert (
-                    len(points) >= 3
-                ), "There should be more than 3 points within a polygon."
-                line_width: int = (
-                    random.randint(0, 2) if randomize else 0
-                )  # TODO: Improve the randomness
+                assert len(points) >= 3, "There should be more than 3 points within a polygon."
+                line_width: int = random.randint(0, 2) if randomize else 0  # TODO: Improve the randomness
                 for index in range(len(points)):
                     self.canvas.line(
                         xy=(
@@ -91,9 +84,7 @@ class Figure(object):
             case "line":
                 points: list = [self.__translate(point) for point in rule["points"]]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
-                line_width: int = (
-                    random.randint(0, 2) if randomize else 0
-                )  # TODO: Improve the randomness
+                line_width: int = random.randint(0, 2) if randomize else 0  # TODO: Improve the randomness
                 self.canvas.line(
                     xy=(
                         leftwise_endpoint[0],
@@ -108,14 +99,8 @@ class Figure(object):
             case "ray":
                 points: list = [self.__translate(point) for point in rule["points"]]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
-                line_width: int = (
-                    random.randint(0, 2) if randomize else 0
-                )  # TODO: Improve the randomness
-                farwise = (
-                    leftwise_endpoint
-                    if points[0][0] > points[1][0]
-                    else rightwise_endpoint
-                )
+                line_width: int = random.randint(0, 2) if randomize else 0  # TODO: Improve the randomness
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
 
                 self.canvas.line(
                     xy=(points[0][0], points[0][1], farwise[0], farwise[1]),
@@ -124,9 +109,7 @@ class Figure(object):
                 )
             case "segment":
                 points: list = [self.__translate(point) for point in rule["points"]]
-                line_width: int = (
-                    random.randint(0, 2) if randomize else 0
-                )  # TODO: Improve the randomness
+                line_width: int = random.randint(0, 2) if randomize else 0  # TODO: Improve the randomness
                 self.canvas.line(
                     xy=(
                         points[0][0],

@@ -59,9 +59,7 @@ def generate_rules(num_samples=1000) -> list[list[GSRule]]:
     # TODO: generate different types and shapes
     # TODO: how to mix them to form a sample
 
-    results: list[list[GSRule]] = [
-        [Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])] for _ in range(num_samples)
-    ]
+    results: list[list[GSRule]] = [[Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])] for _ in range(num_samples)]
 
     assert len(results) == num_samples
     return results
