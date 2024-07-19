@@ -1,6 +1,7 @@
 "draw geometry shapes according to generated rules"
 import os, json, sys
 import math
+import numpy as np
 from typing import Any
 from PIL import Image, ImageDraw
 import random
@@ -32,19 +33,234 @@ class Figure:
         )
         self.canvas = ImageDraw.Draw(self.image, mode="RGB")
         random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
 
-    def draw(self, n_pictures: int):
-        for _ in range(n_pictures):
-            for rule in self.rules:
-                self.handle(
-                    rule, randomize=self.randomize, line_weight=self.line_weight
+    def draw(self, color = None, n_redraw = None, n_rand_pixels = None, n_white_line = None, Gaussian_mean=0, Gaussian_var = 25):
+        for index, rule in enumerate(self.rules):
+            print(f"{index+1}/{len(self.rules)}: Handling {rule["type"]}")
+            self.__handle(rule, randomize=self.randomize, color = color)
+        print("All rules adapted.")
+        if self.randomize:
+            print("Adding Noise...")
+            self.__add_noise(n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var)
+        print("Monochromizing the image...")
+        self.__monochromize()
+
+    def save(self, path: str):
+        self.image.save(fp=path)
+
+    def __add_noise(self, n_redraw = None, n_rand_pixels = None, n_white_line = None, Gaussian_mean=0, Gaussian_var = 25):
+        assert (
+            self.randomize
+        ), "Function 'add_noise' is disabled whilst randomize==False"
+        try:
+            rdm_lw = self.randomized_line_width
+        except:
+            raise AttributeError(
+                "Must firstly run 'draw' to create attribute 'randomized_line_width'"
+            )
+        n_redraw = int(random.gauss(len(self.rules)//2, len(self.rules) // 20)) if n_redraw == None else n_redraw
+        n_rand_pixels = int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
+        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+        for index, rule in enumerate(random.sample(self.rules, n_redraw)):
+            print(f"Redrawing #{index}: {rule["type"]}")
+            self.__redraw(rule)
+
+        self.__add_random_pixels(n_pixels=n_rand_pixels)
+        self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+        self.__add_white_line(n_white_line)
+
+    def __redraw(self, rule: "dict[str, Any]"):
+        self.line_weight = self.randomized_line_width + 2
+        #TODO: redrawing type "line" needs to adjust its width in a certain range
+        self.__handle(rule, randomize=False, color = None)
+
+    def __add_random_pixels(self, n_pixels: int):
+        for _ in range(n_pixels):
+            x = random.randint(0, self.width)
+            y = random.randint(0, self.height)
+            self.canvas.point((x, y), fill="black")
+
+    def __add_GaussianNoise(self, mean: float = 0, var: float = 25):
+        img_array = np.array(self.image, dtype=float)
+        noise = np.random.normal(mean, var**0.5, img_array.shape)
+        processed_img = np.clip(img_array+noise, 0, 255).astype(np.uint8)
+        self.image = Image.fromarray(processed_img)
+
+    def __add_white_line(self, n_line: int):
+        for _ in range(n_line):
+            x1 = random.randint(0, self.width)
+            y1 = random.randint(0, self.height)
+            x2 = random.randint(0, self.width)
+            y2 = random.randint(0, self.height)
+            self.canvas.line((x1, y1, x2, y2), fill="white", width=5)
+
+    def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any):
+        assert (color == None) or (isinstance(color, tuple) and len(color) == 3), "Argument 'color' should be set empty, or a 3-dimension tuple."
+        line_width = (
+            self.line_weight
+            + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            if randomize
+            else self.line_weight
+        )
+        if randomize:
+            self.randomized_line_width = line_width
+        match rule["type"]:
+            case "polygon":
+                points: list = [self.__translate(point) for point in rule["points"]]
+                assert (
+                    len(points) >= 3
+                ), "There should be more than 3 points within a polygon."
+                self.__handle_polygon(points, line_width, color)
+
+            case "line":
+                points: list = [self.__translate(point) for point in rule["points"]]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+                self.__handle_line(
+                    (
+                        (leftwise_endpoint[0],
+                        leftwise_endpoint[1]),
+                        (rightwise_endpoint[0],
+                        rightwise_endpoint[1]),
+                    ),
+                    line_width,
+                    color
                 )
 
-    def __translate(self, point: tuple) -> tuple:
-        return (self.width * point[0], self.height * point[1])
+            case "ray":
+                points: list = [self.__translate(point) for point in rule["points"]]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-    def add_noise(self):
-        pass  # not sure about that... ^^|||
+                farwise = (
+                    leftwise_endpoint
+                    if points[0][0] > points[1][0]
+                    else rightwise_endpoint
+                )
+
+                self.__handle_line(
+                    ((points[0][0], points[0][1]), (farwise[0], farwise[1])), line_width, color
+                )
+            case "segment":
+                points: list = [self.__translate(point) for point in rule["points"]]
+                self.__handle_line(points, line_width, color)
+
+            case "ellipse":
+                ellipse_x, ellipse_y = self.__translate(rule["center"])
+                major = int(rule["major_axis"] * self.width)
+                minor = int(rule["minor_axis"] * self.height)
+                alpha = rule["rotation"]
+                self.__handle_ellipse(
+                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color
+                )
+
+            case "spiral":
+                # r = a + b\theta
+                # x = x_0 + r\cos{\theta}
+                # y = y_0 + r\sin{\theta}
+                # manually draw the shape
+                # A bit buggy when a \approx 0 and b is relatively big, about 0.1
+                a: float = rule["initial_radius"] * self.width
+                b: float = rule["growth_rate"] * self.width
+                max_theta: float = rule["max_theta"]
+                # clockwise: int = 1
+                spiral_x, spiral_y = self.__translate(rule["center"])
+                # self.canvas.point((spiral_x, spiral_y), fill="red")
+                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
+
+            case _:
+                raise ValueError(f"{rule['type']} is not any valid rule.")
+
+    def __handle_line(self, points, line_width: int, color: Any):
+        self.canvas.line(
+            xy=(points[0][0], points[0][1], points[1][0], points[1][1]),
+            width=line_width,
+            fill=(random.randint(0,255),random.randint(0,255),random.randint(0,255) if color == None else color),
+        )
+
+    def __handle_ellipse(
+        self,
+        ellipse_x: float,
+        ellipse_y: float,
+        major: int,
+        minor: int,
+        alpha: float,
+        line_width: int,
+        color: Any
+    ):
+        ellipse_x -= major // 2
+        ellipse_y -= major // 2
+
+        im_ellipse_bkgrnd = (
+            self.background[0],
+            self.background[1],
+            self.background[2],
+            0,
+        )
+        im_ellipse = Image.new("RGBA", (major, major), im_ellipse_bkgrnd)
+        cvs_ellipse = ImageDraw.Draw(im_ellipse, "RGBA")
+
+        cvs_ellipse.ellipse(
+            (0, major // 2 - minor // 2, major, major // 2 + minor // 2),
+            fill=self.background,
+            outline=((random.randint(0,255),random.randint(0,255),random.randint(0,255), 255) if color == None else list(color).append(255)),
+            width=line_width,
+        )  # original ellipse
+
+        rotated = im_ellipse.rotate(alpha * 180 / 3.1416)  # precision should be enough
+        rx, ry = rotated.size
+
+        # rotated.save("debugging_rotated.png")
+
+        self.image.paste(
+            rotated,
+            (
+                int(ellipse_x),
+                int(ellipse_y),
+                int(ellipse_x + rx),
+                int(ellipse_y + ry),
+            ),
+            mask=rotated,
+        )
+
+    def __handle_polygon(self, points: list, line_width: int, color: Any):
+        for index in range(len(points)):
+            self.canvas.line(
+                xy=(
+                    points[index][0],
+                    points[index][1],
+                    points[(index + 1) % len(points)][0],
+                    points[(index + 1) % len(points)][1],
+                ),
+                width=(line_width),
+                fill=(random.randint(0,255),random.randint(0,255),random.randint(0,255)) if color == None else color,
+            )
+
+    def __handle_spiral(
+        self,
+        spiral_x: float,
+        spiral_y: float,
+        a: float,
+        b: float,
+        max_theta: float,
+        line_width: int,
+        color: Any
+    ):
+        theta: float = 0
+
+        if a <= 0.01:
+            a = 1  # promise r \neq 0
+
+        while theta <= max_theta:
+            c_theta = math.cos(theta)
+            s_theta = math.sin(theta)
+            r = a + b * theta
+
+            for w in range(line_width):
+                x = spiral_x + (r - line_width / 2 + w) * c_theta
+                y = spiral_y - (r - line_width / 2 + w) * s_theta
+                self.canvas.point((x, y), fill=(random.randint(0,255),random.randint(0,255),random.randint(0,255)) if color == None else color)   
+            theta += (math.atan(1 / r) if r < 10 else 1 / r)  # arctan(1/r) \approx 1/r, speed up
+                
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
@@ -77,168 +293,11 @@ class Figure:
 
         return (leftwise_endpoint, rightwise_endpoint)
 
-    def handle(self, rule: "dict[str, Any]", randomize: bool, line_weight: int):
-        match rule["type"]:
-            case "polygon":
-                points: list = [self.__translate(point) for point in rule["points"]]
-                assert (
-                    len(points) >= 3
-                ), "There should be more than 3 points within a polygon."
-                for index in range(len(points)):
-                    self.canvas.line(
-                        xy=(
-                            points[index][0],
-                            points[index][1],
-                            points[(index + 1) % len(points)][0],
-                            points[(index + 1) % len(points)][1],
-                        ),
-                        width=(
-                            line_weight + random.randint(-2, 2)
-                            if randomize
-                            else line_weight
-                        ),
-                        fill="black",
-                    )
-            case "line":
-                points: list = [self.__translate(point) for point in rule["points"]]
-                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+    def __translate(self, point: tuple) -> tuple:
+        return (self.width * point[0], self.height * point[1])
 
-                self.canvas.line(
-                    xy=(
-                        leftwise_endpoint[0],
-                        leftwise_endpoint[1],
-                        rightwise_endpoint[0],
-                        rightwise_endpoint[1],
-                    ),
-                    width=(
-                        line_weight + random.randint(-2, 2)
-                        if randomize
-                        else line_weight
-                    ),
-                    fill="black",
-                )
-
-            case "ray":
-                points: list = [self.__translate(point) for point in rule["points"]]
-                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
-
-                farwise = (
-                    leftwise_endpoint
-                    if points[0][0] > points[1][0]
-                    else rightwise_endpoint
-                )
-
-                self.canvas.line(
-                    xy=(points[0][0], points[0][1], farwise[0], farwise[1]),
-                    width=(
-                        line_weight + random.randint(-2, 2)
-                        if randomize
-                        else line_weight
-                    ),
-                    fill="black",
-                )
-            case "segment":
-                points: list = [self.__translate(point) for point in rule["points"]]
-
-                self.canvas.line(
-                    xy=(
-                        points[0][0],
-                        points[0][1],
-                        points[1][0],
-                        points[1][1],
-                    ),
-                    width=(
-                        line_weight + random.randint(-2, 2)
-                        if randomize
-                        else line_weight
-                    ),
-                    fill="black",
-                )
-            case "ellipse":
-                ellipse_x, ellipse_y = self.__translate(rule["center"])
-                major = int(rule["major_axis"] * self.width)
-                minor = int(rule["minor_axis"] * self.height)
-                alpha = rule["rotation"]
-
-                ellipse_x -= major // 2
-                ellipse_y -= major // 2
-
-                im_ellipse_bkgrnd = (
-                    self.background[0],
-                    self.background[1],
-                    self.background[2],
-                    0,
-                )
-                im_ellipse = Image.new("RGBA", (major, major), im_ellipse_bkgrnd)
-                cvs_ellipse = ImageDraw.Draw(im_ellipse, "RGBA")
-
-                cvs_ellipse.ellipse(
-                    (0, major // 2 - minor // 2, major, major // 2 + minor // 2),
-                    fill=self.background,
-                    outline="black",
-                    width=(
-                        line_weight + random.randint(-2, 2)
-                        if randomize
-                        else line_weight
-                    ),
-                )  # original ellipse
-
-                rotated = im_ellipse.rotate(
-                    alpha * 180 / 3.1416
-                )  # precision should be enough
-                rx, ry = rotated.size
-
-                # rotated.save("debugging_rotated.png")
-
-                self.image.paste(
-                    rotated,
-                    (
-                        int(ellipse_x),
-                        int(ellipse_y),
-                        int(ellipse_x + rx),
-                        int(ellipse_y + ry),
-                    ),
-                    mask=rotated,
-                )
-
-            case "spiral":
-                # r = a + b\theta
-                # x = x_0 + r\cos{\theta}
-                # y = y_0 + r\sin{\theta}
-                # manually draw the shape
-                # A bit buggy when a \approx 0 and b is relatively big, about 0.1
-                a: float = rule["initial_radius"] * self.width
-                b: float = rule["growth_rate"] * self.width
-                max_theta: float = rule["max_theta"]
-                # clockwise: int = 1
-                theta: float = 0
-                spiral_x, spiral_y = self.__translate(rule["center"])
-                # self.canvas.point((spiral_x, spiral_y), fill="red")
-                width = (
-                    line_weight + random.randint(-2, 2) if randomize else line_weight
-                )
-
-                if a <= 0.01:
-                    a = 1  # promise r \neq 0
-
-                while theta <= max_theta:
-                    c_theta = math.cos(theta)
-                    s_theta = math.sin(theta)
-                    r = a + b * theta
-
-                    for w in range(line_weight):
-                        x = spiral_x + (r - width / 2 + w) * c_theta
-                        y = spiral_y - (r - width / 2 + w) * s_theta
-                        self.canvas.point((x, y), fill="black")
-                    theta += (
-                        math.atan(1 / r) if r < 10 else 1 / r
-                    )  # arctan(1/r) \approx 1/r, speed up
-
-            case _:
-                raise ValueError(f"{rule['type']} is not any valid rule.")
-
-    def save(self, path: str):
-        self.image.save(fp=path)
+    def __monochromize(self):
+        self.image = self.image.convert('L')
 
 
 def draw_figure(rules: "list[dict[str, Any]]", path: str):
@@ -246,9 +305,9 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
     # TODO control their line weight and curves (MANUALLY)
 
     # TODO add various backgrounds and noise (HOW?)
-    figure = Figure(rules, random_seed=0)
-    figure.draw(n_pictures=1)
-    figure.save(path)
+        figure = Figure(rules, random_seed=0)
+        figure.draw()
+        figure.save(path)
 
 
 def main():
