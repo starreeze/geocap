@@ -28,7 +28,9 @@ class Figure:
         self.height = size[1]
         self.background = background
         self.line_weight = line_weight
-        self.image = Image.new(mode="RGB", size=(self.width, self.height), color=self.background)
+        self.image = Image.new(
+            mode="RGB", size=(self.width, self.height), color=self.background
+        )
         self.canvas = ImageDraw.Draw(self.image, mode="RGB")
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -48,7 +50,9 @@ class Figure:
         print("All rules adapted.")
         if self.randomize:
             print("Adding Noise...")
-            self.__add_noise(n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var)
+            self.__add_noise(
+                n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var
+            )
         print("Monochromizing the image...")
         self.__monochromize()
 
@@ -63,26 +67,37 @@ class Figure:
         Gaussian_mean=25,
         Gaussian_var=100,
     ):
-        assert self.randomize, "Function 'add_noise' is disabled whilst randomize==False"
+        assert (
+            self.randomize
+        ), "Function 'add_noise' is disabled whilst randomize==False"
         try:
             rdm_lw = self.randomized_line_width
         except:
-            raise AttributeError("Must firstly run 'draw' to create attribute 'randomized_line_width'")
-        n_redraw = int(random.gauss(len(self.rules) // 2, len(self.rules) // 20)) if n_redraw == None else n_redraw
-        n_rand_pixels = int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
-        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            raise AttributeError(
+                "Must firstly run 'draw' to create attribute 'randomized_line_width'"
+            )
+        n_redraw = (
+            int(random.gauss(len(self.rules) // 2, len(self.rules) // 20))
+            if n_redraw == None
+            else n_redraw
+        )
+        n_rand_pixels = (
+            int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
+        )
+        n_white_line = (
+            int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+        )
+        self.__redraw(n_redraw)
+        self.__add_random_pixels(n_pixels=n_rand_pixels)
+        self.__add_white_line(n_white_line)
+        self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+
+    def __redraw(self, n_redraw: int):
         for index, rule in enumerate(random.sample(self.rules, n_redraw)):
             print(f"Redrawing #{index}: {rule['type']}")
-            self.__redraw(rule)
-
-        self.__add_random_pixels(n_pixels=n_rand_pixels)
-        self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
-        self.__add_white_line(n_white_line)
-
-    def __redraw(self, rule: "dict[str, Any]"):
-        self.line_weight = self.randomized_line_width + 2
-        # TODO: redrawing type "line" needs to adjust its width in a certain range
-        self.__handle(rule, randomize=False, color=None)
+            self.line_weight = int(self.randomized_line_width + random.gauss(20, 10))
+            # TODO: redrawing type "line" needs to adjust its width in a certain range
+            self.__handle(rule, randomize=False, color=None)
 
     def __add_random_pixels(self, n_pixels: int):
         for _ in range(n_pixels):
@@ -102,14 +117,17 @@ class Figure:
             y1 = random.randint(0, self.height)
             x2 = random.randint(0, self.width)
             y2 = random.randint(0, self.height)
-            self.canvas.line((x1, y1, x2, y2), fill="white", width=5)
+            self.canvas.line(
+                (x1, y1, x2, y2), fill="white", width=self.randomized_line_width
+            )
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any):
         assert (color == None) or (
             isinstance(color, tuple) and len(color) == 3
-        ), "Argument 'color' should be set empty, or a 3-dimension tuple."
+        ), "Argument 'color' should be None or a 3-dimension tuple."
         line_width = (
-            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            self.line_weight
+            + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
             else self.line_weight
         )
@@ -118,7 +136,9 @@ class Figure:
         match rule["type"]:
             case "polygon":
                 points: list = [self.__translate(point) for point in rule["points"]]
-                assert len(points) >= 3, "There should be more than 3 points within a polygon."
+                assert (
+                    len(points) >= 3
+                ), "There should be more than 3 points within a polygon."
                 self.__handle_polygon(points, line_width, color)
 
             case "line":
@@ -137,7 +157,11 @@ class Figure:
                 points: list = [self.__translate(point) for point in rule["points"]]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+                farwise = (
+                    leftwise_endpoint
+                    if points[0][0] > points[1][0]
+                    else rightwise_endpoint
+                )
 
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
@@ -153,7 +177,9 @@ class Figure:
                 major = int(rule["major_axis"] * self.width)
                 minor = int(rule["minor_axis"] * self.height)
                 alpha = rule["rotation"]
-                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color)
+                self.__handle_ellipse(
+                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color
+                )
 
             case "spiral":
                 # r = a + b\theta
@@ -167,7 +193,9 @@ class Figure:
                 # clockwise: int = 1
                 spiral_x, spiral_y = self.__translate(rule["center"])
                 # self.canvas.point((spiral_x, spiral_y), fill="red")
-                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
+                self.__handle_spiral(
+                    spiral_x, spiral_y, a, b, max_theta, line_width, color
+                )
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -238,6 +266,15 @@ class Figure:
         )
 
     def __handle_polygon(self, points: list, line_width: int, color: Any):
+        color = (
+            (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
+            if color == None
+            else color
+        )
         for index in range(len(points)):
             self.canvas.line(
                 xy=(
@@ -247,15 +284,10 @@ class Figure:
                     points[(index + 1) % len(points)][1],
                 ),
                 width=(line_width),
-                fill=(
-                    (
-                        random.randint(0, 255),
-                        random.randint(0, 255),
-                        random.randint(0, 255),
-                    )
-                    if color == None
-                    else color
-                ),
+                fill=(color),
+            )
+            self.canvas.circle(
+                xy=points[index], radius=line_width / 2, fill=color, outline=color
             )
 
     def __handle_spiral(
@@ -270,6 +302,16 @@ class Figure:
     ):
         theta: float = 0
 
+        color = (
+            (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
+            if color == None
+            else color
+        )
+
         if a <= 0.01:
             a = 1  # promise r \neq 0
 
@@ -283,17 +325,11 @@ class Figure:
                 y = spiral_y - (r - line_width / 2 + w) * s_theta
                 self.canvas.point(
                     (x, y),
-                    fill=(
-                        (
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        )
-                        if color == None
-                        else color
-                    ),
+                    fill=(color),
                 )
-            theta += math.atan(1 / r) if r < 10 else 1 / r  # arctan(1/r) \approx 1/r, speed up
+            theta += (
+                math.atan(1 / r) if r < 10 else 1 / r
+            )  # arctan(1/r) \approx 1/r, speed up
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
@@ -311,7 +347,10 @@ class Figure:
                 self.height,
             )
 
-        if line_k * self.width + line_b >= 0 and line_k * self.width + line_b <= self.height:
+        if (
+            line_k * self.width + line_b >= 0
+            and line_k * self.width + line_b <= self.height
+        ):
             rightwise_endpoint = (self.width, line_k * self.width + line_b)
         elif line_k * self.width + line_b < 0:
             rightwise_endpoint = (-line_b / line_k, 0)
