@@ -1,6 +1,5 @@
 "draw geometry shapes according to generated rules"
 import os, json, sys
-import math
 import numpy as np
 from typing import Any
 from PIL import Image, ImageDraw
@@ -43,6 +42,7 @@ class Figure:
         n_white_line=None,
         Gaussian_mean=25,
         Gaussian_var=100,
+        stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
             print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
@@ -54,7 +54,7 @@ class Figure:
                 n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var
             )
         print("Monochromizing the image...")
-        self.__monochromize()
+        self.__monochromize(stylish)
 
     def save(self, path: str):
         self.image.save(fp=path)
@@ -93,11 +93,231 @@ class Figure:
         self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
 
     def __redraw(self, n_redraw: int):
+        n_redraw = n_redraw if n_redraw < len(self.rules) else len(self.rules)
         for index, rule in enumerate(random.sample(self.rules, n_redraw)):
             print(f"Redrawing #{index}: {rule['type']}")
-            self.line_weight = int(self.randomized_line_width + random.gauss(20, 10))
-            # TODO: redrawing type "line" needs to adjust its width in a certain range
-            self.__handle(rule, randomize=False, color=None)
+            match rule["type"]:
+                case "segment":
+                    points = [self.__translate(i) for i in rule["points"]]
+                    points = [
+                        (
+                            point[0],
+                            point[1],
+                            int(self.randomized_line_width + random.gauss(10, 10)),
+                        )
+                        for point in points
+                    ]
+                    self.__redraw_line(mode="2_points_control", control_points=points)
+                case "line":
+                    points: list = [self.__translate(point) for point in rule["points"]]
+                    leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+                    self.__redraw_line(
+                        control_points=[
+                            (
+                                leftwise_endpoint[0],
+                                leftwise_endpoint[1],
+                                int(self.randomized_line_width + random.gauss(10, 10)),
+                            ),
+                            (
+                                rightwise_endpoint[0],
+                                rightwise_endpoint[1],
+                                int(self.randomized_line_width + random.gauss(10, 10)),
+                            ),
+                        ],
+                        mode="2_points_control",
+                    )
+                case "ray":
+                    points: list = [self.__translate(point) for point in rule["points"]]
+                    leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+
+                    farwise = (
+                        leftwise_endpoint
+                        if points[0][0] > points[1][0]
+                        else rightwise_endpoint
+                    )
+
+                    self.__redraw_line(
+                        control_points=[
+                            (
+                                points[0][0],
+                                points[0][1],
+                                int(self.randomized_line_width + random.gauss(10, 10)),
+                            ),
+                            (
+                                farwise[0],
+                                farwise[1],
+                                int(self.randomized_line_width + random.gauss(10, 10)),
+                            ),
+                        ],
+                        mode="2_points_control",
+                    )
+                case "polygon":
+                    points = [self.__translate(i) for i in rule["points"]]
+                    points = [
+                        (
+                            point[0],
+                            point[1],
+                            int(self.randomized_line_width + random.gauss(10, 10)),
+                        )
+                        for point in points
+                    ]
+                    self.__redraw_polygon(points)
+                case _:
+                    self.line_weight = int(
+                        self.randomized_line_width + random.gauss(20, 10)
+                    )
+                    self.__handle(rule, randomize=False)
+
+    def __redraw_line(
+        self,
+        points=[],
+        mode: str = "auto",
+        control_points: "list[tuple[float, float, int]]" = [],
+        ascensions: "list[tuple[float, float, int]]" = [],
+        color=None,
+    ):
+        match mode:
+            case "auto":
+                self.canvas.line(
+                    (points[0][0], points[0][1], points[1][0], points[1][1]),
+                    fill=(
+                        (
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                        )
+                        if color == None
+                        else color
+                    ),
+                    width=int(self.randomized_line_width + random.gauss(20, 10)),
+                )
+            case "2_points_control":
+                # Override the points argument
+                assert (
+                    len(control_points) == 2
+                ), "You must give exactly two points' info in the argument"
+                width = [
+                    control_points[i][2] if control_points[i][2] > 0 else 1
+                    for i in range(2)
+                ]
+                x = [control_points[i][0] for i in range(2)]
+                y = [control_points[i][1] for i in range(2)]
+                if width[0] == width[1]:
+                    self.canvas.line(
+                        xy=(x[0], y[0], x[1], y[1]),
+                        fill=(
+                            (
+                                random.randint(0, 255),
+                                random.randint(0, 255),
+                                random.randint(0, 255),
+                            )
+                            if color == None
+                            else color
+                        ),
+                        width=width[1],
+                    )
+                    return
+                length_of_line = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
+                pixels_per_ascend = length_of_line // np.absolute(width[0] - width[1])
+                if pixels_per_ascend == 0:
+                    print(
+                        "The line is too short to perform this redraw attempt. Reperform the attempt in auto mode."
+                    )
+                    self.__redraw_line(points, mode="auto")
+                    return
+                begin_point = 0 if width[0] < width[1] else 1
+                end_point = 1 if width[0] < width[1] else 0
+                uni_vec = (
+                    (x[end_point] - x[begin_point]) / length_of_line,
+                    (y[end_point] - y[begin_point]) / length_of_line,
+                )
+                n_ascend = width[end_point] - width[begin_point]
+                color = (
+                    (
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                    )
+                    if color == None
+                    else color
+                )
+                for i in range(n_ascend - 1):
+                    xy = (
+                        x[begin_point] + i * pixels_per_ascend * uni_vec[0],
+                        y[begin_point] + i * pixels_per_ascend * uni_vec[1],
+                        x[begin_point] + (i + 1) * pixels_per_ascend * uni_vec[0],
+                        y[begin_point] + (i + 1) * pixels_per_ascend * uni_vec[1],
+                    )
+                    self.canvas.line(
+                        xy=xy,
+                        fill=color,
+                        width=width[begin_point] + i,
+                    )
+                self.canvas.line(
+                    xy=(
+                        x[begin_point]
+                        + (n_ascend - 1) * pixels_per_ascend * uni_vec[0],
+                        y[begin_point]
+                        + (n_ascend - 1) * pixels_per_ascend * uni_vec[1],
+                        x[end_point],
+                        y[end_point],
+                    ),
+                    fill=color,
+                    width=width[end_point],
+                )
+
+            case "manual":
+                color = (
+                    (
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                        random.randint(0, 255),
+                    )
+                    if color == None
+                    else color
+                )
+                for i in range(len(ascensions) - 1):
+                    self.canvas.line(
+                        (
+                            ascensions[i][0],
+                            ascensions[i][1],
+                            ascensions[i + 1][0],
+                            ascensions[i + 1][1],
+                        ),
+                        width=ascensions[i][2],
+                        fill=color,
+                    )
+            case _:
+                raise ValueError(
+                    f"Invalid argument mode = {mode}, must be 'auto', '2_points_control', or 'manual'."
+                )
+
+    def __redraw_polygon(self, points):
+        color = (
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255),
+        )
+        for index in range(len(points)):
+            self.__redraw_line(
+                points=None,
+                control_points=[
+                    (points[index][0], points[index][1], points[index][2]),
+                    (
+                        points[(index + 1) % len(points)][0],
+                        points[(index + 1) % len(points)][1],
+                        points[(index + 1) % len(points)][2],
+                    ),
+                ],
+                mode="2_points_control",
+                color=color,
+            )
+            self.canvas.circle(
+                xy=(points[index][0], points[index][1]),
+                radius=points[index][2] / 2 if points[index][2] > 0 else 1,
+                fill=color,
+                outline=color,
+            )
 
     def __add_random_pixels(self, n_pixels: int):
         for _ in range(n_pixels):
@@ -121,7 +341,7 @@ class Figure:
                 (x1, y1, x2, y2), fill="white", width=self.randomized_line_width
             )
 
-    def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any):
+    def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
             isinstance(color, tuple) and len(color) == 3
         ), "Argument 'color' should be None or a 3-dimension tuple."
@@ -235,7 +455,7 @@ class Figure:
 
         cvs_ellipse.ellipse(
             (0, major // 2 - minor // 2, major, major // 2 + minor // 2),
-            fill=self.background,
+            fill=(self.background[0], self.background[1], self.background[2], 0),
             outline=(
                 (
                     random.randint(0, 255),
@@ -249,7 +469,7 @@ class Figure:
             width=line_width,
         )  # original ellipse
 
-        rotated = im_ellipse.rotate(alpha * 180 / 3.1416)  # precision should be enough
+        rotated = im_ellipse.rotate(-alpha * 180 / 3.1416)  # precision should be enough
         rx, ry = rotated.size
 
         # rotated.save("debugging_rotated.png")
@@ -316,8 +536,8 @@ class Figure:
             a = 1  # promise r \neq 0
 
         while theta <= max_theta:
-            c_theta = math.cos(theta)
-            s_theta = math.sin(theta)
+            c_theta = np.cos(theta)
+            s_theta = np.sin(theta)
             r = a + b * theta
 
             for w in range(line_width):
@@ -328,7 +548,7 @@ class Figure:
                     fill=(color),
                 )
             theta += (
-                math.atan(1 / r) if r < 10 else 1 / r
+                np.arctan(1 / r) if r < 10 else 1 / r
             )  # arctan(1/r) \approx 1/r, speed up
 
     def __line_extend(self, points: list) -> tuple:
@@ -365,8 +585,34 @@ class Figure:
     def __translate(self, point: tuple) -> tuple:
         return (self.width * point[0], self.height * point[1])
 
-    def __monochromize(self):
+    def __monochromize(
+        self,
+        stylish: bool = False,
+        depth: int = 10,
+        height: float = 3.1416 / 2.2,
+        alpha: float = 3.1416 / 4,
+    ):
         self.image = self.image.convert("L")
+        if not stylish:
+            return
+        data = np.array(self.image)
+        grad_x, grad_y = np.gradient(data)
+
+        grad_x /= 100 / depth
+        grad_y /= 100 / depth
+
+        dx = np.cos(height) * np.cos(alpha)
+        dy = np.cos(height) * np.sin(alpha)
+        dz = np.sin(height)
+
+        remap = np.sqrt(grad_x**2 + grad_y**2 + 1)
+        uni_x = grad_x / remap
+        uni_y = grad_y / remap
+        uni_z = 1 / remap
+
+        self.image = Image.fromarray(
+            (255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8")
+        )
 
 
 def draw_figure(rules: "list[dict[str, Any]]", path: str):
@@ -375,7 +621,7 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
 
     # TODO add various backgrounds and noise (HOW?)
     figure = Figure(rules, random_seed=0)
-    figure.draw()
+    figure.draw(n_redraw=100)
     figure.save(path)
 
 
@@ -383,7 +629,7 @@ def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
     for i, sample in enumerate(samples):
-        draw_figure(sample, f"dataset/pictures/{i}.png")
+        draw_figure(sample, f"dataset/pictures/{i}_PIL.png")
 
 
 if __name__ == "__main__":
