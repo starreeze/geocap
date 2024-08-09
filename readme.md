@@ -24,5 +24,7 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 
    ```shell
    pip install black
-   black . --line-length 120 --extend-exclude models
+   black . --line-length 120 --extend-exclude llava
    ```
+
+Note: If you want to add external modules which will not pass the linter, you can add them to `pyrightconfig.json` and `.github/workflows/lint_format.yaml`.

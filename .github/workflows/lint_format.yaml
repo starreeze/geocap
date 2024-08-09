@@ -28,4 +28,4 @@ jobs:
 
       - name: Run Pyright lint
         run: |
-          npx pyright --level warning && black --check . --line-length 120 --extend-exclude models
+          npx pyright --level warning && black --check . --line-length 120 --extend-exclude llava
