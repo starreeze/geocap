@@ -26,7 +26,7 @@ import torch
 
 import transformers
 import tokenizers
-
+from peft.peft_model import PeftModel
 from llava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
@@ -1012,6 +1012,7 @@ def train(attn_implementation=None):
     model.config.use_cache = False
 
     model.requires_grad_(model_args.tune_llm)
+    training_args.tune_llm = model_args.tune_llm
 
     if training_args.bits in [4, 8]:
         from peft import prepare_model_for_kbit_training
@@ -1139,6 +1140,15 @@ def train(attn_implementation=None):
                 if hasattr(module, "weight"):
                     if training_args.bf16 and module.weight.dtype == torch.float32:
                         module = module.to(torch.bfloat16)
+
+    # print(f"trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    # print([n for n, p in model.named_parameters() if p.requires_grad])
+
+    trainable_params, all_param = PeftModel.get_nb_trainable_parameters(model)
+    rank0_print(
+        f"trainable params: {trainable_params:,d} || all params: {all_param:,d} || "
+        f"trainable%: {100 * trainable_params / all_param:.4f}"
+    )
 
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     trainer = LLaVATrainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
