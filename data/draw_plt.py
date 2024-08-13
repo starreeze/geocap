@@ -23,7 +23,7 @@ class Figure:
     def __init__(
         self,
         rules: "list[dict[str, Any]]",
-        random_seed: int,
+        random_seed=None,
         randomize: bool = True,
         size: "tuple[float, float]" = (6.4, 6.4),
         dpi: int = 100,
@@ -31,7 +31,7 @@ class Figure:
         xkcd: bool = False,
     ) -> None:
         self.rules = rules
-        self.random_seed = random_seed
+        self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
@@ -46,19 +46,19 @@ class Figure:
     def draw(
         self,
         color=None,
-        n_rand_pixels=None,
         n_white_line=None,
-        Gaussian_mean=30,
-        Gaussian_var=300,
+        Gaussian_mean: float = 0,
+        Gaussian_var: float = 10,
+        Perlin_lattice: int = 20,
+        Perlin_power: float = 16,
+        Perlin_bias: float = -16,
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
             print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
         print("All rules adapted.")
-        n_white_line = (
-            int(random.gauss(10, 1)) if n_white_line == None else n_white_line
-        )
+        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
         self.__add_white_line(n_white_line)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
@@ -66,12 +66,12 @@ class Figure:
         self.unprocessed_image = self.__fig2img()
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
-        if self.randomize:
-            print("Adding Noise...")
-            self.__add_noise(n_rand_pixels)
         print("Monochromizing the image...")
         self.__monochromize(stylish)
+        print("Adding Gaussian Noise...")
         self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+        print("Adding Perlin Noise...")
+        self.__add_PerlinNoise(Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save(self, path: str):
         self.unprocessed_image.save(path)
@@ -89,32 +89,45 @@ class Figure:
 
         return image
 
-    def __add_noise(
-        self,
-        n_rand_pixels=None,
-    ):
-        assert (
-            self.randomize
-        ), "Function 'add_noise' is disabled whilst randomize==False"
-        n_rand_pixels = (
-            int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
-        )
-        self.__add_random_pixels(n_pixels=n_rand_pixels)
-
-    def __add_random_pixels(self, n_pixels: int):
-        for _ in range(n_pixels):
-            x = random.randint(0, self.width)
-            y = random.randint(0, self.height)
-            self.canvas.point((x, y), fill="black")
-
     def __add_GaussianNoise(self, mean: float = 0, var: float = 25):
         img_array = np.array(self.unprocessed_image, dtype=float)
-        noise = np.random.normal(mean, var**0.5, img_array.shape)
+
+        noise = np.random.normal(mean, var, img_array.shape)
+
         processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
-        self.unprocessed_image = self.unprocessed_image.filter(
-            ImageFilter.GaussianBlur(0.5)
-        )
+
+    def __add_PerlinNoise(self, lattice: int = 20, power: float = 32, bias: float = 0):
+        def generate_perlin_noise_2d(shape, res):
+            def f(t):
+                return 6 * t**5 - 15 * t**4 + 10 * t**3
+
+            delta = (res[0] / shape[0], res[1] / shape[1])
+            d = (shape[0] // res[0], shape[1] // res[1])
+            grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
+            # Gradients
+            angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
+            gradients = np.dstack((np.cos(angles), np.sin(angles)))
+            g00 = gradients[0:-1, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
+            g10 = gradients[1:, 0:-1].repeat(d[0], 0).repeat(d[1], 1)
+            g01 = gradients[0:-1, 1:].repeat(d[0], 0).repeat(d[1], 1)
+            g11 = gradients[1:, 1:].repeat(d[0], 0).repeat(d[1], 1)
+            # Ramps
+            n00 = np.sum(grid * g00, 2)
+            n10 = np.sum(np.dstack((grid[:, :, 0] - 1, grid[:, :, 1])) * g10, 2)
+            n01 = np.sum(np.dstack((grid[:, :, 0], grid[:, :, 1] - 1)) * g01, 2)
+            n11 = np.sum(np.dstack((grid[:, :, 0] - 1, grid[:, :, 1] - 1)) * g11, 2)
+            # Interpolation
+            t = f(grid)
+            n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
+            n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
+            return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
+
+        img_array = np.array(self.unprocessed_image, dtype=float)
+        noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+
+        processed_img = np.clip((img_array + noise), 0, 255).astype(np.uint8)
+        self.unprocessed_image = Image.fromarray(processed_img)
 
     def __add_white_line(self, n_line: int):
         with plt.xkcd():
@@ -130,8 +143,7 @@ class Figure:
             isinstance(color, tuple) and len(color) == 3
         ), "Argument 'color' should be None or a 3-dimension tuple."
         line_width = (
-            self.line_weight
-            + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
             else self.line_weight
         )
@@ -142,9 +154,7 @@ class Figure:
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
-                assert (
-                    len(points) >= 3
-                ), "There should be more than 3 points within a polygon."
+                assert len(points) >= 3, "There should be more than 3 points within a polygon."
                 self.__handle_polygon(points, line_width, color)
 
             case "line":
@@ -163,11 +173,7 @@ class Figure:
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = (
-                    leftwise_endpoint
-                    if points[0][0] > points[1][0]
-                    else rightwise_endpoint
-                )
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
 
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
@@ -183,9 +189,7 @@ class Figure:
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
                 alpha = rule["rotation"] * 180 / np.pi
-                self.__handle_ellipse(
-                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color
-                )
+                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color)
 
             case "spiral":
                 # r = a + b\theta
@@ -197,9 +201,7 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
-                self.__handle_spiral(
-                    spiral_x, spiral_y, a, b, max_theta, line_width, color
-                )
+                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -232,7 +234,7 @@ class Figure:
                     x[i : i + 2],
                     y[i : i + 2],
                     linewidth=ln_wths[i],
-                    color=color,
+                    color=(c + i for c in color),
                 )
 
     def __handle_ellipse(
@@ -251,11 +253,7 @@ class Figure:
                 major,
                 minor,
                 angle=alpha,
-                edgecolor=(
-                    (random.random(), random.random(), random.random())
-                    if color == None
-                    else color
-                ),
+                edgecolor=((random.random(), random.random(), random.random()) if color == None else color),
                 facecolor=(0, 0, 0, 0),
                 linewidth=line_width,
             )
@@ -371,7 +369,7 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
 
     # TODO add various backgrounds and noise (HOW?)
     figure = Figure(rules, random_seed=0, xkcd=True)
-    figure.draw(n_rand_pixels=80)
+    figure.draw(stylish=True)
     figure.save(path)
 
 
