@@ -3,7 +3,7 @@
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
-        "models"
+        "llava"
     ],
     "reportMissingImports": false,
     "reportMissingModuleSource": false
