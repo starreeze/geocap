@@ -27,9 +27,7 @@ class Figure:
         self.height = size[1]
         self.background = background
         self.line_weight = line_weight
-        self.image = Image.new(
-            mode="RGB", size=(self.width, self.height), color=self.background
-        )
+        self.image = Image.new(mode="RGB", size=(self.width, self.height), color=self.background)
         self.canvas = ImageDraw.Draw(self.image, mode="RGB")
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
@@ -50,9 +48,7 @@ class Figure:
         print("All rules adapted.")
         if self.randomize:
             print("Adding Noise...")
-            self.__add_noise(
-                n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var
-            )
+            self.__add_noise(n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var)
         print("Monochromizing the image...")
         self.__monochromize(stylish)
 
@@ -67,26 +63,14 @@ class Figure:
         Gaussian_mean=25,
         Gaussian_var=100,
     ):
-        assert (
-            self.randomize
-        ), "Function 'add_noise' is disabled whilst randomize==False"
+        assert self.randomize, "Function 'add_noise' is disabled whilst randomize==False"
         try:
             rdm_lw = self.randomized_line_width
         except:
-            raise AttributeError(
-                "Must firstly run 'draw' to create attribute 'randomized_line_width'"
-            )
-        n_redraw = (
-            int(random.gauss(len(self.rules) // 2, len(self.rules) // 20))
-            if n_redraw == None
-            else n_redraw
-        )
-        n_rand_pixels = (
-            int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
-        )
-        n_white_line = (
-            int(random.gauss(10, 1)) if n_white_line == None else n_white_line
-        )
+            raise AttributeError("Must firstly run 'draw' to create attribute 'randomized_line_width'")
+        n_redraw = int(random.gauss(len(self.rules) // 2, len(self.rules) // 20)) if n_redraw == None else n_redraw
+        n_rand_pixels = int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
+        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
         self.__redraw(n_redraw)
         self.__add_random_pixels(n_pixels=n_rand_pixels)
         self.__add_white_line(n_white_line)
@@ -130,11 +114,7 @@ class Figure:
                     points: list = [self.__translate(point) for point in rule["points"]]
                     leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                    farwise = (
-                        leftwise_endpoint
-                        if points[0][0] > points[1][0]
-                        else rightwise_endpoint
-                    )
+                    farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
 
                     self.__redraw_line(
                         control_points=[
@@ -163,9 +143,7 @@ class Figure:
                     ]
                     self.__redraw_polygon(points)
                 case _:
-                    self.line_weight = int(
-                        self.randomized_line_width + random.gauss(20, 10)
-                    )
+                    self.line_weight = int(self.randomized_line_width + random.gauss(20, 10))
                     self.__handle(rule, randomize=False)
 
     def __redraw_line(
@@ -193,13 +171,8 @@ class Figure:
                 )
             case "2_points_control":
                 # Override the points argument
-                assert (
-                    len(control_points) == 2
-                ), "You must give exactly two points' info in the argument"
-                width = [
-                    control_points[i][2] if control_points[i][2] > 0 else 1
-                    for i in range(2)
-                ]
+                assert len(control_points) == 2, "You must give exactly two points' info in the argument"
+                width = [control_points[i][2] if control_points[i][2] > 0 else 1 for i in range(2)]
                 x = [control_points[i][0] for i in range(2)]
                 y = [control_points[i][1] for i in range(2)]
                 if width[0] == width[1]:
@@ -220,9 +193,7 @@ class Figure:
                 length_of_line = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
                 pixels_per_ascend = length_of_line // np.absolute(width[0] - width[1])
                 if pixels_per_ascend == 0:
-                    print(
-                        "The line is too short to perform this redraw attempt. Reperform the attempt in auto mode."
-                    )
+                    print("The line is too short to perform this redraw attempt. Reperform the attempt in auto mode.")
                     self.__redraw_line(points, mode="auto")
                     return
                 begin_point = 0 if width[0] < width[1] else 1
@@ -255,10 +226,8 @@ class Figure:
                     )
                 self.canvas.line(
                     xy=(
-                        x[begin_point]
-                        + (n_ascend - 1) * pixels_per_ascend * uni_vec[0],
-                        y[begin_point]
-                        + (n_ascend - 1) * pixels_per_ascend * uni_vec[1],
+                        x[begin_point] + (n_ascend - 1) * pixels_per_ascend * uni_vec[0],
+                        y[begin_point] + (n_ascend - 1) * pixels_per_ascend * uni_vec[1],
                         x[end_point],
                         y[end_point],
                     ),
@@ -288,9 +257,7 @@ class Figure:
                         fill=color,
                     )
             case _:
-                raise ValueError(
-                    f"Invalid argument mode = {mode}, must be 'auto', '2_points_control', or 'manual'."
-                )
+                raise ValueError(f"Invalid argument mode = {mode}, must be 'auto', '2_points_control', or 'manual'.")
 
     def __redraw_polygon(self, points):
         color = (
@@ -339,17 +306,14 @@ class Figure:
             y1 = random.randint(0, self.height)
             x2 = random.randint(0, self.width)
             y2 = random.randint(0, self.height)
-            self.canvas.line(
-                (x1, y1, x2, y2), fill="white", width=self.randomized_line_width
-            )
+            self.canvas.line((x1, y1, x2, y2), fill="white", width=self.randomized_line_width)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
             isinstance(color, tuple) and len(color) == 3
         ), "Argument 'color' should be None or a 3-dimension tuple."
         line_width = (
-            self.line_weight
-            + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
             else self.line_weight
         )
@@ -358,9 +322,7 @@ class Figure:
         match rule["type"]:
             case "polygon":
                 points: list = [self.__translate(point) for point in rule["points"]]
-                assert (
-                    len(points) >= 3
-                ), "There should be more than 3 points within a polygon."
+                assert len(points) >= 3, "There should be more than 3 points within a polygon."
                 self.__handle_polygon(points, line_width, color)
 
             case "line":
@@ -379,11 +341,7 @@ class Figure:
                 points: list = [self.__translate(point) for point in rule["points"]]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = (
-                    leftwise_endpoint
-                    if points[0][0] > points[1][0]
-                    else rightwise_endpoint
-                )
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
 
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
@@ -399,9 +357,7 @@ class Figure:
                 major = int(rule["major_axis"] * self.width)
                 minor = int(rule["minor_axis"] * self.height)
                 alpha = rule["rotation"]
-                self.__handle_ellipse(
-                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color
-                )
+                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color)
 
             case "spiral":
                 # r = a + b\theta
@@ -415,9 +371,7 @@ class Figure:
                 # clockwise: int = 1
                 spiral_x, spiral_y = self.__translate(rule["center"])
                 # self.canvas.point((spiral_x, spiral_y), fill="red")
-                self.__handle_spiral(
-                    spiral_x, spiral_y, a, b, max_theta, line_width, color
-                )
+                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -547,9 +501,7 @@ class Figure:
                     (x, y),
                     fill=(color),
                 )
-            theta += (
-                np.arctan(1 / r) if r < 10 else 1 / r
-            )  # arctan(1/r) \approx 1/r, speed up
+            theta += np.arctan(1 / r) if r < 10 else 1 / r  # arctan(1/r) \approx 1/r, speed up
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
@@ -567,10 +519,7 @@ class Figure:
                 self.height,
             )
 
-        if (
-            line_k * self.width + line_b >= 0
-            and line_k * self.width + line_b <= self.height
-        ):
+        if line_k * self.width + line_b >= 0 and line_k * self.width + line_b <= self.height:
             rightwise_endpoint = (self.width, line_k * self.width + line_b)
         elif line_k * self.width + line_b < 0:
             rightwise_endpoint = (-line_b / line_k, 0)
@@ -610,9 +559,7 @@ class Figure:
         uni_y = grad_y / remap
         uni_z = 1 / remap
 
-        self.image = Image.fromarray(
-            (255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8")
-        )
+        self.image = Image.fromarray((255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8"))
 
 
 def draw_figure(rules: "list[dict[str, Any]]", path: str):
