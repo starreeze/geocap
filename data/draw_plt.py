@@ -35,6 +35,7 @@ class Figure:
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
+        self.shape = (int(size[0] * dpi), int(size[1] * dpi))
         self.ax = self.image.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
         self.ax.set_xlim(0, 1)
@@ -71,7 +72,8 @@ class Figure:
         print("Adding Gaussian Noise...")
         self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
         print("Adding Perlin Noise...")
-        self.__add_PerlinNoise(Perlin_lattice, Perlin_power, Perlin_bias)
+        mask = self.__get_perlin_mask()
+        self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save(self, path: str):
         self.unprocessed_image.save(path)
@@ -97,7 +99,51 @@ class Figure:
         processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __add_PerlinNoise(self, lattice: int = 20, power: float = 32, bias: float = 0):
+    def __get_perlin_mask(self) -> np.ndarray:
+        mask = np.zeros(self.shape, dtype=np.uint8)
+        for rule in self.rules:
+            if rule["type"] == "ellipse":
+                angle_range = np.linspace(0, 2 * 3.1416, 1440)
+                a = rule["major_axis"] / 2
+                b = rule["minor_axis"] / 2
+                c = np.sqrt(a**2 - b**2)
+                e = c / a
+                offset_x = rule["center"][0] * self.shape[0] - a * np.cos(rule["rotation"]) * self.shape[0]
+                offset_y = rule["center"][1] * self.shape[1] - a * np.sin(rule["rotation"]) * self.shape[1]
+                for angle in angle_range:
+                    radius_range = np.linspace(
+                        0,
+                        (a * (1 - e**2) / (1 - e * np.cos(angle))) * self.shape[0],
+                        self.shape[0] * 2,
+                    )
+                    x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
+                    y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
+                    for pos in zip(x, y):
+                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                            continue
+                        mask[int(pos[1])][int(pos[0])] = 1
+            elif rule["type"] == "spiral":
+                if rule["max_theta"] <= 2 * 3.1416:
+                    continue
+                angle_range = np.linspace(rule["max_theta"] - 2 * 3.1416, rule["max_theta"], 1440)
+                for angle in angle_range:
+                    radius_range = rule["initial_radius"] + rule["growth_rate"] * angle
+                    radius_range = np.linspace(
+                        0,
+                        radius_range * self.shape[0],
+                        int(radius_range * self.shape[0]) * 2,
+                    )
+                    x = radius_range * np.cos(angle) + rule["center"][0] * self.shape[0]
+                    y = self.shape[1] - (radius_range * np.sin(angle) + rule["center"][1] * self.shape[1])
+                    for pos in zip(x, y):
+                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                            continue
+                        mask[int(pos[1])][int(pos[0])] = 1
+            else:
+                continue
+        return mask
+
+    def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
         def generate_perlin_noise_2d(shape, res):
             def f(t):
                 return 6 * t**5 - 15 * t**4 + 10 * t**3
@@ -125,8 +171,9 @@ class Figure:
 
         img_array = np.array(self.unprocessed_image, dtype=float)
         noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        end_array = img_array + mask * noise
 
-        processed_img = np.clip((img_array + noise), 0, 255).astype(np.uint8)
+        processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
     def __add_white_line(self, n_line: int):
