@@ -31,7 +31,9 @@ class Figure:
         xkcd: bool = False,
     ) -> None:
         self.rules = rules
-        self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
+        self.random_seed = (
+            random_seed if random_seed != None else random.randint(0, 2000000)
+        )
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
@@ -51,7 +53,7 @@ class Figure:
         Gaussian_mean: float = 0,
         Gaussian_var: float = 10,
         Perlin_lattice: int = 20,
-        Perlin_power: float = 16,
+        Perlin_power: float = 24,
         Perlin_bias: float = -16,
         stylish: bool = False,
     ):
@@ -59,7 +61,9 @@ class Figure:
             print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
         print("All rules adapted.")
-        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+        n_white_line = (
+            int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+        )
         self.__add_white_line(n_white_line)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
@@ -103,13 +107,22 @@ class Figure:
         mask = np.zeros(self.shape, dtype=np.uint8)
         for rule in self.rules:
             if rule["type"] == "ellipse":
-                angle_range = np.linspace(0, 2 * 3.1416, 1440)
+
                 a = rule["major_axis"] / 2
                 b = rule["minor_axis"] / 2
                 c = np.sqrt(a**2 - b**2)
                 e = c / a
-                offset_x = rule["center"][0] * self.shape[0] - a * np.cos(rule["rotation"]) * self.shape[0]
-                offset_y = rule["center"][1] * self.shape[1] - a * np.sin(rule["rotation"]) * self.shape[1]
+                offset_x = (
+                    rule["center"][0] * self.shape[0]
+                    - a * np.cos(rule["rotation"]) * self.shape[0]
+                )
+                offset_y = (
+                    rule["center"][1] * self.shape[1]
+                    - a * np.sin(rule["rotation"]) * self.shape[1]
+                )
+                angle_range = np.linspace(
+                    0, 2 * 3.1416, int(2 * 3.1416 * a * self.shape[0])
+                )
                 for angle in angle_range:
                     radius_range = np.linspace(
                         0,
@@ -117,15 +130,29 @@ class Figure:
                         self.shape[0] * 2,
                     )
                     x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
-                    y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
+                    y = self.shape[1] - (
+                        radius_range * np.sin(angle + rule["rotation"]) + offset_y
+                    )
                     for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                        if (
+                            pos[0] < 0
+                            or pos[0] > self.shape[0]
+                            or pos[1] < 0
+                            or pos[1] > self.shape[1]
+                        ):
                             continue
                         mask[int(pos[1])][int(pos[0])] = 1
             elif rule["type"] == "spiral":
                 if rule["max_theta"] <= 2 * 3.1416:
                     continue
-                angle_range = np.linspace(rule["max_theta"] - 2 * 3.1416, rule["max_theta"], 1440)
+                max_radius = (
+                    rule["initial_radius"] + rule["growth_rate"] * rule["max_theta"]
+                )
+                angle_range = np.linspace(
+                    rule["max_theta"] - 2 * 3.1416,
+                    rule["max_theta"],
+                    int(2 * 3.1416 * max_radius * self.shape[0]),
+                )
                 for angle in angle_range:
                     radius_range = rule["initial_radius"] + rule["growth_rate"] * angle
                     radius_range = np.linspace(
@@ -134,23 +161,37 @@ class Figure:
                         int(radius_range * self.shape[0]) * 2,
                     )
                     x = radius_range * np.cos(angle) + rule["center"][0] * self.shape[0]
-                    y = self.shape[1] - (radius_range * np.sin(angle) + rule["center"][1] * self.shape[1])
+                    y = self.shape[1] - (
+                        radius_range * np.sin(angle) + rule["center"][1] * self.shape[1]
+                    )
                     for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                        if (
+                            pos[0] < 0
+                            or pos[0] > self.shape[0]
+                            or pos[1] < 0
+                            or pos[1] > self.shape[1]
+                        ):
                             continue
                         mask[int(pos[1])][int(pos[0])] = 1
             else:
                 continue
         return mask
 
-    def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
+    def __add_PerlinNoise(
+        self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0
+    ):
         def generate_perlin_noise_2d(shape, res):
             def f(t):
                 return 6 * t**5 - 15 * t**4 + 10 * t**3
 
             delta = (res[0] / shape[0], res[1] / shape[1])
             d = (shape[0] // res[0], shape[1] // res[1])
-            grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
+            grid = (
+                np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(
+                    1, 2, 0
+                )
+                % 1
+            )
             # Gradients
             angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
             gradients = np.dstack((np.cos(angles), np.sin(angles)))
@@ -170,7 +211,9 @@ class Figure:
             return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
 
         img_array = np.array(self.unprocessed_image, dtype=float)
-        noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        noise = (
+            generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        )
         end_array = img_array + mask * noise
 
         processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
@@ -190,7 +233,8 @@ class Figure:
             isinstance(color, tuple) and len(color) == 3
         ), "Argument 'color' should be None or a 3-dimension tuple."
         line_width = (
-            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            self.line_weight
+            + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
             else self.line_weight
         )
@@ -201,7 +245,9 @@ class Figure:
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
-                assert len(points) >= 3, "There should be more than 3 points within a polygon."
+                assert (
+                    len(points) >= 3
+                ), "There should be more than 3 points within a polygon."
                 self.__handle_polygon(points, line_width, color)
 
             case "line":
@@ -220,7 +266,11 @@ class Figure:
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+                farwise = (
+                    leftwise_endpoint
+                    if points[0][0] > points[1][0]
+                    else rightwise_endpoint
+                )
 
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
@@ -236,7 +286,9 @@ class Figure:
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
                 alpha = rule["rotation"] * 180 / np.pi
-                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color)
+                self.__handle_ellipse(
+                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color
+                )
 
             case "spiral":
                 # r = a + b\theta
@@ -248,7 +300,9 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
-                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
+                self.__handle_spiral(
+                    spiral_x, spiral_y, a, b, max_theta, line_width, color
+                )
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -300,7 +354,11 @@ class Figure:
                 major,
                 minor,
                 angle=alpha,
-                edgecolor=((random.random(), random.random(), random.random()) if color == None else color),
+                edgecolor=(
+                    (random.random(), random.random(), random.random())
+                    if color == None
+                    else color
+                ),
                 facecolor=(0, 0, 0, 0),
                 linewidth=line_width,
             )
