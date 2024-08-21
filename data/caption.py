@@ -5,6 +5,8 @@ from common.args import data_args
 import math
 from scipy import special
 import requests
+import random
+import hashlib
 
 # gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 
@@ -323,6 +325,104 @@ def group_by_position(positions):
 
 def gen_input(special_shapes: dict):
     head = "Please provide a fluent and detailed description of the geometric patterns in this image and their relationships. "
+
+    def choose_head():
+        seed = int(hashlib.md5(json.dumps(special_shapes).encode("utf-8")).hexdigest(), 16)
+        head_start_no_param_pool = [
+            "Please provide a smooth and detailed description of the shapes in this image and their relationships. ",
+            "Kindly furnish a coherent and elaborate account of the forms present in this picture and how they interact. ",
+            "Please supply a fluid and comprehensive depiction of the figures within this image and their interconnections. ",
+            "I would appreciate a well-structured and intricate narrative of the various shapes visible in the image and the nature of their associations. ",
+            "Could you please offer a seamless and thorough explanation of the shapes seen in this image and the relationship between them? ",
+            "It is requested that you deliver a contiguous and detailed description of the shapes in this image and their respective relationships. ",
+            "Please render a lucid and elaborate description of the shapes that compose this image and the dynamics between them. ",
+            "I need a clear and detailed account of the shapes in this image and how they relate to one another. ",
+            "Offer a flowing and detailed depiction of the shapes within this image and the relationships that they share. ",
+            "We require a well-ordered and explicit description of the shapes present in the image and the manner in which they relate. ",
+            "Could you supply a contiguous and detailed account of the forms in this image and the connections between them? ",
+        ]
+        head_start_with_param_part1_pool = [
+            "I invite you to elaborate a fluid and precise narrative of the shapes in the image, detailing their interplay, ",
+            "Please be so kind as to craft a comprehensive and clear description of the shapes within the image, ",
+            "We ask that you generate a detailed and coherent explanation of the shapes observed in the image and the nature of their interactions, ",
+            "It is imperative that you describe the shapes in the image and their relationships in a smooth and detailed manner, ",
+            "Could you create a meticulous and well-flowing description of the shapes in the image, along with their interactions, ",
+            "We would like a seamless and detailed depiction of the shapes in the image and how they relate to one another, ",
+            "Please offer a nuanced and comprehensive description of the image’s shapes and their relationships, ",
+            "It is requested that you provide a clear and elaborate account of the shapes in the image and their interconnectedness, ",
+            "We require a detailed and coherent description of the shapes within the image, including their relationships, ",
+            "Please furnish a detailed and integrated description of the shapes in the image and the dynamics between them, ",
+        ]
+        head_start_with_param_part2_pool = [
+            "with numerical specifics for each shape based on its relative position. ",
+            "including their relationships, as outlined by the numerical details that define their relative placements. ",
+            "using the provided numerical data that categorizes them by their relative positions. ",
+            "utilizing the numerical details given for each shape based on its relative position. ",
+            "taking into account the numerical specifics that identify them by their relative locations? ",
+            "using the numerical details provided that distinguish them by their relative positioning. ",
+            "considering the numerical information that characterizes each shape by its relative position. ",
+            "with reference to the numerical details that classify them based on their relative placements. ",
+            "as informed by the numerical specifics that mark their relative positions. ",
+            "taking into account the numerical details that identify each shape by its relative location. ",
+        ]
+        head_with_param_part1_pool = [
+            "Here are some numerical specifics about certain shapes, identified by their positioning in relation to one another. ",
+            "The following numbers provide details about individual shapes, categorized by their comparative locations. ",
+            "Supplied here are some numerical specifics of individual shapes, noted by their position relative to the others. ",
+            "There are some numerical data points for particular shapes that are defined by their relative placement. ",
+            "Enclosed are numerical specifics of several shapes, which are recognized by their position in relation to one another. ",
+            "Here are some numerical details about select shapes, identified by their relative positions. ",
+            "The following are numerical details for certain shapes that are characterized by their relative locations. ",
+            "The numerical data provided here pertains to specific shapes, distinguished by their relative placement. ",
+            "Below, there are numerical specifics for individual shapes, which are set apart by their comparative positions. ",
+            "Here are numerical details of some shapes, which are classified by their relative positioning. ",
+        ]
+        head_end_pool = [
+            "Your narrative should accurately portray the precise placement of the shapes on the canvas. ",
+            "Your description should reflect the exact locations of the shapes on the artboard. ",
+            "Be sure to illustrate the exact positioning of the shapes on the canvas in your description. ",
+            "Your task is to represent the exact layout of the shapes on the canvas in your description. ",
+            "Your description should render the actual arrangement of the shapes on the canvas. ",
+            "Your goal is to delineate the exact positions of the shapes on the canvas. ",
+            "Please ensure that your description accurately details the positions of the shapes on the canvas. ",
+            "In your description, be sure to accurately convey where the shapes are situated on the canvas. ",
+            "Your description should accurately map out the placement of the shapes on the canvas. ",
+            "Be certain to capture the precise placement of the shapes on the canvas in your description. ",
+            "Ensure your description reflects the exact positioning on the canvas. ",
+            "Your depiction should accurately represent the shapes’ locations on the canvas. ",
+            "Your description should pinpoint the exact locations of the shapes on the canvas. ",
+            "Your account must accurately convey the shapes’ arrangement on the canvas. ",
+            "Your aim should be to accurately depict the placement of the shapes on the canvas. ",
+            "Your description should map out the precise locations of the shapes on the canvas. ",
+            "Your narrative should reflect the accurate positioning of the shapes on the canvas. ",
+            "Your description should accurately capture the shapes’ positions on the canvas. ",
+            "Your depiction should correctly represent where each shape is placed on the canvas.",
+            "Your narrative should accurately detail the exact positioning of the shapes on the canvas. ",
+        ]
+        random.seed(seed)
+        if len(special_shapes.keys()) == 0:
+            rnd_start = random.randint(0, len(head_start_no_param_pool) - 1)
+            rnd_end = random.randint(0, len(head_end_pool) - 1)
+            return head_start_no_param_pool[rnd_start] + head_end_pool[rnd_end]
+        else:
+            if random.random() > 0.5:
+                rnd_start = random.randint(0, len(head_start_no_param_pool) - 1)
+                rnd_part1 = random.randint(0, len(head_with_param_part1_pool) - 1)
+                rnd_end = random.randint(0, len(head_end_pool) - 1)
+                return (
+                    head_start_no_param_pool[rnd_start] + head_with_param_part1_pool[rnd_part1] + head_end_pool[rnd_end]
+                )
+            else:
+                rnd_start_part1 = random.randint(0, len(head_start_with_param_part1_pool) - 1)
+                rnd_start_part2 = random.randint(0, len(head_start_with_param_part2_pool) - 1)
+                rnd_end = random.randint(0, len(head_end_pool) - 1)
+                return (
+                    head_start_with_param_part1_pool[rnd_start_part1]
+                    + head_start_with_param_part2_pool[rnd_start_part2]
+                    + head_end_pool[rnd_end]
+                )
+
+    head = choose_head()
     single_1_param_format = "The {attr} of the {shape} is {value}. "
     single_2_param_format = "The {attr1} and {attr2} of the {shape} are {value1} and {value2}, respectively. "
     single_concentric_1_param_format = "The {attr}s of the {shape}s are {value}, respectively. "
