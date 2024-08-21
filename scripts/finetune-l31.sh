@@ -1,15 +1,15 @@
 #!/bin/bash
 export PYTHONPATH=`pwd`
+#    --pretrain_visual_encoder None \
 
 deepspeed llava/train/train_mem.py  \
     --model_name_or_path /home/nfs02/model/llama-3.1-8b-instruct \
-    --deepspeed scripts/zero3.json \
+    --deepspeed scripts/zero3_offload.json \
     --version v3 \
     --data_path /home/nfs03/zhaof/LLaVA/playground/data/llava_v1_5_mix665k.json \
     --image_folder /home/nfs03/zhaof/LLaVA/playground/data/ \
     --vision_tower /home/nfs03/zhaof/clip-vit-large-patch14-336 \
-    --pretrain_mm_mlp_adapter checkpoints/geocap-s1-7b/mm_mlp_adapter.bin \
-    --pretrain_visual_encoder checkpoints/geocap-s1-7b/vision_tower.bin \
+    --pretrain_mm_mlp_adapter checkpoints/geocap-s1-fe/mm_projector.bin \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
     --tune_visual_encoder False \
@@ -20,11 +20,11 @@ deepspeed llava/train/train_mem.py  \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir checkpoints/geocap-s2-7b \
+    --output_dir checkpoints/geocap-s2-fe \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 6 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 1 \
+    --gradient_accumulation_steps 4 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
     --save_steps 100000 \
