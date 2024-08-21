@@ -348,6 +348,10 @@ class Figure:
         line_width: int,
         color: Any,
     ):
+        if major < minor:
+            raise ValueError(
+                "The major axis is smaller than the minor axis, which is incorrect."
+            )
         self.ax.add_patch(
             pch.Ellipse(
                 (ellipse_x, ellipse_y),
