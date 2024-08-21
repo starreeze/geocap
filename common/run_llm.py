@@ -33,7 +33,7 @@ class Messages(BaseModel):
 
 
 app = FastAPI()
-gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
+gen = LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 # gen = print
 
 origins = ["*"]
@@ -51,8 +51,10 @@ app.add_middleware(
 def chat(msg: Messages):
     return cast(list, gen(msg.messages))[0]
 
+
 def main():
     uvicorn.run(app=app, host="127.0.0.1", port=7999)
+
 
 if __name__ == "__main__":
     main()
