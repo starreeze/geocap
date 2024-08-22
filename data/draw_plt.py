@@ -23,19 +23,20 @@ from common.iterwrap import iterate_wrapper
 class Figure:
     def __init__(
         self,
-        rules: "list[dict[str, Any]]",
+        rules: "dict",
         random_seed=None,
         randomize: bool = True,
-        size: "tuple[float, float]" = (6.4, 6.4),
+        size: "tuple[float, float]" = (12.8, 12.8),
         dpi: int = 100,
         line_weight: int = 4,
         xkcd: bool = False,
     ) -> None:
-        self.rules = rules
+        self.rules: list = rules["shapes"]
         self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
+        self.shape = (int(size[0] * dpi), int(size[1] * dpi))
         self.ax = self.image.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
         self.ax.set_xlim(0, 1)
@@ -51,14 +52,14 @@ class Figure:
         Gaussian_mean: float = 0,
         Gaussian_var: float = 10,
         Perlin_lattice: int = 20,
-        Perlin_power: float = 16,
+        Perlin_power: float = 24,
         Perlin_bias: float = -16,
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
-            print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
+            # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
-        print("All rules adapted.")
+        # print("All rules adapted.")
         n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
         self.__add_white_line(n_white_line)
         self.ax.axis("off")
@@ -67,12 +68,13 @@ class Figure:
         self.unprocessed_image = self.__fig2img()
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
-        print("Monochromizing the image...")
+        # print("Monochromizing the image...")
         self.__monochromize(stylish)
-        print("Adding Gaussian Noise...")
+        # print("Adding Gaussian Noise...")
         self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
-        print("Adding Perlin Noise...")
-        self.__add_PerlinNoise(Perlin_lattice, Perlin_power, Perlin_bias)
+        # print("Adding Perlin Noise...")
+        mask = self.__get_perlin_mask()
+        self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save(self, path: str):
         self.unprocessed_image.save(path)
@@ -98,7 +100,58 @@ class Figure:
         processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __add_PerlinNoise(self, lattice: int = 20, power: float = 32, bias: float = 0):
+    def __get_perlin_mask(self) -> np.ndarray:
+        mask = np.zeros(self.shape, dtype=np.uint8)
+        for rule in self.rules:
+            if rule["type"] == "ellipse":
+
+                a = rule["major_axis"] / 2
+                b = rule["minor_axis"] / 2
+                c = np.sqrt(a**2 - b**2)
+                e = c / a
+                offset_x = rule["center"][0] * self.shape[0] - np.cos(rule["rotation"]) * c * self.shape[0]
+                offset_y = rule["center"][1] * self.shape[1] - np.sin(rule["rotation"]) * c * self.shape[1]
+                angle_range = np.linspace(0, 2 * 3.1416, 2880)
+
+                for angle in angle_range:
+                    radius_range = np.linspace(
+                        0,
+                        (a * (1 - e**2) / (1 - e * np.cos(angle))) * self.shape[0],
+                        self.shape[0] * 2,
+                    )
+                    x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
+                    y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
+                    for pos in zip(x, y):
+                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                            continue
+                        mask[int(pos[1])][int(pos[0])] = 1
+            elif rule["type"] == "spiral":
+                if rule["max_theta"] <= 2 * 3.1416:
+                    continue
+                max_radius = rule["initial_radius"] + rule["growth_rate"] * rule["max_theta"]
+                angle_range = np.linspace(
+                    rule["max_theta"] - 2 * 3.1416,
+                    rule["max_theta"],
+                    int(2 * 3.1416 * max_radius * self.shape[0]),
+                )
+                for angle in angle_range:
+                    radius_range = rule["initial_radius"] + rule["growth_rate"] * angle
+                    radius_range = np.linspace(
+                        0,
+                        radius_range * self.shape[0],
+                        int(radius_range * self.shape[0]) * 2,
+                    )
+                    x = radius_range * np.cos(angle) + rule["center"][0] * self.shape[0]
+                    y = self.shape[1] - (radius_range * np.sin(angle) + rule["center"][1] * self.shape[1])
+                    for pos in zip(x, y):
+                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                            continue
+                        mask[int(pos[1])][int(pos[0])] = 1
+            else:
+                continue
+        return mask
+
+    def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
         def generate_perlin_noise_2d(shape, res):
             def f(t):
                 return 6 * t**5 - 15 * t**4 + 10 * t**3
@@ -126,8 +179,9 @@ class Figure:
 
         img_array = np.array(self.unprocessed_image, dtype=float)
         noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        end_array = img_array + mask * noise
 
-        processed_img = np.clip((img_array + noise), 0, 255).astype(np.uint8)
+        processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
     def __add_white_line(self, n_line: int):
@@ -214,7 +268,7 @@ class Figure:
             self.ax.plot(
                 (points[0][0], points[1][0]),
                 (points[0][1], points[1][1]),
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
                 color=color,
             )
         else:
@@ -234,7 +288,7 @@ class Figure:
                 self.ax.plot(
                     x[i : i + 2],
                     y[i : i + 2],
-                    linewidth=ln_wths[i],
+                    linewidth=ln_wths[i] * (self.shape[0] / 640),
                     color=(c + i for c in color),
                 )
 
@@ -248,6 +302,8 @@ class Figure:
         line_width: int,
         color: Any,
     ):
+        if major < minor:
+            raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
         self.ax.add_patch(
             pch.Ellipse(
                 (ellipse_x, ellipse_y),
@@ -256,7 +312,7 @@ class Figure:
                 angle=alpha,
                 edgecolor=((random.random(), random.random(), random.random()) if color == None else color),
                 facecolor=(0, 0, 0, 0),
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
             )
         )
 
@@ -275,7 +331,7 @@ class Figure:
                 points,
                 closed=True,
                 edgecolor=color,
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
                 facecolor=(0, 0, 0, 0),
             )
         )
@@ -304,7 +360,7 @@ class Figure:
         y = (a + b * theta) * np.sin(theta)
         x += spiral_x
         y += spiral_y
-        self.ax.plot(x, y, color=color, linewidth=line_width)
+        self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
@@ -364,7 +420,7 @@ class Figure:
         )
 
 
-def draw_figure(rules: "list[dict[str, Any]]", path: str):
+def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
     # TODO control their line weight and curves (MANUALLY)
 
@@ -374,14 +430,16 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
     figure.save(path)
 
 
-def process_single(f, idx_sample: tuple[int, list[dict[str, Any]]], vars):
+def process_single(f, idx_sample: tuple[int, dict], vars):
     draw_figure(idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"))
 
 
 def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    iterate_wrapper(process_single, list(enumerate(samples)), num_workers=run_args.num_workers)
+        assert isinstance(samples, list)
+    for idx_sample, sample in enumerate(samples):
+        draw_figure(sample, os.path.join(data_args.figure_dir, f"{idx_sample:08d}.jpg"))
 
 
 if __name__ == "__main__":

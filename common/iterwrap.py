@@ -7,7 +7,18 @@ from __future__ import annotations
 import os
 import traceback
 import json
-from typing import Any, BinaryIO, Callable, Iterable, Iterator, Literal, TextIO, TypeVar, IO, Sequence
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Iterable,
+    Iterator,
+    Literal,
+    TextIO,
+    TypeVar,
+    IO,
+    Sequence,
+)
 from glob import glob
 from itertools import product
 from functools import wraps
@@ -86,7 +97,10 @@ class IterateWrapper:
             from tqdm import tqdm
 
             self.wrapped_range = tqdm(
-                range(checkpoint, total_items), initial=checkpoint, total=total_items, position=bar
+                range(checkpoint, total_items),
+                initial=checkpoint,
+                total=total_items,
+                position=bar,
             )
         else:
             self.wrapped_range = range(checkpoint, total_items)

@@ -62,8 +62,8 @@ class RuleArgs:
 
 @dataclass
 class DrawArgs:
-    rules: "list[dict[str, Any]]" = field(default_factory=list)
-    random_seed: None | int = field(default=0)
+    rules: "dict" = field(default_factory=lambda: {})
+    random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
     size: "tuple[float, float]" = field(default=(6.4, 6.4))
     dpi: int = field(default=100)
