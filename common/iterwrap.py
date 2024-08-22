@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# @Date    : 2023-10-24 16:21:46
+# @Author  : Shangyu.Xing (starreeze@foxmail.com)
 """wrapper on an iterable to allow interruption & auto resume, retrying and multiprocessing"""
 
 from __future__ import annotations
@@ -62,6 +65,7 @@ class IterateWrapper:
         run_name=__name__,
     ):
         """wrap some iterables to provide automatic resuming on interruption, no retrying and limited to sequence
+
         Args:
             data: iterables to be wrapped
             mode: how to combine iterables. 'product' means Cartesian product, 'zip' means zip()
@@ -271,6 +275,7 @@ def iterate_wrapper(
     vars_factory: Callable[[], dict[str, Any]] = lambda: {},
 ) -> None:
     """Wrapper on a processor (func) and iterable (data) to support multiprocessing, retrying and automatic resuming.
+
     Args:
         func: The processor function. It should accept three arguments: output stream, data item and vars. Within func, the output stream can be used to save data in real time.
         data: The data to be processed. It can be an iterable or a sequence.
