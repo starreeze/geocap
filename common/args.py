@@ -24,7 +24,8 @@ class RunArgs:
     action: str = field(default="main")
 
     num_workers: int = field(default=32)
-    
+
+
 @dataclass
 class RuleArgs:
     # max number of shapes in each sample
