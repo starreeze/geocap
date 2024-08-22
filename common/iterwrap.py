@@ -47,9 +47,7 @@ def check_unfinished(run_name: str, warning_fn: Callable[[str], None] = print):
         num_ckpt = len(open(ckpt, "r").readlines())
         if num_cache == num_ckpt:
             return True
-        warning_fn(
-            f"unmatched: {num_cache} unfinished files vs {num_ckpt} checkpoints, restart from the beginning"
-        )
+        warning_fn(f"unmatched: {num_cache} unfinished files vs {num_ckpt} checkpoints, restart from the beginning")
     return False
 
 
@@ -147,9 +145,7 @@ def retry_dec(retry=5, on_error: Literal["raise", "continue"] = "raise"):
                             traceback.print_exc()
                             raise e
                         elif on_error == "continue":
-                            print(
-                                f"{type(e).__name__}: {e}, all retry failed. Continue due to on_error policy."
-                            )
+                            print(f"{type(e).__name__}: {e}, all retry failed. Continue due to on_error policy.")
                             return
                     print(f"{type(e).__name__}: {e}, retrying [{j + 1}]...")
 
@@ -229,11 +225,7 @@ def _process_job(
 
     retry_func = retry_dec(retry, on_error)(func)
     open_flags = ("w" if restart else "a") + ("b" if output_type == "binary" else "")
-    output = (
-        open(output_tmpl.format(name=run_name, id=process_idx), open_flags)
-        if output_type != "none"
-        else None
-    )
+    output = open(output_tmpl.format(name=run_name, id=process_idx), open_flags) if output_type != "none" else None
     for i in range_to_process:
         if iterator_mode:
             assert isinstance(data, Iterator)
@@ -292,9 +284,7 @@ def iterate_wrapper(
     """
     # init vars
     if num_workers < 1 or len(envs) and len(envs) != num_workers:
-        raise ValueError(
-            "num_workers must be a positive integer and envs must be a list of length num_workers"
-        )
+        raise ValueError("num_workers must be a positive integer and envs must be a list of length num_workers")
     if isinstance(data, Sequence):
         iterator_mode = False
         if total_items is not None:
@@ -304,9 +294,7 @@ def iterate_wrapper(
     else:
         iterator_mode = True
         data = iter(data)
-        assert (
-            total_items is not None
-        ), "total_items must be provided when data is not a sequence"
+        assert total_items is not None, "total_items must be provided when data is not a sequence"
 
     if num_workers > total_items:
         print(
@@ -323,9 +311,7 @@ def iterate_wrapper(
         with open(checkpoint_path, "w") as f:
             f.write("\n".join(map(str, checkpoint)))
     elif len(checkpoint) != num_workers:
-        raise ValueError(
-            f"checkpoint length {len(checkpoint)} does not match num_workers {num_workers}!"
-        )
+        raise ValueError(f"checkpoint length {len(checkpoint)} does not match num_workers {num_workers}!")
 
     # get multiprocessing results
     lock = Lock()
@@ -359,10 +345,7 @@ def iterate_wrapper(
         )
 
     if num_workers > 1:
-        pool = [
-            Process(target=_process_job, args=_get_job_args(i))
-            for i in range(num_workers)
-        ]
+        pool = [Process(target=_process_job, args=_get_job_args(i)) for i in range(num_workers)]
         for p in pool:
             p.start()
         for p in pool:
@@ -379,9 +362,7 @@ def iterate_wrapper(
         f = output
     else:
         f = None
-    _merge_files(
-        [output_tmpl.format(name=run_name, id=i) for i in range(num_workers)], f
-    )
+    _merge_files([output_tmpl.format(name=run_name, id=i) for i in range(num_workers)], f)
 
     # remove checkpoint file on complete
     try:
