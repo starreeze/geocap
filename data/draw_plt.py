@@ -16,13 +16,14 @@ import random
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
-from common.args import data_args
+from common.args import data_args, run_args
+from common.iterwrap import iterate_wrapper
 
 
 class Figure:
     def __init__(
         self,
-        rules: "list[dict[str, Any]]",
+        rules: "dict",
         random_seed=None,
         randomize: bool = True,
         size: "tuple[float, float]" = (12.8, 12.8),
@@ -30,7 +31,7 @@ class Figure:
         line_weight: int = 4,
         xkcd: bool = False,
     ) -> None:
-        self.rules = rules
+        self.rules: list = rules["shapes"]
         self.random_seed = (
             random_seed if random_seed != None else random.randint(0, 2000000)
         )
@@ -114,13 +115,14 @@ class Figure:
                 e = c / a
                 offset_x = (
                     rule["center"][0] * self.shape[0]
-                    - a * np.cos(rule["rotation"]) * self.shape[0]
+                    - np.cos(rule["rotation"]) * c * self.shape[0]
                 )
                 offset_y = (
                     rule["center"][1] * self.shape[1]
-                    - a * np.sin(rule["rotation"]) * self.shape[1]
+                    - np.sin(rule["rotation"]) * c * self.shape[1]
                 )
-                angle_range = np.linspace(0, 2 * 3.1416, 1440)
+                angle_range = np.linspace(0, 2 * 3.1416, 2880)
+
                 for angle in angle_range:
                     radius_range = np.linspace(
                         0,
@@ -470,7 +472,13 @@ class Figure:
         )
 
 
-def draw_figure(rules: "list[dict[str, Any]]", path: str):
+def process_single(f, idx_sample: tuple[int, dict], vars):
+    draw_figure(
+        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
+    )
+
+
+def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
     # TODO control their line weight and curves (MANUALLY)
 
@@ -483,8 +491,9 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
 def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    for i, sample in enumerate(samples):
-        draw_figure(sample, f"dataset/pictures/{i}_PLT.png")
+    iterate_wrapper(
+        process_single, list(enumerate(samples)), num_workers=run_args.num_workers
+    )
 
 
 if __name__ == "__main__":

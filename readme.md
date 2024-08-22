@@ -24,7 +24,7 @@ To use `draw_plt.py`, the following arguments are expected:
 - random_seed: int|None. The default value is None. Control the random seed.
 - randomize: bool. The default value is True. Enable the noise-applying procedure.
 - size: "tuple[float, float]". The deault value is (6.4, 6.4).
-- dpi: int. The default value is 100. dpi * size = resolution.
+- dpi: int. The default value is 100. dpi \* size = resolution.
 - line_weight: int. The default value is 4. Control the line weight. If `randomize` is enabled, the line weight will be randomly chosen in a certain range near the value.
 - xkcd: bool. The default value is False. Enable the hand-drawing line style.
 - color:None|tuple[int,int,int]. The default value is None. If a color in RGB form is provided, that rule will be drawn in the given color. The the value is None, that rule will be drawn in random colors.
@@ -38,6 +38,15 @@ To use `draw_plt.py`, the following arguments are expected:
 
 If you would like to use another version, please edit `args.py` and refer to `draw_PIL.py`. Most arguments are the same.
 
+### Running caption
+
+- 首先启动 LLM Server：
+
+  `python run.py --module common.run_llm`
+
+- 之后再运行`caption.py`即可：
+
+  `python run.py --module data.caption`
 ## Contributing
 
 Fork and open a pull request. Follow the instructions below or your PR will fail.

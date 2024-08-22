@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Date    : 2024-07-01 09:06:19
-# @Author  : Shangyu.Xing (starreeze@foxmail.com)
 "convert generated dataset to MLLM trainable format"
 
 from __future__ import annotations

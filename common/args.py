@@ -4,7 +4,9 @@ import logging, os
 from rich.logging import RichHandler
 from typing import cast, Any
 
-logging.basicConfig(level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(
+    level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+)
 logger = logging.getLogger("rich")
 
 
@@ -22,12 +24,13 @@ class DataArgs:
 class RunArgs:
     module: str = field(default="")
     action: str = field(default="main")
+    num_workers: int = field(default=32)
 
 
 @dataclass
 class DrawArgs:
-    rules: "list[dict[str, Any]]" = field()
-    random_seed: None | int = field()
+    rules: "dict" = field(default_factory=lambda: {})
+    random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
     size: "tuple[float, float]" = field(default=(6.4, 6.4))
     dpi: int = field(default=100)
@@ -36,23 +39,14 @@ class DrawArgs:
     color: None | tuple = field(default=None)
     n_white_line: None | int = field(default=None)
     Gaussian_mean: float = field(default=0)
-    Gaussian_var: float = field(
-        default=10,
-    )
-    Perlin_lattice: int = field(
-        default=20,
-    )
-    Perlin_power: float = field(
-        default=16,
-    )
-    Perlin_bias: float = field(
-        default=-16,
-    )
-    stylish: bool = field(
-        default=False,
-    )
+    Gaussian_var: float = field(default=10)
+    Perlin_lattice: int = field(default=20)
+    Perlin_power: float = field(default=16)
+    Perlin_bias: float = field(default=-16)
+    stylish: bool = field(default=False)
 
 
-data_args, run_args = HfArgumentParser([DataArgs, RunArgs]).parse_args_into_dataclasses()  # type: ignore
+data_args, run_args, draw_args = HfArgumentParser([DataArgs, RunArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
+draw_args = cast(DrawArgs, draw_args)
