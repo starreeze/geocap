@@ -17,6 +17,7 @@ import random
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 from common.args import data_args, run_args
+from common.iterwrap import iterate_wrapper, run_args
 from common.iterwrap import iterate_wrapper
 
 
@@ -486,6 +487,12 @@ def draw_figure(rules: "dict", path: str):
     figure = Figure(rules, random_seed=0, xkcd=True)
     figure.draw(stylish=True)
     figure.save(path)
+
+
+def process_single(f, idx_sample: tuple[int, list[dict[str, Any]]], vars):
+    draw_figure(
+        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
+    )
 
 
 def main():

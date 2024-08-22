@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from transformers import HfArgumentParser
 import logging, os
 from rich.logging import RichHandler
-from typing import cast, Any
+from typing import Any, cast
 
 logging.basicConfig(
     level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
@@ -24,13 +24,48 @@ class DataArgs:
 class RunArgs:
     module: str = field(default="")
     action: str = field(default="main")
+
     num_workers: int = field(default=32)
 
 
 @dataclass
+class RuleArgs:
+    # max number of shapes in each sample
+    max_num_shapes: int = field(default=10)
+
+    # levels of shape generation
+    polygon_shape_level: int = field(default=3)
+    line_shape_level: int = field(default=1)
+    ellipse_shape_level: int = field(default=4)
+    spiral_shape_level: int = field(default=3)
+
+    # levels of polygon relation
+    polygon_tangent_line_level: int = field(default=1)
+    polygon_symmetric_level: int = field(default=1)
+    polygon_similar_level: int = field(default=1)
+    polygon_shared_edge_level: int = field(default=3)
+    polygon_circumscribed_circle_of_triangle_level: int = field(default=2)
+    polygon_inscribed_circle_level: int = field(default=2)
+    polygon_circumscribed_circle_of_rectangle_level: int = field(default=2)
+    polygon_diagonal_level: int = field(default=1)
+
+    # levels of line relation
+    line_parallel_level: int = field(default=1)
+    line_tangent_line_level: int = field(default=2)
+    line_axis_of_ellipse_level: int = field(default=2)
+
+    # levels of ellipse relation
+    ellipse_tangent_line_level: int = field(default=1)
+    ellipse_tangent_circle_level: int = field(default=2)
+    ellipse_concentric_level: int = field(default=3)
+    ellipse_circumscribed_level: int = field(default=3)
+    ellipse_inscribed_level: int = field(default=3)
+
+
+@dataclass
 class DrawArgs:
-    rules: "dict" = field(default_factory=lambda: {})
-    random_seed: None | int = field(default=None)
+    rules: "list[dict[str, Any]]" = field(default_factory=list)
+    random_seed: None | int = field(default=0)
     randomize: bool = field(default=True)
     size: "tuple[float, float]" = field(default=(6.4, 6.4))
     dpi: int = field(default=100)
@@ -46,7 +81,8 @@ class DrawArgs:
     stylish: bool = field(default=False)
 
 
-data_args, run_args, draw_args = HfArgumentParser([DataArgs, RunArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
+data_args, run_args, rule_args, draw_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
+rule_args = cast(DataArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)

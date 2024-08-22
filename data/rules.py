@@ -1,30 +1,26 @@
 "generate rules for producing geometry shapes"
 import json, json_fix
-from common.args import data_args
+from common.args import data_args, rule_args
 from numpy.random import randint
+from tqdm import trange
+from data.shapes import ShapeGenerator
+from data.relations import RelationGenerator
 
 
-def generate_rules(num_samples=1000, max_num_shapes=10) -> list[dict[str, list]]:
+def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
     """
     Generate random rules across different types and shapes. Then mix them together.
     Returns: a list of samples where each consists a list of shapes and a list of relations.
     """
-
-    # NOTE: all the shape should be in [0, 1] for both x and y
-    # TODO: generate different types and shapes
-    # TODO: how to mix them to form a sample
-    from data.shapes import ShapeGenerator
-    from data.relations import RelationGenerator
-
-    shape_generator = ShapeGenerator()
-    relation_generator = RelationGenerator(shape_generator)
+    shape_generator = ShapeGenerator(rule_args)
+    relation_generator = RelationGenerator(rule_args)
     results = []
 
     num_init_shapes = 0
     total_shapes = 0
-    for _ in range(num_samples):
+    for _ in trange(data_args.num_basic_geo_samples):
         shapes = []
-        num_shapes = randint(2, max_num_shapes // 2)  # leave space for special relations
+        num_shapes = randint(2, rule_args.max_num_shapes // 2)  # leave space for special relations
         for _ in range(num_shapes):
             new_shape = shape_generator()
             # shapes.append(new_shape)
@@ -41,10 +37,19 @@ def generate_rules(num_samples=1000, max_num_shapes=10) -> list[dict[str, list]]
 
             tail_shape, relation_type = relation_generator(head_shape)
 
-            if no_overlap(shapes, tail_shape, exclude_shape=head_shape):
-                tail_idx = len(shapes)
-                relations.append((head_idx, tail_idx, relation_type))
-                shapes.append(tail_shape)
+            if isinstance(tail_shape, list):
+                exclude_shape = [head_shape]
+                for t_shape in tail_shape:
+                    if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
+                        tail_idx = len(shapes)
+                        relations.append((head_idx, tail_idx, relation_type))
+                        shapes.append(t_shape)
+                        exclude_shape.append(t_shape)
+            else:  # tail_shape is a GSRule instance
+                if no_overlap(shapes, tail_shape, exclude_shape=[head_shape]):
+                    tail_idx = len(shapes)
+                    relations.append((head_idx, tail_idx, relation_type))
+                    shapes.append(tail_shape)
 
         total_shapes += len(shapes)
         shapes_dict = [shape.to_dict() for shape in shapes]
@@ -53,11 +58,11 @@ def generate_rules(num_samples=1000, max_num_shapes=10) -> list[dict[str, list]]
 
     print(f"number of initial shapes = {num_init_shapes}")
     print(f"total shapes = {total_shapes}")
-    assert len(results) == num_samples
+    assert len(results) == data_args.num_basic_geo_samples
     return results
 
 
-def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.1) -> bool:
+def no_overlap(shapes, new_shape, exclude_shape: list = [], thres=0.2) -> bool:
     if new_shape is None:
         return False
 
@@ -84,7 +89,7 @@ def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.1) -> bool:
 
     iou_sum = 0
     for cur_shape in shapes:
-        if cur_shape is not exclude_shape:
+        if cur_shape not in exclude_shape:
             cur_bbox = cur_shape.get_bbox()
             new_bbox = new_shape.get_bbox()
             cur_area = (cur_bbox[1][0] - cur_bbox[0][0]) * (cur_bbox[0][1] - cur_bbox[1][1])
@@ -104,7 +109,7 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 
 
 def main():
-    samples = generate_rules(data_args.num_basic_geo_samples)
+    samples = generate_rules(data_args, rule_args)
     save_rules(samples, data_args.rules_path)
 
 

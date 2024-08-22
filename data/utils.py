@@ -105,3 +105,16 @@ def find_intersection(
         y = k1 * x + b1
 
     return (x, y)
+
+
+def find_symmetric_point(line: tuple[float, float], point: tuple[float, float]) -> tuple[float, float]:
+    k, b = line
+    x1, y1 = point
+
+    x2 = (x1 + k * (y1 - b)) / (k**2 + 1)
+    y2 = k * x2 + b
+
+    x_prime = 2 * x2 - x1
+    y_prime = 2 * y2 - y1
+
+    return (x_prime, y_prime)

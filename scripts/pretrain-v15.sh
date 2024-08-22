@@ -1,28 +1,29 @@
 #!/bin/bash
-
 export PYTHONPATH=`pwd`
 
 deepspeed llava/train/train_mem.py \
-    --deepspeed scripts/zero3.json \
-    --model_name_or_path lmsys/vicuna-13b-v1.5 \
+    --deepspeed scripts/zero2.json \
+    --model_name_or_path /home/nfs02/model/vicuna-7b-v1.5 \
     --version plain \
-    --data_path dataset/stage_1.json \
-    --image_folder dataset/stage_1_images \
+    --data_path /home/nfs03/zhaof/LLaVA/playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
+    --image_folder /home/nfs03/zhaof/LLaVA/playground/data/LLaVA-Pretrain/images \
     --vision_tower /home/nfs03/zhaof/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
+    --tune_visual_encoder False \
+    --tune_llm False \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --bf16 True \
-    --output_dir checkpoints/geocap-s1-7b \
+    --output_dir checkpoints/llava-s1 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 32 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 1 \
+    --gradient_accumulation_steps 4 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 24000 \
+    --save_steps 100000 \
     --save_total_limit 1 \
     --learning_rate 1e-3 \
     --weight_decay 0. \
