@@ -59,9 +59,9 @@ class Figure:
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
-            print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
+            # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
-        print("All rules adapted.")
+        # print("All rules adapted.")
         n_white_line = (
             int(random.gauss(10, 1)) if n_white_line == None else n_white_line
         )
@@ -72,11 +72,11 @@ class Figure:
         self.unprocessed_image = self.__fig2img()
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
-        print("Monochromizing the image...")
+        # print("Monochromizing the image...")
         self.__monochromize(stylish)
-        print("Adding Gaussian Noise...")
+        # print("Adding Gaussian Noise...")
         self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
-        print("Adding Perlin Noise...")
+        # print("Adding Perlin Noise...")
         mask = self.__get_perlin_mask()
         self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
@@ -472,12 +472,6 @@ class Figure:
         )
 
 
-def process_single(f, idx_sample: tuple[int, dict], vars):
-    draw_figure(
-        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
-    )
-
-
 def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
     # TODO control their line weight and curves (MANUALLY)
@@ -488,12 +482,18 @@ def draw_figure(rules: "dict", path: str):
     figure.save(path)
 
 
+def process_single(f, idx_sample: tuple[int, dict], vars):
+    draw_figure(
+        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
+    )
+
+
 def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    iterate_wrapper(
-        process_single, list(enumerate(samples)), num_workers=run_args.num_workers
-    )
+        assert isinstance(samples, list)
+    for idx_sample, sample in enumerate(samples):
+        draw_figure(sample, os.path.join(data_args.figure_dir, f"{idx_sample:08d}.jpg"))
 
 
 if __name__ == "__main__":
