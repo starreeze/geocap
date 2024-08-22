@@ -16,7 +16,8 @@ import random
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
-from common.args import data_args
+from common.args import data_args, run_args
+from common.iterwrap import iterate_wrapper
 
 
 class Figure:
@@ -373,11 +374,14 @@ def draw_figure(rules: "list[dict[str, Any]]", path: str):
     figure.save(path)
 
 
+def process_single(f, idx_sample: tuple[int, list[dict[str, Any]]], vars):
+    draw_figure(idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"))
+
+
 def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    for i, sample in enumerate(samples):
-        draw_figure(sample, f"dataset/pictures/{i}_PLT.png")
+    iterate_wrapper(process_single, list(enumerate(samples)), num_workers=run_args.num_workers)
 
 
 if __name__ == "__main__":

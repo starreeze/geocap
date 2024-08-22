@@ -20,11 +20,12 @@ python run.py --module data.format --action to_llava  # you can also specify the
 Two python files, `draw_PIL.py` and `draw_plt.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `draw_plt.py` is recommended to use and `run.py` will automatically parse this version.
 
 To use `draw_plt.py`, the following arguments are expected:
+
 - rules: "list[dict[str, Any]]". Mandatory. The rules you would like to draw.
 - random_seed: int|None. The default value is None. Control the random seed.
 - randomize: bool. The default value is True. Enable the noise-applying procedure.
 - size: "tuple[float, float]". The deault value is (6.4, 6.4).
-- dpi: int. The default value is 100. dpi * size = resolution.
+- dpi: int. The default value is 100. dpi \* size = resolution.
 - line_weight: int. The default value is 4. Control the line weight. If `randomize` is enabled, the line weight will be randomly chosen in a certain range near the value.
 - xkcd: bool. The default value is False. Enable the hand-drawing line style.
 - color:None|tuple[int,int,int]. The default value is None. If a color in RGB form is provided, that rule will be drawn in the given color. The the value is None, that rule will be drawn in random colors.
@@ -37,6 +38,16 @@ To use `draw_plt.py`, the following arguments are expected:
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
 
 If you would like to use another version, please edit `args.py` and refer to `draw_PIL.py`. Most arguments are the same.
+
+### Running caption
+
+- 首先启动 LLM Server：
+
+  `python run.py --module common.run_llm`
+
+- 之后再运行`caption.py`即可：
+
+  `python run.py --module data.caption`
 
 ## Contributing
 

@@ -22,6 +22,7 @@ class DataArgs:
 class RunArgs:
     module: str = field(default="")
     action: str = field(default="main")
+    num_workers: int = field(default=32)
 
 
 @dataclass
@@ -36,21 +37,11 @@ class DrawArgs:
     color: None | tuple = field(default=None)
     n_white_line: None | int = field(default=None)
     Gaussian_mean: float = field(default=0)
-    Gaussian_var: float = field(
-        default=10,
-    )
-    Perlin_lattice: int = field(
-        default=20,
-    )
-    Perlin_power: float = field(
-        default=16,
-    )
-    Perlin_bias: float = field(
-        default=-16,
-    )
-    stylish: bool = field(
-        default=False,
-    )
+    Gaussian_var: float = field(default=10)
+    Perlin_lattice: int = field(default=20)
+    Perlin_power: float = field(default=16)
+    Perlin_bias: float = field(default=-16)
+    stylish: bool = field(default=False)
 
 
 data_args, run_args, draw_args = HfArgumentParser([DataArgs, RunArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
