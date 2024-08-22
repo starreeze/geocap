@@ -30,11 +30,11 @@ Each data sample contains two parts:
 {
    "shapes": [
       {
-         "type": line,
+         "type": "line",
          ...
       },
       {
-         "type": ellipse,
+         "type": "ellipse",
          ...
       },
    ],
