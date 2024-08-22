@@ -25,7 +25,7 @@ class Figure:
         rules: "list[dict[str, Any]]",
         random_seed=None,
         randomize: bool = True,
-        size: "tuple[float, float]" = (6.4, 6.4),
+        size: "tuple[float, float]" = (12.8, 12.8),
         dpi: int = 100,
         line_weight: int = 4,
         xkcd: bool = False,
@@ -120,9 +120,7 @@ class Figure:
                     rule["center"][1] * self.shape[1]
                     - a * np.sin(rule["rotation"]) * self.shape[1]
                 )
-                angle_range = np.linspace(
-                    0, 2 * 3.1416, int(2 * 3.1416 * a * self.shape[0])
-                )
+                angle_range = np.linspace(0, 2 * 3.1416, 1440)
                 for angle in angle_range:
                     radius_range = np.linspace(
                         0,
@@ -314,7 +312,7 @@ class Figure:
             self.ax.plot(
                 (points[0][0], points[1][0]),
                 (points[0][1], points[1][1]),
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
                 color=color,
             )
         else:
@@ -334,7 +332,7 @@ class Figure:
                 self.ax.plot(
                     x[i : i + 2],
                     y[i : i + 2],
-                    linewidth=ln_wths[i],
+                    linewidth=ln_wths[i] * (self.shape[0] / 640),
                     color=(c + i for c in color),
                 )
 
@@ -364,7 +362,7 @@ class Figure:
                     else color
                 ),
                 facecolor=(0, 0, 0, 0),
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
             )
         )
 
@@ -383,7 +381,7 @@ class Figure:
                 points,
                 closed=True,
                 edgecolor=color,
-                linewidth=line_width,
+                linewidth=line_width * (self.shape[0] / 640),
                 facecolor=(0, 0, 0, 0),
             )
         )
@@ -412,7 +410,7 @@ class Figure:
         y = (a + b * theta) * np.sin(theta)
         x += spiral_x
         y += spiral_y
-        self.ax.plot(x, y, color=color, linewidth=line_width)
+        self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
