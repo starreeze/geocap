@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 import numpy as np
 from numpy.random import randint, uniform, normal
+from data.utils import distance_2points
 
 
 @dataclass
@@ -35,6 +36,19 @@ class Polygon(GSRule):
 
     def get_bbox(self) -> list[tuple[float, float]]:
         return self.bbox_from_points(self.points)
+
+    def get_area(self) -> float:
+        if "triangle" in self.special_info:
+            A, B, C = self.points
+            a = distance_2points(B, C)
+            b = distance_2points(A, C)
+            c = distance_2points(A, B)
+            s = (a + b + c) / 2
+            area = np.sqrt(s * (s - a) * (s - b) * (s - c))
+        else:
+            bbox = self.get_bbox()
+            area = (bbox[1][0] - bbox[0][0]) * (bbox[0][1] - bbox[1][1])
+        return area
 
     def normalize_points(self):
         min_x = min(x for x, y in self.points)
@@ -152,6 +166,9 @@ class Ellipse(GSRule):
         transformed_points = [(h + x, k + y) for x, y in points]
         return self.bbox_from_points(transformed_points)
 
+    def get_area(self) -> float:
+        return np.pi * self.major_axis * self.minor_axis
+
     def get_point(self, theta=None) -> tuple[float, float]:
         if theta is None:
             theta = np.random.uniform(0, 2 * np.pi)
@@ -232,16 +249,23 @@ class Spiral(GSRule):
         return self.bbox_from_points(points)
 
     def radius(self, theta: float) -> float:
-        ε, ω, φ = self.sin_params
-        return self.initial_radius + (self.growth_rate + ε * np.sin(ω * theta + φ)) * theta
+        epsilon, omega, phi = self.sin_params
+        return self.initial_radius + (self.growth_rate + epsilon * np.sin(omega * theta + phi)) * theta
 
 
 class ShapeGenerator:
-    def __init__(self) -> None:
+    def __init__(self, rule_args) -> None:
         self.opt_shapes = ["polygon", "line", "ellipse", "spiral"]
 
+        self.shape_prob = []
+
+        for shape_type in self.opt_shapes:
+            shape_prob = eval(f"rule_args.{shape_type}_shape_level")
+            self.shape_prob.append(shape_prob)
+        self.shape_prob = [x / sum(self.shape_prob) for x in self.shape_prob]
+
     def __call__(self) -> Polygon | Line | Ellipse | Spiral:
-        shape_type = np.random.choice(self.opt_shapes)
+        shape_type = np.random.choice(self.opt_shapes, p=self.shape_prob)
         if shape_type == "polygon":
             shape = self.generate_random_polygon()
         elif shape_type == "line":
@@ -259,7 +283,7 @@ class ShapeGenerator:
         points = [(uniform(0.2, 0.8), uniform(0.2, 0.8)) for _ in range(num_points)]
         polygon = Polygon(points)
         polygon.to_simple_polygon()
-        while not polygon.is_convex():
+        while not polygon.is_convex() or polygon.get_area() < 0.01:
             points = [(uniform(0.2, 0.8), uniform(0.2, 0.8)) for _ in range(num_points)]
             polygon = Polygon(points)
             polygon.to_simple_polygon()
@@ -296,6 +320,11 @@ class ShapeGenerator:
         minor_axis = uniform(0.3 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         ellipse = Ellipse(center, major_axis, minor_axis, rotation)
+        while ellipse.get_area() < 0.01:
+            major_axis = normal(0.5, 0.1)
+            minor_axis = uniform(0.3 * major_axis, major_axis)
+            ellipse = Ellipse(center, major_axis, minor_axis, rotation)
+
         special_ellipse = np.random.choice(["no", "circle"])
         if special_ellipse == "circle":
             ellipse.to_circle(radius=minor_axis / 2)
@@ -303,7 +332,7 @@ class ShapeGenerator:
 
     def generate_random_spiral(self) -> Spiral:
         center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
-        max_theta = uniform(4 * np.pi, 16 * np.pi)  # at least 2 full turns
+        max_theta = uniform(5 * np.pi, 12 * np.pi)
         initial_radius = normal(5e-4, 1e-4)
         growth_rate = normal(1e-2, 2e-3)
         epsilon = normal(1e-3, 2e-4)

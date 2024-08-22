@@ -15,6 +15,57 @@ python run.py --module data.rules --num_basic_geo_samples 10  # default entry is
 python run.py --module data.format --action to_llava  # you can also specify the entry function (--action)
 ```
 
+## Generating rules for geometric shapes
+
+Running the following command can generate rules in `dataset/rules.json`:
+```shell
+python run.py --module data.rules --num_basic_geo_samples 10
+```
+
+Each data sample contains two parts:
+- **shapes**: parameters and special information of each geometric shape. 
+- **relations**: relationship between two shapes in form of `[head_shape_idx, tail_shape_idx, relation_type]`
+### Example data sample
+```json
+{
+   "shapes": [
+      {
+         "type": "line",
+         ...
+      },
+      {
+         "type": "ellipse",
+         ...
+      },
+   ],
+   "relations": [
+      [
+         0,
+         1,
+         "tangent line"
+      ]
+   ]
+}
+```
+
+You can control the generation process with the following arguments:
+- max_num_shapes: the maximum number of shapes in each sample. Default is 10
+and there are arguments for controling the proportion of different shapes and relations, for example:
+- polygon_shape_level: the proportion of polygon in all shapes
+- line_shape_level: the proportion of line in all shapes
+- ...
+- polygon_tangent_line_level: the proportion of generating a tangent line in all polygon relations
+- polygon_shared_edge_level: the proportion of generating a new polygon that have a shared edge with a given polygon
+- ellipse_concentric_level: the proportion of generating a set of ellipses that is concentric with a given ellipse
+- ...
+
+Each 'level' argument is an integer (with a default value) representing the relative level within its shape/relation block. For more details, please refer to `RuleArgs` in `common/args.py`. All 'level' arguments will be transformed into probabilities using L1 normalization (sum normalization).
+
+If more ellipse is expected, you can set a higher level for ellipse_shape_level:
+```shell
+python run.py --module data.rules --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
+```
+
 ### Running Module 'draw'
 
 Two python files, `draw_PIL.py` and `draw_plt.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `draw_plt.py` is recommended to use and `run.py` will automatically parse this version.
