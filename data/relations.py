@@ -1,7 +1,7 @@
 from typing import Any
 import numpy as np
-from numpy.random import uniform
-from .shapes import Polygon, Line, Ellipse, ShapeGenerator
+from numpy.random import uniform, randint, normal
+from .shapes import Polygon, Line, Ellipse
 from data.utils import (
     distance_2points,
     polar_angle,
@@ -9,15 +9,16 @@ from data.utils import (
     distance_point_to_line,
     another_2points_on_line,
     find_intersection,
+    find_symmetric_point,
 )
 
 
 class RelationGenerator:
-    def __init__(self, shape_generator: ShapeGenerator) -> None:
-        self.shape_generator = shape_generator
-        self.polygon_relation_generator = PolygonRelationGenerator()
-        self.line_relation_generator = LineRelationGenerator()
-        self.ellipse_relation_generator = EllipseRelationGenerator()
+    def __init__(self, rule_args) -> None:
+        # probability for different types of relation
+        self.polygon_relation_generator = PolygonRelationGenerator(rule_args)
+        self.line_relation_generator = LineRelationGenerator(rule_args)
+        self.ellipse_relation_generator = EllipseRelationGenerator(rule_args)
 
         self.type2generator = {
             "polygon": self.polygon_relation_generator,
@@ -36,11 +37,18 @@ class RelationGenerator:
 
 
 class PolygonRelationGenerator:
-    def __init__(self) -> None:
-        # self.base_rel = ['tangent line', 'coincident edge', 'similar']
-        self.base_rel = ["tangent line", "similar"]
-        self.triangle_only_rel = ["circumscribed circle", "inscribed circle"]
-        self.rectangle_only_rel = ["circumscribed circle", "diagonal"]
+    def __init__(self, rule_args) -> None:
+        self.base_rel = ["tangent line", "symmetric", "similar"]
+        self.triangle_only_rel = ["shared edge", "circumscribed circle of triangle", "inscribed circle"]
+        self.rectangle_only_rel = ["circumscribed circle of rectangle", "diagonal"]
+        all_relations = self.base_rel + self.triangle_only_rel + self.rectangle_only_rel
+
+        self.relation_level = []
+        for relation_type in all_relations:
+            level = eval(f"rule_args.polygon_{relation_type.replace(' ', '_')}_level")
+            self.relation_level.append(level)
+
+        # self.relation_prob = [1 / len(all_relations) for _ in range(len(all_relations))]
 
     def generate_relation(self, polygon: Polygon) -> tuple[Any, str] | tuple[None, None]:
         self.polygon = polygon
@@ -50,23 +58,28 @@ class PolygonRelationGenerator:
         elif "rectangle" in self.polygon.special_info:
             opt_rel = opt_rel + self.rectangle_only_rel
 
-        relation_type = np.random.choice(opt_rel)
+        opt_relation_level = self.relation_level[: len(opt_rel)]
+        relation_prob = [x / sum(opt_relation_level) for x in opt_relation_level]
+        relation_type = np.random.choice(opt_rel, p=relation_prob)
         if relation_type == "tangent line":
             new_shape = self.get_tangent_line()
 
-        elif relation_type == "coincident edge":
-            new_shape = self.get_coincident_polygon()
+        elif "symmetric" in relation_type:
+            new_shape = self.get_symmetric_polygon()
 
-        elif relation_type == "similar":
+        elif "similar" in relation_type:
             new_shape = self.get_similar_polygon()
 
-        elif relation_type == "circumscribed circle":
+        elif "shared edge" in relation_type:
+            new_shape = self.get_share_edge_polygon()
+
+        elif "circumscribed circle" in relation_type:
             new_shape = self.get_circumscribed_circle()
 
-        elif relation_type == "inscribed circle":
+        elif "inscribed circle" in relation_type:
             new_shape = self.get_inscribed_circle()
 
-        elif relation_type == "diagonal":
+        elif "diagonal" in relation_type:
             new_shape = self.get_diagonal()
 
         return new_shape, relation_type
@@ -74,7 +87,7 @@ class PolygonRelationGenerator:
     def get_tangent_line(self) -> Line:
         # choose a vertex randomly
         n = len(self.polygon.points)
-        index = np.random.randint(0, n)
+        index = randint(0, n)
         x, y = self.polygon.points[index]
         # calculate tangent line
         prev_point = self.polygon.points[(index - 1) % n]
@@ -86,11 +99,13 @@ class PolygonRelationGenerator:
         line = Line(type="segment", points=[p1, p2])
         return line
 
-    def get_coincident_polygon(self) -> Polygon:
-        # two polygons have a coincident edge
-        new_polygon = Polygon(points=[(0, 0) for _ in range(3)])
-        # TODO: modify points of new_polygon
-
+    def get_symmetric_polygon(self) -> Polygon | None:
+        points = self.polygon.points
+        idx = randint(0, len(points))
+        axial = line_given2points([points[idx], points[(idx + 1) % len(points)]])
+        new_points = [find_symmetric_point(axial, point) for point in points]
+        new_polygon = Polygon(new_points)
+        new_polygon.special_info = self.polygon.special_info
         return new_polygon
 
     def get_similar_polygon(self) -> Polygon:
@@ -103,6 +118,20 @@ class PolygonRelationGenerator:
         new_polygon = Polygon(points)
         new_polygon.normalize_points()
         return new_polygon
+
+    def get_share_edge_polygon(self) -> list[Polygon]:
+        assert "triangle" in self.polygon.special_info and len(self.polygon.points) == 3
+
+        points = self.polygon.points
+        polygon_list = []
+        num_new_polygons = randint(1, 3)
+        for _ in range(num_new_polygons):
+            side_len = distance_2points(points[0], points[1])  # length of the shared edge
+            mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
+            new_point = (mid_point[0] + side_len * uniform(-0.5, 0.5), mid_point[1] + side_len * uniform(-0.5, 0.5))
+            polygon_list.append(Polygon([points[0], points[1], new_point], special_info="triangle"))
+
+        return polygon_list
 
     def get_circumscribed_circle(self) -> Ellipse:
         if "triangle" in self.polygon.special_info:
@@ -121,7 +150,10 @@ class PolygonRelationGenerator:
             circle.to_circle(radius)
 
         elif "rectangle" in self.polygon.special_info:
-            center = (sum(x for x, y in self.polygon.points) / 4, sum(y for x, y in self.polygon.points) / 4)
+            center = (
+                sum(x for x, y in self.polygon.points) / 4,
+                sum(y for x, y in self.polygon.points) / 4,
+            )
             radius = distance_2points(center, self.polygon.points[0])
             circle = Ellipse(center=center, major_axis=radius, minor_axis=radius, rotation=0)
             circle.to_circle(radius)
@@ -156,7 +188,7 @@ class PolygonRelationGenerator:
 
     def get_diagonal(self) -> Line:
         assert "rectangle" in self.polygon.special_info
-        idx = np.random.randint(0, 2)
+        idx = randint(0, 2)
         p1 = self.polygon.points[idx]
         p2 = self.polygon.points[idx + 2]
         line = Line(type="segment", points=[p1, p2])
@@ -164,12 +196,22 @@ class PolygonRelationGenerator:
 
 
 class LineRelationGenerator:
-    def __init__(self) -> None:
+    def __init__(self, rule_args) -> None:
         self.base_rel = ["parallel", "tangent line", "axis of ellipse"]
+
+        self.relation_level = []
+        for relation_type in self.base_rel:
+            level = eval(f"rule_args.line_{relation_type.replace(' ', '_')}_level")
+            self.relation_level.append(level)
+
+        # self.relation_prob = [1 / len(self.base_rel) for _ in range(len(self.base_rel))]
+
+        self.relation_prob = [x / sum(self.relation_level) for x in self.relation_level]
 
     def generate_relation(self, line: Line) -> tuple[Any, str] | tuple[None, None]:
         self.line = line
-        relation_type = np.random.choice(self.base_rel)
+
+        relation_type = np.random.choice(self.base_rel, p=self.relation_prob)
 
         if relation_type == "parallel":
             new_shape = self.get_parallel_line()
@@ -234,9 +276,21 @@ class LineRelationGenerator:
 
 
 class EllipseRelationGenerator:
-    def __init__(self) -> None:
-        self.base_rel = ["tangent line", "tangent circle", "concentric", "circumscribed", "inscribed"]
+    def __init__(self, rule_args) -> None:
+        self.base_rel = [
+            "tangent line",
+            "tangent circle",
+            "concentric",
+            "circumscribed",
+            "inscribed",
+        ]
         self.circle_rel = []
+
+        self.relation_level = []
+        for relation_type in self.base_rel:
+            level = eval(f"rule_args.ellipse_{relation_type.replace(' ', '_')}_level")
+            self.relation_level.append(level)
+        # self.relation_prob = [1 / len(self.base_rel) for _ in range(len(self.base_rel))]
 
     def generate_relation(self, ellipse: Ellipse) -> tuple[Any, str] | tuple[None, None]:
         self.ellipse = ellipse
@@ -244,7 +298,9 @@ class EllipseRelationGenerator:
         if "circle" in self.ellipse.special_info:
             opt_rel = opt_rel + self.circle_rel
 
-        relation_type = np.random.choice(opt_rel)
+        opt_relation_level = self.relation_level[: len(opt_rel)]
+        relation_prob = [x / sum(opt_relation_level) for x in opt_relation_level]
+        relation_type = np.random.choice(opt_rel, p=relation_prob)
 
         if relation_type == "tangent line":
             new_shape = self.get_tangent_line()
@@ -273,16 +329,21 @@ class EllipseRelationGenerator:
 
         return line
 
-    def get_concentric_ellipse(self) -> Ellipse:
-        scale_factor = uniform(0.5, 1.5)
-        scaled_major_axis = self.ellipse.major_axis * scale_factor
-        scaled_minor_axis = self.ellipse.minor_axis * scale_factor
-        center = self.ellipse.center
-        rotation = self.ellipse.rotation
+    def get_concentric_ellipse(self) -> list[Ellipse]:
+        ellipse_list = []
+        num_concentric = randint(1, 4)
+        for _ in range(num_concentric):
+            scale_factor = uniform(0.6, 1.5)
+            while 0.9 < scale_factor < 1.1:
+                scale_factor = uniform(0.6, 1.5)
+            scaled_major_axis = self.ellipse.major_axis * scale_factor
+            scaled_minor_axis = self.ellipse.minor_axis * scale_factor
+            center = self.ellipse.center
+            rotation = self.ellipse.rotation
 
-        ellipse = Ellipse(center, scaled_major_axis, scaled_minor_axis, rotation)
-
-        return ellipse
+            ellipse = Ellipse(center, scaled_major_axis, scaled_minor_axis, rotation)
+            ellipse_list.append(ellipse)
+        return ellipse_list
 
     def get_inscribed_polygon(self, special_polygon="") -> Polygon:
         special_polygon = np.random.choice(["", "rectangle", "equilateral triangle"])
@@ -335,8 +396,15 @@ class EllipseRelationGenerator:
         return polygon
 
     def get_tangent_circle(self) -> tuple[Ellipse, str]:
-        x, y = self.ellipse.center
-        new_center = (x + uniform(-0.5, 0.5), y + uniform(-0.5, 0.5))
+        if "circle" in self.ellipse.special_info:
+            x, y = self.ellipse.center
+            new_center = (x + uniform(-0.5, 0.5), y + uniform(-0.5, 0.5))
+        else:  # tangent circle to a ellipse
+            theta = np.random.choice([0, 0.5 * np.pi, np.pi, 1.5 * np.pi])
+            vertice = self.ellipse.get_point(theta)
+            radius_vec = line_given2points([self.ellipse.center, vertice])
+            new_center = another_2points_on_line(line=radius_vec, point=vertice)[0]
+
         d_centers = distance_2points(self.ellipse.center, new_center)
 
         angle = polar_angle(self.ellipse.center, new_center)
