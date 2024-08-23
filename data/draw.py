@@ -7,9 +7,7 @@ import os
 from typing import Any
 
 
-def draw_figure(
-    rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True
-):
+def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
     if backend == "plt":
         figure = ptd.Figure(rules, random_seed, randomize, xkcd=True)
     elif backend == "pil":
@@ -21,9 +19,7 @@ def draw_figure(
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
-    draw_figure(
-        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
-    )
+    draw_figure(idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"))
 
 
 def main():
