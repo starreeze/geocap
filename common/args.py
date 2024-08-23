@@ -4,7 +4,9 @@ import logging, os
 from rich.logging import RichHandler
 from typing import Any, cast
 
-logging.basicConfig(level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(
+    level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+)
 logger = logging.getLogger("rich")
 
 
@@ -62,6 +64,7 @@ class RuleArgs:
 
 @dataclass
 class DrawArgs:
+    backend: "str" = field(default="plt")
     rules: "dict" = field(default_factory=lambda: {})
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
