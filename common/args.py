@@ -12,6 +12,7 @@ logger = logging.getLogger("rich")
 class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
+    figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     captions_path: str = field(default="dataset/captions.jsonl")
     num_basic_geo_samples: int = field(default=100000)
 
@@ -85,3 +86,5 @@ data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
+
+figure_prefix = draw_args.backend if draw_args.randomize else "pure"
