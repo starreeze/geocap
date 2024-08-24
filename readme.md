@@ -95,14 +95,10 @@ python run.py --module data.draw --backend plt
 If you would like to use another version, please edit `args.py` and refer to `pil_backend.py`. Most arguments are the same.
 
 ### Running caption
+    
+    python run.py --module data.caption [ --caption_batchsize ${BatchSize} ]
 
-- 首先启动 LLM Server：
-
-  `python run.py --module common.run_llm`
-
-- 之后再运行`caption.py`即可：
-
-  `python run.py --module data.caption`
+The default value of `BatchSize` is 1.
 
 ## Contributing
 

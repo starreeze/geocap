@@ -15,7 +15,7 @@ class DataArgs:
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     captions_path: str = field(default="dataset/captions.jsonl")
     num_basic_geo_samples: int = field(default=100000)
-
+    caption_batchsize: int = field(default=1)
     llava_data_path: str = field(default="dataset/llava-data.json")
 
 
