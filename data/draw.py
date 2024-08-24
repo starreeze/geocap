@@ -7,9 +7,7 @@ import os
 from typing import Any
 
 
-def draw_figure(
-    rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True
-):
+def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
     if backend == "plt":
         figure = ptd.Figure(
             rules,
