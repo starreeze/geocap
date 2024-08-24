@@ -35,8 +35,11 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
-        Gaussian_mean=25,
-        Gaussian_var=100,
+        Gaussian_mean: float = 25,
+        Gaussian_var: float = 100,
+        Perlin_lattice: int = 0,
+        Perlin_bias: float = 0,
+        Perlin_power: float = 0,
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
@@ -57,8 +60,8 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
-        Gaussian_mean=25,
-        Gaussian_var=100,
+        Gaussian_mean: float = 25,
+        Gaussian_var: float = 100,
     ):
         assert self.randomize, "Function 'add_noise' is disabled whilst randomize==False"
         try:

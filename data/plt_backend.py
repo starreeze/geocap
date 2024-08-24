@@ -44,12 +44,14 @@ class Figure:
     def draw(
         self,
         color=None,
+        n_redraw=None,
+        n_rand_pixels=None,
         n_white_line=None,
-        Gaussian_mean: float = 0,
-        Gaussian_var: float = 25,
-        Perlin_lattice: int = 20,
-        Perlin_power: float = 24,
-        Perlin_bias: float = -16,
+        Gaussian_mean: float = 25,
+        Gaussian_var: float = 100,
+        Perlin_lattice: int = 0,
+        Perlin_bias: float = 0,
+        Perlin_power: float = 0,
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
@@ -66,11 +68,12 @@ class Figure:
 
         # print("Monochromizing the image...")
         self.__monochromize(stylish)
-        # print("Adding Gaussian Noise...")
-        self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
-        # print("Adding Perlin Noise...")
-        mask = self.__get_perlin_mask()
-        self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
+        if self.randomize:
+            # print("Adding Gaussian Noise...")
+            self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+            # print("Adding Perlin Noise...")
+            mask = self.__get_perlin_mask()
+            self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save(self, path: str):
         self.unprocessed_image.save(path)
@@ -260,6 +263,15 @@ class Figure:
     # It's very likely that 'patch' should be truncated and use plot instead to complete the change of width
 
     def __handle_line(self, points, line_width: int, color: Any):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
         if self.xkcd:
             self.ax.plot(
                 (points[0][0], points[1][0]),
@@ -271,15 +283,7 @@ class Figure:
             ln_wths = np.linspace(line_width / 2, line_width + line_width / 2, 50)
             x = np.linspace(points[0][0], points[1][0], 50)
             y = np.linspace(points[0][1], points[1][1], 50)
-            color = (
-                (
-                    random.random(),
-                    random.random(),
-                    random.random(),
-                )
-                if color == None
-                else color
-            )
+            color = color
             for i in range(50):
                 self.ax.plot(
                     x[i : i + 2],
@@ -298,6 +302,7 @@ class Figure:
         line_width: int,
         color: Any,
     ):
+        color = (random.random(), random.random(), random.random()) if color == None else color
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
         self.ax.add_patch(
@@ -306,7 +311,7 @@ class Figure:
                 major,
                 minor,
                 angle=alpha,
-                edgecolor=((random.random(), random.random(), random.random()) if color == None else color),
+                edgecolor=color,
                 facecolor=(0, 0, 0, 0),
                 linewidth=line_width * (self.shape[0] / 640),
             )
