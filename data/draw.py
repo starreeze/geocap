@@ -72,7 +72,7 @@ def main():
                 draw_args.randomize,
             )
     else:
-        iterate_wrapper(process_single, list(enumerate(samples)), num_workers=run_args.num_workers)
+        iterate_wrapper(process_single, list(enumerate(samples)), num_workers=run_args.num_workers, run_name="draw")
 
 
 if __name__ == "__main__":

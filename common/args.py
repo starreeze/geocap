@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from transformers import HfArgumentParser
-import logging, os
+import logging
 from rich.logging import RichHandler
-from typing import Any, cast
+from typing import cast
 
 logging.basicConfig(level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
@@ -12,8 +12,8 @@ logger = logging.getLogger("rich")
 class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
-    captions_path: str = field(default="dataset/captions.json")
-    num_basic_geo_samples: int = field(default=1000)
+    captions_path: str = field(default="dataset/captions.jsonl")
+    num_basic_geo_samples: int = field(default=100000)
 
     llava_data_path: str = field(default="dataset/llava-data.json")
 

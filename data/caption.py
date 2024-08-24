@@ -2,12 +2,12 @@
 import json
 from typing import Any
 from common.args import data_args
+from common.iterwrap import IterateWrapper
 import math
 from scipy import special
 import requests
 import random
 import hashlib
-from tqdm import tqdm
 
 # gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 
@@ -547,11 +547,10 @@ def main():
     # caption([{"a":"b"}])
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    captions: list[dict[str, str]] = []
-    for sample in tqdm(samples):
-        captions.append(caption(sample))
     with open(data_args.captions_path, "w") as f:
-        json.dump(captions, f)
+        for sample in IterateWrapper(samples, run_name="caption"):
+            assert isinstance(sample, list)
+            f.write(json.dumps(caption(sample), ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
