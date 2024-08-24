@@ -43,10 +43,13 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
     figure.save(path)
 
 
+name_prefix = draw_args.backend if draw_args.randomize else "pure"
+
+
 def process_single(f, idx_sample: tuple[int, dict], vars):
     draw_figure(
         idx_sample[1],
-        os.path.join(data_args.figure_dir, f"{draw_args.backend}_{idx_sample[0]:08d}.jpg"),
+        os.path.join(data_args.figure_dir, f"{name_prefix}_{idx_sample[0]:08d}.jpg"),
         draw_args.backend,
         draw_args.random_seed,
         draw_args.randomize,
@@ -63,13 +66,13 @@ def main():
         for idx_sample, sample in enumerate(samples):
             draw_figure(
                 sample,
-                os.path.join(data_args.figure_dir, f"{draw_args.backend}_{idx_sample:08d}.jpg"),
+                os.path.join(data_args.figure_dir, f"{name_prefix}_{idx_sample:08d}.jpg"),
                 draw_args.backend,
                 draw_args.random_seed,
                 draw_args.randomize,
             )
     else:
-        iterate_wrapper(process_single, list(enumerate(samples)), num_workers=8)
+        iterate_wrapper(process_single, list(enumerate(samples)), num_workers=run_args.num_workers)
 
 
 if __name__ == "__main__":

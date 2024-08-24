@@ -83,5 +83,5 @@ class DrawArgs:
 data_args, run_args, rule_args, draw_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
-rule_args = cast(DataArgs, rule_args)
+rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
