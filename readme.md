@@ -68,9 +68,9 @@ python run.py --module data.rules --polygon_shape_level 1 --line_shape_level 1 -
 
 ### Running Module 'draw'
 
-Two python files, `draw_PIL.py` and `draw_plt.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `draw_plt.py` is recommended to use and `run.py` will automatically parse this version.
+Two python files, `pil_backend.py` and `plt_backend.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `plt_backend.py` is recommended to use and `draw.py` will automatically use this version. You can change the preferred version by setting argument `backend` to `plt` or `pil`.
 
-To use `draw_plt.py`, the following arguments are expected:
+To use `plt_backend.py`, the following arguments are expected:
 
 - rules: "list[dict[str, Any]]". Mandatory. The rules you would like to draw.
 - random_seed: int|None. The default value is None. Control the random seed.
@@ -88,7 +88,11 @@ To use `draw_plt.py`, the following arguments are expected:
 - Perlin_bias: float. The default value is -16. Control the bias of the Perlin noise. The lower it is, the brighter the image will be.
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
 
-If you would like to use another version, please edit `args.py` and refer to `draw_PIL.py`. Most arguments are the same.
+To simply generate a picture with default settings, use the following command:
+```shell
+python run.py --module data.draw --backend plt
+```
+If you would like to use another version, please edit `args.py` and refer to `pil_backend.py`. Most arguments are the same.
 
 ### Running caption
 
