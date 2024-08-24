@@ -7,6 +7,7 @@ from scipy import special
 import requests
 import random
 import hashlib
+from tqdm import tqdm
 
 # gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 
@@ -547,7 +548,7 @@ def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
     captions: list[dict[str, str]] = []
-    for sample in samples:
+    for sample in tqdm(samples):
         captions.append(caption(sample))
     with open(data_args.captions_path, "w") as f:
         json.dump(captions, f)
