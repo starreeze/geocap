@@ -2,22 +2,18 @@
 import os, json, sys
 import numpy as np
 from typing import Any
-
-# Debug
-#'''
-import logging
-
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
-#'''
 import matplotlib.pyplot as plt
 import matplotlib.patches as pch
 from PIL import Image, ImageDraw, ImageFilter
 import random
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 from common.args import data_args, run_args
 from common.iterwrap import iterate_wrapper
+
+#''' Do not delete, otherwise a lot of matplotlib logs will appear.
+import logging
+
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+#'''
 
 
 class Figure:
@@ -50,7 +46,7 @@ class Figure:
         color=None,
         n_white_line=None,
         Gaussian_mean: float = 0,
-        Gaussian_var: float = 10,
+        Gaussian_var: float = 25,
         Perlin_lattice: int = 20,
         Perlin_power: float = 24,
         Perlin_bias: float = -16,
@@ -438,8 +434,9 @@ def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
         assert isinstance(samples, list)
-    for idx_sample, sample in enumerate(samples):
-        draw_figure(sample, os.path.join(data_args.figure_dir, f"{idx_sample:08d}.jpg"))
+    # for idx_sample, sample in enumerate(samples):
+    #     draw_figure(sample, os.path.join(data_args.figure_dir, f"{idx_sample:08d}.jpg"))
+    iterate_wrapper(process_single, list(enumerate(samples)), num_workers=8)
 
 
 if __name__ == "__main__":

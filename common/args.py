@@ -62,6 +62,7 @@ class RuleArgs:
 
 @dataclass
 class DrawArgs:
+    backend: "str" = field(default="plt")
     rules: "dict" = field(default_factory=lambda: {})
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)

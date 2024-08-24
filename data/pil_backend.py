@@ -4,23 +4,20 @@ import numpy as np
 from typing import Any
 from PIL import Image, ImageDraw
 import random
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
 from common.args import data_args
 
 
 class Figure:
     def __init__(
         self,
-        rules: "list[dict[str, Any]]",
-        random_seed: int,
+        rules: "dict",
+        random_seed=None,
         randomize: bool = True,
         size: "tuple[int, int]" = (1024, 1024),
         background: "tuple[int, int, int]" = (255, 255, 255),
         line_weight: int = 4,
     ) -> None:
-        self.rules = rules
+        self.rules: list = rules["shapes"]
         self.random_seed = random_seed
         self.randomize = randomize
         self.width = size[0]
@@ -562,7 +559,7 @@ class Figure:
         self.image = Image.fromarray((255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8"))
 
 
-def draw_figure(rules: "list[dict[str, Any]]", path: str):
+def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
     # TODO control their line weight and curves (MANUALLY)
 
