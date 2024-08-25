@@ -7,29 +7,20 @@ from __future__ import annotations
 import os
 import traceback
 import json
-from typing import (
-    Any,
-    BinaryIO,
-    Callable,
-    Iterable,
-    Iterator,
-    Literal,
-    TextIO,
-    TypeVar,
-    IO,
-    Sequence,
-)
+import logging
+from typing import Any, BinaryIO, Callable, Iterable, Iterator, Literal, TextIO, TypeVar, IO, Sequence
 from glob import glob
 from itertools import product
 from functools import wraps
-from multiprocessing import Lock, Process
+from multiprocessing import Lock, Process, synchronize
 
 # package info
 __name__ = __file__.split("/")[-1].split(".")[0]
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Starreeze"
 __license__ = "GPLv3"
 __url__ = "https://github.com/starreeze/server-tools"
+_logger = logging.getLogger(__name__)
 
 # default file path
 output_tmpl = "{name}_p{id}.output"
@@ -39,7 +30,7 @@ ckpt_tmpl = "{name}.ckpt"
 DataType = TypeVar("DataType")
 
 
-def check_unfinished(run_name: str, warning_fn: Callable[[str], None] = print):
+def check_unfinished(run_name: str):
     "To check if the run is unfinished, according to whether the checkpoint file and the cache file exists"
     ckpt = ckpt_tmpl.format(name=run_name)
     if os.path.exists(ckpt):
@@ -47,7 +38,9 @@ def check_unfinished(run_name: str, warning_fn: Callable[[str], None] = print):
         num_ckpt = len(open(ckpt, "r").readlines())
         if num_cache == num_ckpt:
             return True
-        warning_fn(f"unmatched: {num_cache} unfinished files vs {num_ckpt} checkpoints, restart from the beginning")
+        _logger.warning(
+            f"unmatched: {num_cache} unfinished files vs {num_ckpt} checkpoints, restart from the beginning"
+        )
     return False
 
 
@@ -136,18 +129,20 @@ def retry_dec(retry=5, on_error: Literal["raise", "continue"] = "raise"):
                 try:
                     return func(*args, **kwargs)
                 except KeyboardInterrupt as e:
-                    traceback.print_exc()
+                    _logger.error(traceback.format_exc())
                     raise e
                 except BaseException as e:
                     if j == retry - 1:
                         if on_error == "raise":
-                            print("All retry failed:")
-                            traceback.print_exc()
+                            _logger.error("All retry failed:")
+                            _logger.info(traceback.format_exc())
                             raise e
                         elif on_error == "continue":
-                            print(f"{type(e).__name__}: {e}, all retry failed. Continue due to on_error policy.")
+                            _logger.warning(
+                                f"{type(e).__name__}: {e}, all retry failed. Continue due to on_error policy."
+                            )
                             return
-                    print(f"{type(e).__name__}: {e}, retrying [{j + 1}]...")
+                    _logger.warning(f"{type(e).__name__}: {e}, retrying [{j + 1}]...")
 
         return wrapper
 
@@ -167,7 +162,7 @@ def _load_ckpt(path: str, restart: bool) -> list[int] | None:
     return checkpoint
 
 
-def _write_ckpt(path: str, checkpoint: int, process_idx: int, lock):
+def _write_ckpt(path: str, checkpoint: int, process_idx: int, lock: synchronize.Lock):
     with lock:
         with open(path, "r") as f:
             checkpoints = f.read().splitlines()
@@ -184,7 +179,7 @@ def _process_job(
     process_idx: int,
     num_workers: int,
     iterator_mode: bool,
-    lock,
+    lock: synchronize.Lock,
     run_name,
     checkpoint,
     restart,
@@ -202,7 +197,6 @@ def _process_job(
     chunk_items = (total_items + num_workers - 1) // num_workers
     start_pos = process_idx * chunk_items
     end_pos = min(start_pos + chunk_items, total_items)
-    checkpoint += start_pos
 
     range_to_process = range(checkpoint, end_pos)
     range_checkpointed = range(start_pos, checkpoint)
@@ -218,7 +212,7 @@ def _process_job(
         )
 
     if iterator_mode:
-        print(f"{process_idx}: skipping data until {checkpoint}")
+        _logger.info(f"{process_idx}: skipping data until {checkpoint}")
         assert isinstance(data, Iterator)
         for i in range_checkpointed:
             next(data)
@@ -226,7 +220,9 @@ def _process_job(
     retry_func = retry_dec(retry, on_error)(func)
     open_flags = ("w" if restart else "a") + ("b" if output_type == "binary" else "")
     output = open(output_tmpl.format(name=run_name, id=process_idx), open_flags) if output_type != "none" else None
+    _logger.debug(f"{process_idx}: processing data from {checkpoint} to {end_pos}")
     for i in range_to_process:
+        _logger.debug(f"{process_idx}: processing data {i}")
         if iterator_mode:
             assert isinstance(data, Iterator)
             try:
@@ -297,8 +293,8 @@ def iterate_wrapper(
         assert total_items is not None, "total_items must be provided when data is not a sequence"
 
     if num_workers > total_items:
-        print(
-            f"Warning: num_workers {num_workers} is greater than total_items {total_items}, "
+        _logger.warning(
+            f"num_workers {num_workers} is greater than total_items {total_items}, "
             "setting num_workers to total_items."
         )
         num_workers = total_items
@@ -383,7 +379,7 @@ def bind_cache_json(file_path_factory: Callable[[], str]):
                     json.dump(result, f)
                 return result
             else:
-                print(f"Loading cached file {file_path} from disk...")
+                _logger.info(f"Loading cached file {file_path} from disk...")
                 with open(file_path, "r") as f:
                     return json.load(f)
 

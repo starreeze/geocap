@@ -4,7 +4,7 @@ import logging
 from rich.logging import RichHandler
 from typing import cast
 
-logging.basicConfig(level="NOTSET", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
 
 

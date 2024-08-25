@@ -43,17 +43,18 @@ class Figure:
         stylish: bool = False,
     ):
         for index, rule in enumerate(self.rules):
-            print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
+            # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
-        print("All rules adapted.")
+        # print("All rules adapted.")
         if self.randomize:
-            print("Adding Noise...")
+            # print("Adding Noise...")
             self.__add_noise(n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var)
-        print("Monochromizing the image...")
+        # print("Monochromizing the image...")
         self.__monochromize(stylish)
 
-    def save(self, path: str):
+    def save_release(self, path: str):
         self.image.save(fp=path)
+        self.image.close()
 
     def __add_noise(
         self,
@@ -79,7 +80,7 @@ class Figure:
     def __redraw(self, n_redraw: int):
         n_redraw = n_redraw if n_redraw < len(self.rules) else len(self.rules)
         for index, rule in enumerate(random.sample(self.rules, n_redraw)):
-            print(f"Redrawing #{index}: {rule['type']}")
+            # print(f"Redrawing #{index}: {rule['type']}")
             match rule["type"]:
                 case "segment":
                     points = [self.__translate(i) for i in rule["points"]]
@@ -569,7 +570,7 @@ def draw_figure(rules: "dict", path: str):
     # TODO add various backgrounds and noise (HOW?)
     figure = Figure(rules, random_seed=0)
     figure.draw(n_redraw=100)
-    figure.save(path)
+    figure.save_release(path)
 
 
 def main():

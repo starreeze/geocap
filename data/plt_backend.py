@@ -75,8 +75,10 @@ class Figure:
             mask = self.__get_perlin_mask()
             self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
-    def save(self, path: str):
+    def save_release(self, path: str):
         self.unprocessed_image.save(path)
+        self.unprocessed_image.close()
+        plt.close(self.image)
 
     def __fig2img(self):
         from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -428,7 +430,7 @@ def draw_figure(rules: "dict", path: str):
     # TODO add various backgrounds and noise (HOW?)
     figure = Figure(rules, random_seed=0, xkcd=True)
     figure.draw(stylish=True)
-    figure.save(path)
+    figure.save_release(path)
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
