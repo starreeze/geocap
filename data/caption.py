@@ -10,7 +10,7 @@ import requests
 import random
 import hashlib
 
-gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
+gen = LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 
 
 def caption(rules: list[dict[str, Any]]) -> dict[str, str]:
@@ -69,7 +69,7 @@ This image contains four shapes: in the upper left corner, there is a line segme
     messages = [[{"role": "system", "content": context}, {"role": "user", "content": rule_str}]]
     text_gen = gen(messages, data_args.caption_batchsize)  # type: ignore
     print(text_gen)
-    return {"input": gen_input_text, "output": text_gen} # type: ignore
+    return {"input": gen_input_text, "output": text_gen}  # type: ignore
 
 
 def euc_dist(p1, p2):
