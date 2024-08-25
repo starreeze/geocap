@@ -375,6 +375,7 @@ class EllipseRelationGenerator:
             theta_0 = uniform(0, np.pi)
             theta_list = [theta_0, theta_0 + np.pi * 2 / 3, theta_0 + np.pi * 4 / 3]
         else:
+            special_polygon = ""
             # divide the ellipse to equal sections, and choose a point on each section
             num_points = np.random.randint(3, 7)
             theta_each_section = 2 * np.pi / num_points
