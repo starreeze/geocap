@@ -40,7 +40,7 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
         Perlin_power=draw_args.Perlin_power,
         stylish=draw_args.stylish,
     )
-    figure.save(path)
+    figure.save_release(path)
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
@@ -54,7 +54,6 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
 
 
 def main():
-    # Parse:
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
         assert isinstance(samples, list)
