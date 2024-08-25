@@ -96,9 +96,10 @@ If you would like to use another version, please edit `args.py` and refer to `pi
 
 ### Running caption
     
-    python run.py --module data.caption [ --caption_batchsize ${BatchSize} ]
+    python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM Path} ]
 
 The default value of `BatchSize` is 1.
+The default value of `LLM Path` is `/home/nfs02/model/llama-3.1-70b-instruct`
 
 ## Contributing
 

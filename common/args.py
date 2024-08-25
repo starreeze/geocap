@@ -15,7 +15,7 @@ class DataArgs:
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     captions_path: str = field(default="dataset/captions.jsonl")
     num_basic_geo_samples: int = field(default=100000)
-    caption_batchsize: int = field(default=1)
+
     llava_data_path: str = field(default="dataset/llava-data.json")
 
 
@@ -81,10 +81,17 @@ class DrawArgs:
     stylish: bool = field(default=False)
 
 
-data_args, run_args, rule_args, draw_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs]).parse_args_into_dataclasses()  # type: ignore
+@dataclass
+class CaptionArgs:
+    caption_batchsize: int = field(default=1)
+    caption_llm: str = field(default="/home/nfs02/model/llama-3.1-70b-instruct")
+
+
+data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]).parse_args_into_dataclasses()  # type: ignore
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
+caption_args = cast(CaptionArgs, caption_args)
 
 figure_prefix = draw_args.backend if draw_args.randomize else "pure"
