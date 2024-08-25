@@ -16,7 +16,7 @@ from multiprocessing import Lock, Process, synchronize
 
 # package info
 __name__ = __file__.split("/")[-1].split(".")[0]
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = "Starreeze"
 __license__ = "GPLv3"
 __url__ = "https://github.com/starreeze/server-tools"
@@ -198,6 +198,7 @@ def _process_job(
     start_pos = process_idx * chunk_items
     end_pos = min(start_pos + chunk_items, total_items)
 
+    checkpoint += start_pos
     range_to_process = range(checkpoint, end_pos)
     range_checkpointed = range(start_pos, checkpoint)
     if bar:
@@ -233,7 +234,7 @@ def _process_job(
             assert isinstance(data, Sequence)
             item = data[i]
         retry_func(output, item, vars)
-        _write_ckpt(ckpt_tmpl.format(name=run_name), i + 1, process_idx, lock)
+        _write_ckpt(ckpt_tmpl.format(name=run_name), i + 1 - start_pos, process_idx, lock)
     if output is not None:
         output.close()
 

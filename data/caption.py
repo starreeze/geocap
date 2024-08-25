@@ -438,11 +438,11 @@ def gen_input(special_shapes: dict):
 
 def main():
     # caption([{"a":"b"}])
-    gen = LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
+    gen = LLMGenerator(caption_args.caption_llm)
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
     with open(data_args.captions_path, "w") as f:
-        f.write(json.dumps(caption(samples, gen), ensure_ascii=False) + "\n")
+        json.dump(caption(samples, gen), f, ensure_ascii=False)
 
 
 if __name__ == "__main__":

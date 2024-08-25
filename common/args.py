@@ -4,16 +4,13 @@ import logging
 from rich.logging import RichHandler
 from typing import cast
 
-logging.basicConfig(level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
-logger = logging.getLogger("rich")
-
 
 @dataclass
 class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
-    captions_path: str = field(default="dataset/captions.jsonl")
+    captions_path: str = field(default="dataset/captions.json")
     num_basic_geo_samples: int = field(default=100000)
 
     llava_data_path: str = field(default="dataset/llava-data.json")
@@ -23,8 +20,9 @@ class DataArgs:
 class RunArgs:
     module: str = field(default="")
     action: str = field(default="main")
-
+    log_level: str = field(default="INFO")
     num_workers: int = field(default=32)
+    progress_bar: bool = field(default=True)
 
 
 @dataclass
@@ -95,3 +93,6 @@ draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
 figure_prefix = draw_args.backend if draw_args.randomize else "pure"
+
+logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logger = logging.getLogger("rich")
