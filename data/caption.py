@@ -2,6 +2,7 @@
 import json
 from typing import Any
 from common.args import data_args
+from common.llm import LLMGenerator
 from common.iterwrap import IterateWrapper
 import math
 from scipy import special
@@ -9,7 +10,7 @@ import requests
 import random
 import hashlib
 
-# gen=LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
+gen = LLMGenerator("/home/nfs02/model/llama-3.1-70b-instruct")
 
 
 def caption(rules: list[dict[str, Any]]) -> dict[str, str]:
@@ -66,9 +67,9 @@ The descriptive text you should generate:
 This image contains four shapes: in the upper left corner, there is a line segment with a length of 0.71; above, there is a ray; in the center, there is a spiral; and below, there is an ellipse with a major axis of 0.95 and a minor axis of 0.63.
 """
     messages = [[{"role": "system", "content": context}, {"role": "user", "content": rule_str}]]
-    text_gen = requests.post("http://127.0.0.1:7999/chat", json={"messages": messages}).text
+    text_gen = gen(messages, data_args.caption_batchsize)  # type: ignore
     print(text_gen)
-    return {"input": gen_input_text, "output": text_gen}
+    return {"input": gen_input_text, "output": text_gen}  # type: ignore
 
 
 def euc_dist(p1, p2):
