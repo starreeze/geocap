@@ -95,14 +95,11 @@ python run.py --module data.draw --backend plt
 If you would like to use another version, please edit `args.py` and refer to `pil_backend.py`. Most arguments are the same.
 
 ### Running caption
+    
+    python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM Path} ]
 
-- 首先启动 LLM Server：
-
-  `python run.py --module common.run_llm`
-
-- 之后再运行`caption.py`即可：
-
-  `python run.py --module data.caption`
+The default value of `BatchSize` is 1.
+The default value of `LLM Path` is `/home/nfs02/model/llama-3.1-70b-instruct`
 
 ## Contributing
 
