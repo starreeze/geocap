@@ -55,7 +55,7 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
 
 def main():
     with open(data_args.rules_path, "r") as f:
-        samples = json.load(f)
+        samples = json.load(f)[run_args.start_pos : run_args.end_pos]
         assert isinstance(samples, list)
     serial_version = draw_args.serial_version
     if serial_version:

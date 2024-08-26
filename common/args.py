@@ -23,6 +23,8 @@ class RunArgs:
     log_level: str = field(default="INFO")
     num_workers: int = field(default=32)
     progress_bar: bool = field(default=True)
+    start_pos: int = field(default=0)
+    end_pos: int = field(default=100000)
 
 
 @dataclass
@@ -82,7 +84,7 @@ class DrawArgs:
 @dataclass
 class CaptionArgs:
     caption_batchsize: int = field(default=1)
-    caption_llm: str = field(default="/home/nfs02/model/llama-3.1-70b-instruct")
+    caption_llm: str = field(default="llama3-70")
 
 
 data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]).parse_args_into_dataclasses()  # type: ignore

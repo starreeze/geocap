@@ -1,8 +1,8 @@
 "construct descriptions according to generated rules"
 import json
 from typing import Any
-from common.args import data_args, caption_args
-from common.llm import LLMGenerator
+from common.args import data_args, caption_args, run_args
+from common.llm import generator_mapping, model_path_mapping, LLMGenerator
 from common.iterwrap import IterateWrapper
 import math
 from scipy import special
@@ -437,12 +437,12 @@ def gen_input(special_shapes: dict):
 
 
 def main():
-    # caption([{"a":"b"}])
-    gen = LLMGenerator(caption_args.caption_llm)
+    model_name, model_size = caption_args.caption_llm.split("-")
+    generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
     with open(data_args.rules_path, "r") as f:
-        samples = json.load(f)
+        samples = json.load(f)[run_args.start_pos : run_args.end_pos]
     with open(data_args.captions_path, "w") as f:
-        json.dump(caption(samples, gen), f, ensure_ascii=False)
+        json.dump(caption(samples, generator), f, ensure_ascii=False)
 
 
 if __name__ == "__main__":
