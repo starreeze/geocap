@@ -127,7 +127,7 @@ class PolygonRelationGenerator:
         for _ in range(num_new_polygons):
             side_len = distance_2points(points[0], points[1])  # length of the shared edge
             mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
-            new_point = (mid_point[0] + side_len * uniform(-0.5, 0.5), mid_point[1] + side_len * uniform(-0.5, 0.5))
+            new_point = (mid_point[0] + side_len * uniform(0.3, 1), mid_point[1] + side_len * uniform(0.3, 1))
             polygon_list.append(Polygon([points[0], points[1], new_point], special_info="triangle"))
 
         return polygon_list
