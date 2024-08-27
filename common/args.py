@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -11,10 +12,12 @@ class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
-    captions_path: str = field(default="dataset/captions.jsonl")
+    caption_dir: str = field(default="dataset")
     num_basic_geo_samples: int = field(default=100000)
-
     llava_data_path: str = field(default="dataset/llava-data.json")
+
+    caption_path: str = field(default="")
+    figure_prefix: str = field(default="")
 
 
 @dataclass
@@ -88,14 +91,18 @@ class CaptionArgs:
     caption_llm: str = field(default="llama3-70")
 
 
-data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]).parse_args_into_dataclasses()  # type: ignore
+data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]  # type: ignore
+).parse_args_into_dataclasses()
+
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
-figure_prefix = draw_args.backend if draw_args.randomize else "pure"
+data_args.caption_path = os.path.join(data_args.caption_dir, f"{run_args.end_pos//1000}k.jsonl")
+data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
