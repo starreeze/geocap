@@ -50,15 +50,15 @@ def another_2points_on_line(line: tuple[float, float], point: tuple[float, float
     assert np.isclose(slope * x + intercept, y), "The point is not on the line."
 
     if slope != float("inf"):
-        x1 = x + np.random.uniform(0.05, 0.5)
+        x1 = x + np.random.uniform(0.05, 0.2)
         y1 = slope * x1 + intercept
-        x2 = x - np.random.uniform(0.05, 0.5)
+        x2 = x - np.random.uniform(0.05, 0.2)
         y2 = slope * x2 + intercept
     else:
         x1 = x
         x2 = x
-        y1 = y + np.random.uniform(0, 1)
-        y2 = y - np.random.uniform(0, 1)
+        y1 = y + np.random.uniform(0, 0.5)
+        y2 = y - np.random.uniform(0, 0.5)
 
     return [(x1, y1), (x2, y2)]
 
@@ -118,3 +118,25 @@ def find_symmetric_point(line: tuple[float, float], point: tuple[float, float]) 
     y_prime = 2 * y2 - y1
 
     return (x_prime, y_prime)
+
+
+def overlap_area(bbox1, bbox2) -> float:
+    min_x1, max_y1 = bbox1[0]
+    max_x1, min_y1 = bbox1[1]
+    min_x2, max_y2 = bbox2[0]
+    max_x2, min_y2 = bbox2[1]
+
+    # Calculate the intersection coordinates
+    overlap_min_x = max(min_x1, min_x2)
+    overlap_max_x = min(max_x1, max_x2)
+    overlap_min_y = max(min_y1, min_y2)
+    overlap_max_y = min(max_y1, max_y2)
+
+    # Calculate the width and height of the overlap
+    overlap_width = max(0, overlap_max_x - overlap_min_x)
+    overlap_height = max(0, overlap_max_y - overlap_min_y)
+
+    # Calculate the area of the overlap
+    overlap_area = overlap_width * overlap_height
+
+    return overlap_area
