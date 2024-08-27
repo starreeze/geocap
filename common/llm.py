@@ -3,10 +3,11 @@
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 
 from __future__ import annotations
+
 import torch
 from transformers import pipeline
-from tqdm import tqdm
-from typing import cast
+
+from common.iterwrap import IterateWrapper
 
 
 class LLMGenerator:
@@ -18,15 +19,23 @@ class LLMGenerator:
         )
         self.generator.tokenizer.padding_side = "left"  # type: ignore
 
-    def __call__(self, input_texts, batch_size=1) -> list[str]:
-        results = []
-        for i in tqdm(range((len(input_texts) + batch_size - 1) // batch_size)):
+    def __call__(self, input_texts, batch_size=1, output_path: str | None = None):
+        out_file = open(output_path, "w") if output_path else None
+        target_range = range((len(input_texts) + batch_size - 1) // batch_size)
+        if output_path:
+            target_range = IterateWrapper(target_range, run_name="generate")
+        for i in target_range:
+            results: list[str] = []
             batch = input_texts[i * batch_size : (i + 1) * batch_size]
             outputs = self.generator(batch, batch_size=batch_size)
             for input_text, output in zip(batch, outputs):  # type: ignore
                 generated_text = output[0]["generated_text"][len(input_text) :][0]["content"].strip()
                 results.append(generated_text)
-        return results
+                if out_file:
+                    out_file.write(generated_text + "\n")
+            yield results
+        if out_file:
+            out_file.close()
 
 
 class Llama3Generator(LLMGenerator):

@@ -1,5 +1,5 @@
 {
-    "typeCheckingMode": "basic",
+    "typeCheckingMode": "standard",
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
