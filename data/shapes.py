@@ -222,6 +222,7 @@ class Ellipse(GSRule):
         self.radius = radius
         self.major_axis = self.radius * 2
         self.minor_axis = self.radius * 2
+        self.rotation = 0
 
 
 # TODO: add more types
@@ -255,6 +256,7 @@ class Spiral(GSRule):
 
 class ShapeGenerator:
     def __init__(self, rule_args) -> None:
+        self.rule_args = rule_args
         self.opt_shapes = ["polygon", "line", "ellipse", "spiral"]
 
         self.shape_prob = []
