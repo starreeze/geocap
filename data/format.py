@@ -24,7 +24,7 @@ def to_llava():
                 ],
             }
         )
-    os.makedirs(os.path.dirname(data_args.llava_data_path), exist_ok=True)
+    os.makedirs(data_args.llava_data_dir, exist_ok=True)
     json.dump(target_data, open(data_args.llava_data_path, "w"), indent=2)
 
 

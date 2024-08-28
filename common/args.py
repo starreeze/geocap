@@ -14,10 +14,12 @@ class DataArgs:
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
     num_basic_geo_samples: int = field(default=100000)
-    llava_data_path: str = field(default="dataset/llava-data.json")
+    llava_data_dir: str = field(default="dataset/llava")
 
+    # some placeholder to be filled AFTER parsing args
     caption_path: str = field(default="")
     figure_prefix: str = field(default="")
+    llava_data_path: str = field(default="")
 
 
 @dataclass
@@ -89,6 +91,7 @@ class DrawArgs:
 class CaptionArgs:
     caption_batchsize: int = field(default=1)
     caption_llm: str = field(default="llama3-70")
+    numeric_ratio: float = field(default=0)
 
 
 data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser(
@@ -101,8 +104,13 @@ rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
-data_args.caption_path = os.path.join(data_args.caption_dir, f"{run_args.end_pos//1000}k.jsonl")
 data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
+data_args.caption_path = os.path.join(
+    data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl"
+)
+data_args.llava_data_path = os.path.join(
+    data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json"
+)
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
