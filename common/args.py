@@ -13,7 +13,7 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
-    num_basic_geo_samples: int = field(default=100000)
+    num_basic_geo_samples: int = field(default=1000)
     llava_data_dir: str = field(default="dataset/llava")
 
     # some placeholder to be filled AFTER parsing args
@@ -30,7 +30,7 @@ class RunArgs:
     num_workers: int = field(default=32)
     progress_bar: bool = field(default=True)
     start_pos: int = field(default=0)
-    end_pos: int = field(default=100000)
+    end_pos: int = field(default=1000)
 
 
 @dataclass
@@ -106,11 +106,18 @@ caption_args = cast(CaptionArgs, caption_args)
 
 data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
 data_args.caption_path = os.path.join(
-    data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl"
+    data_args.caption_dir,
+    f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl",
 )
 data_args.llava_data_path = os.path.join(
-    data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json"
+    data_args.llava_data_dir,
+    f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
 )
 
-logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(
+    level=run_args.log_level,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()],
+)
 logger = logging.getLogger("rich")

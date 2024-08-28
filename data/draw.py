@@ -1,15 +1,13 @@
 import json
 import os
-
+from tqdm import tqdm
 import data.pil_backend as pld
 import data.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
 from common.iterwrap import iterate_wrapper
 
 
-def draw_figure(
-    rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True
-):
+def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
     if backend == "plt":
         figure = ptd.Figure(
             rules,
@@ -51,9 +49,7 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
         idx_sample[1],
         os.path.join(
             data_args.figure_dir,
-            data_args.figure_name.format(
-                prefix=data_args.figure_prefix, id=idx_sample[0]
-            ),
+            data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx_sample[0]),
         ),
         draw_args.backend,
         draw_args.random_seed,
@@ -67,14 +63,12 @@ def main():
         assert isinstance(samples, list)
     serial_version = draw_args.serial_version
     if serial_version:
-        for idx, sample in enumerate(samples):
+        for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,
                 os.path.join(
                     data_args.figure_dir,
-                    data_args.figure_name.format(
-                        prefix=data_args.figure_prefix, id=idx
-                    ),
+                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,
