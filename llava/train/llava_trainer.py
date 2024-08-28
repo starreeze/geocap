@@ -18,11 +18,10 @@ from typing import List, Optional
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
     from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
-
     if hasattr(param, "ds_id"):
         if param.ds_status == ZeroParamStatus.NOT_AVAILABLE:
             if not ignore_status:
-                print(name, "no ignore status")
+                print(name, 'no ignore status')
         with zero.GatheredParameters([param]):
             param = param.data.detach().cpu().clone()
     else:
@@ -30,7 +29,7 @@ def maybe_zero_3(param, ignore_status=False, name=None):
     return param
 
 
-def get_component_maybe_zero_3(named_params, keys_to_match):
+def get_mm_adapter_state_maybe_zero_3(named_params, keys_to_match):
     to_return = {k: t for k, t in named_params if any(key_match in k for key_match in keys_to_match)}
     to_return = {k: maybe_zero_3(v, ignore_status=True, name=k).cpu() for k, v in to_return.items()}
     return to_return
@@ -68,9 +67,7 @@ def get_modality_length_grouped_indices(lengths, batch_size, world_size, generat
     lang_indices, lang_lengths = zip(*[(i, -l) for i, l in enumerate(lengths) if l < 0])
 
     mm_shuffle = [mm_indices[i] for i in get_length_grouped_indices(mm_lengths, batch_size, world_size, generator=None)]
-    lang_shuffle = [
-        lang_indices[i] for i in get_length_grouped_indices(lang_lengths, batch_size, world_size, generator=None)
-    ]
+    lang_shuffle = [lang_indices[i] for i in get_length_grouped_indices(lang_lengths, batch_size, world_size, generator=None)]
     megabatch_size = world_size * batch_size
     mm_megabatches = [mm_shuffle[i : i + megabatch_size] for i in range(0, len(mm_shuffle), megabatch_size)]
     lang_megabatches = [lang_shuffle[i : i + megabatch_size] for i in range(0, len(lang_shuffle), megabatch_size)]
@@ -127,13 +124,9 @@ class LengthGroupedSampler(Sampler):
 
     def __iter__(self):
         if self.group_by_modality:
-            indices = get_modality_length_grouped_indices(
-                self.lengths, self.batch_size, self.world_size, generator=self.generator
-            )
+            indices = get_modality_length_grouped_indices(self.lengths, self.batch_size, self.world_size, generator=self.generator)
         else:
-            indices = get_length_grouped_indices(
-                self.lengths, self.batch_size, self.world_size, generator=self.generator
-            )
+            indices = get_length_grouped_indices(self.lengths, self.batch_size, self.world_size, generator=self.generator)
         return iter(indices)
 
 
@@ -174,34 +167,26 @@ class LLaVATrainer(Trainer):
                 optimizer_grouped_parameters = [
                     {
                         "params": [
-                            p
-                            for n, p in opt_model.named_parameters()
-                            if (n in decay_parameters and n not in projector_parameters and p.requires_grad)
+                            p for n, p in opt_model.named_parameters() if (n in decay_parameters and n not in projector_parameters and p.requires_grad)
                         ],
                         "weight_decay": self.args.weight_decay,
                     },
                     {
                         "params": [
-                            p
-                            for n, p in opt_model.named_parameters()
-                            if (n not in decay_parameters and n not in projector_parameters and p.requires_grad)
+                            p for n, p in opt_model.named_parameters() if (n not in decay_parameters and n not in projector_parameters and p.requires_grad)
                         ],
                         "weight_decay": 0.0,
                     },
                     {
                         "params": [
-                            p
-                            for n, p in opt_model.named_parameters()
-                            if (n in decay_parameters and n in projector_parameters and p.requires_grad)
+                            p for n, p in opt_model.named_parameters() if (n in decay_parameters and n in projector_parameters and p.requires_grad)
                         ],
                         "weight_decay": self.args.weight_decay,
                         "lr": self.args.mm_projector_lr,
                     },
                     {
                         "params": [
-                            p
-                            for n, p in opt_model.named_parameters()
-                            if (n not in decay_parameters and n in projector_parameters and p.requires_grad)
+                            p for n, p in opt_model.named_parameters() if (n not in decay_parameters and n in projector_parameters and p.requires_grad)
                         ],
                         "weight_decay": 0.0,
                         "lr": self.args.mm_projector_lr,
@@ -217,9 +202,7 @@ class LLaVATrainer(Trainer):
                     },
                     {
                         "params": [
-                            p
-                            for n, p in opt_model.named_parameters()
-                            if (n not in decay_parameters and p.requires_grad)
+                            p for n, p in opt_model.named_parameters() if (n not in decay_parameters and p.requires_grad)
                         ],
                         "weight_decay": 0.0,
                     },
@@ -244,33 +227,29 @@ class LLaVATrainer(Trainer):
 
         return self.optimizer
 
-    def save_component(self, component: str, trial, param_keys=None):
-        from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-
-        checkpoint_folder = f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}"
-
-        run_dir = self._get_output_dir(trial=trial)
-        output_dir = os.path.join(run_dir, checkpoint_folder)
-
-        keys_to_match = [component] if param_keys is None else param_keys
-        if getattr(self.args, "use_im_start_end", False):
-            keys_to_match.extend(["embed_tokens", "embed_in"])
-
-        weight_to_save = get_component_maybe_zero_3(self.model.named_parameters(), keys_to_match)
-
-        if self.args.local_rank == 0 or self.args.local_rank == -1:
-            self.model.config.save_pretrained(output_dir)
-            torch.save(weight_to_save, os.path.join(output_dir, f"{component}.bin"))
-
     def _save_checkpoint(self, model, trial, metrics=None):
-        if getattr(self.args, "tune_llm", False):
+        if getattr(self.args, 'tune_mm_mlp_adapter', False):
+            from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+            checkpoint_folder = f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}"
+
+            run_dir = self._get_output_dir(trial=trial)
+            output_dir = os.path.join(run_dir, checkpoint_folder)
+
+            # Only save Adapter
+            keys_to_match = ['mm_projector', 'vision_resampler']
+            if getattr(self.args, "use_im_start_end", False):
+                keys_to_match.extend(['embed_tokens', 'embed_in'])
+
+            weight_to_save = get_mm_adapter_state_maybe_zero_3(self.model.named_parameters(), keys_to_match)
+
+            if self.args.local_rank == 0 or self.args.local_rank == -1:
+                self.model.config.save_pretrained(output_dir)
+                torch.save(weight_to_save, os.path.join(output_dir, f'mm_projector.bin'))
+        else:
             super(LLaVATrainer, self)._save_checkpoint(model, trial, metrics)
-            return
-        if getattr(self.args, "tune_mm_mlp_adapter", False):
-            self.save_component("mm_mlp_adapter", trial, ["mm_projector", "vision_resampler"])
-        if getattr(self.args, "tune_visual_encoder", False):
-            self.save_component("vision_tower", trial)
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
-        if getattr(self.args, "tune_llm", False):
+        if getattr(self.args, 'tune_mm_mlp_adapter', False):
+            pass
+        else:
             super(LLaVATrainer, self)._save(output_dir, state_dict)

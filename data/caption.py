@@ -1,38 +1,46 @@
 "construct descriptions according to generated rules"
-import json
-from typing import Any
-from common.args import data_args, caption_args
-from common.llm import LLMGenerator
-from common.iterwrap import IterateWrapper
-import math
-from scipy import special
-import requests
-import random
 import hashlib
+import json
+import math
+import os
+import random
+from typing import Any
+
+from scipy import special
+from tqdm import tqdm
+
+from common.args import caption_args, data_args, run_args
+from common.llm import LLMGenerator, generator_mapping, model_path_mapping
 from common.prompt import *
 
 
-def caption(rules: list[dict[str, Any]], gen: LLMGenerator) -> list[dict[str, str]]:
+def caption(rules: list[dict[str, Any]], generator: LLMGenerator, output_path: str):
     # TODO generate captions. Use whatever technique you like, e.g., demonstrations, cot, ...
     # TODO also consider how to handle distance:
     #      It should be mentioned in input prompt. Try scaling to produce different distances.
     # NOTE see common/llm.py for the use of open-source LLMs.
     # test='''[{"type": "line", "points": [[0, 0], [3, 3]]},{"type": "polygon", "points": [[1, 1], [2, 1], [1, 2], [2, 2]]},{"type": "polygon", "points": [[0, 10], [-5, 5], [5, 5]]}]'''
     # rule_str=json.dumps(rules)
-    rule_strs = []
-    input_texts = []
+    rule_strs: list[str] = []
+    input_texts: list[str] = []
     for rule in rules:
         rule_str, gen_input_text = gen_user_input(rule)
         rule_strs.append(rule_str)
         input_texts.append(gen_input_text)
-    # print(rule_str)
 
     messages = [
         [{"role": "system", "content": context}, {"role": "user", "content": rule_strs[i]}]
         for i in range(len(rule_strs))
     ]
-    text_gen = gen(messages, caption_args.caption_batchsize)
-    return [{"input": input_texts[i], "output": text_gen[i]} for i in range(len(input_texts))]
+    bs = caption_args.caption_batchsize
+    output_texts = generator(messages, bs)
+    total_size = (len(input_texts) + bs - 1) // bs
+    with open(output_path, "w") as f:
+        for batch_idx, outputs in tqdm(enumerate(output_texts), total=total_size):
+            inputs = input_texts[batch_idx * bs : (batch_idx + 1) * bs]
+            for input, output in zip(inputs, outputs):
+                f.write(json.dumps({"input": input, "output": output}) + "\n")
+                f.flush()
 
 
 def euc_dist(p1, p2):
@@ -437,12 +445,11 @@ def gen_input(special_shapes: dict):
 
 
 def main():
-    # caption([{"a":"b"}])
-    gen = LLMGenerator(caption_args.caption_llm)
+    model_name, model_size = caption_args.caption_llm.split("-")
+    generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
     with open(data_args.rules_path, "r") as f:
-        samples = json.load(f)
-    with open(data_args.captions_path, "w") as f:
-        json.dump(caption(samples, gen), f, ensure_ascii=False)
+        samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+    caption(samples, generator, data_args.caption_path)
 
 
 if __name__ == "__main__":
