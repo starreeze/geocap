@@ -13,7 +13,6 @@ class SeparatorStyle(Enum):
     MPT = auto()
     PLAIN = auto()
     LLAMA_2 = auto()
-    PHI = auto()
 
 
 @dataclasses.dataclass
@@ -64,15 +63,6 @@ class Conversation:
                     ret += role + ":"
         elif self.sep_style == SeparatorStyle.MPT:
             ret = self.system + self.sep
-            for role, message in messages:
-                if message:
-                    if type(message) is tuple:
-                        message, _, _ = message
-                    ret += role + message + self.sep
-                else:
-                    ret += role
-        elif self.sep_style == SeparatorStyle.PHI:
-            ret = ""
             for role, message in messages:
                 if message:
                     if type(message) is tuple:
@@ -274,18 +264,6 @@ If a question does not make any sense, or is not factually coherent, explain why
     sep2="</s>",
 )
 
-conv_llama_3 = Conversation(
-    system="A chat between a curious user and an artificial intelligence assistant. "
-    "The assistant gives helpful, detailed, and polite answers to the user's questions.",
-    roles=("USER", "ASSISTANT"),
-    version="v3",
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.TWO,
-    sep=" ",
-    sep2="<|end_of_text|>",
-)
-
 conv_llava_llama_2 = Conversation(
     system="You are a helpful language and vision assistant. "
            "You are able to understand the visual content that the user provides, "
@@ -391,16 +369,6 @@ Answer the questions.""",
     sep="<|im_end|>",
 )
 
-conv_phi_3_instruct = Conversation(
-    system="",
-    roles=("<|user|>\n", "<|assistant|>\n"),
-    version="phi",
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.PHI,
-    sep="<|end|>\n",
-)
-
 default_conversation = conv_vicuna_v1
 conv_templates = {
     "default": conv_vicuna_v0,
@@ -408,11 +376,9 @@ conv_templates = {
     "v1": conv_vicuna_v1,
     "vicuna_v1": conv_vicuna_v1,
     "llama_2": conv_llama_2,
-    "llama_3": conv_llama_3,
     "mistral_instruct": conv_mistral_instruct,
     "chatml_direct": conv_chatml_direct,
     "mistral_direct": conv_chatml_direct,
-    "phi_3_instruct": conv_phi_3_instruct,
 
     "plain": conv_llava_plain,
     "v0_plain": conv_llava_plain,

@@ -1,8 +1,10 @@
-from dataclasses import dataclass, field
-from transformers import HfArgumentParser
 import logging
-from rich.logging import RichHandler
+import os
+from dataclasses import dataclass, field
 from typing import cast
+
+from rich.logging import RichHandler
+from transformers import HfArgumentParser
 
 
 @dataclass
@@ -10,10 +12,14 @@ class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
-    captions_path: str = field(default="dataset/captions.json")
+    caption_dir: str = field(default="dataset")
     num_basic_geo_samples: int = field(default=100000)
+    llava_data_dir: str = field(default="dataset/llava")
 
-    llava_data_path: str = field(default="dataset/llava-data.json")
+    # some placeholder to be filled AFTER parsing args
+    caption_path: str = field(default="")
+    figure_prefix: str = field(default="")
+    llava_data_path: str = field(default="")
 
 
 @dataclass
@@ -23,6 +29,8 @@ class RunArgs:
     log_level: str = field(default="INFO")
     num_workers: int = field(default=32)
     progress_bar: bool = field(default=True)
+    start_pos: int = field(default=0)
+    end_pos: int = field(default=100000)
 
 
 @dataclass
@@ -82,17 +90,27 @@ class DrawArgs:
 @dataclass
 class CaptionArgs:
     caption_batchsize: int = field(default=1)
-    caption_llm: str = field(default="/home/nfs02/model/llama-3.1-70b-instruct")
+    caption_llm: str = field(default="llama3-70")
+    numeric_ratio: float = field(default=0)
 
 
-data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser([DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]).parse_args_into_dataclasses()  # type: ignore
+data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]  # type: ignore
+).parse_args_into_dataclasses()
+
 data_args = cast(DataArgs, data_args)
 run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
-figure_prefix = draw_args.backend if draw_args.randomize else "pure"
+data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
+data_args.caption_path = os.path.join(
+    data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl"
+)
+data_args.llava_data_path = os.path.join(
+    data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json"
+)
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")

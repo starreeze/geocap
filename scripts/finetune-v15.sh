@@ -6,21 +6,18 @@ deepspeed llava/train/train_mem.py  \
     --model_name_or_path /home/nfs02/model/vicuna-7b-v1.5 \
     --deepspeed scripts/zero3_offload.json \
     --version v1 \
-    --data_path /home/nfs03/zhaof/LLaVA/playground/data/llava_v1_5_mix665k.json \
-    --image_folder /home/nfs03/zhaof/LLaVA/playground/data/ \
+    --data_path dataset/llava/finetune.json \
+    --image_folder dataset/geo-shapes \
     --vision_tower /home/nfs03/zhaof/clip-vit-large-patch14-336 \
-    --pretrain_mm_mlp_adapter checkpoints/llava-s1/mm_projector.bin \
+    --pretrain_mm_mlp_adapter checkpoints/gllava-s1/mm_projector.bin \
     --mm_projector_type mlp2x_gelu \
-    --tune_mm_mlp_adapter True \
-    --tune_visual_encoder False \
-    --tune_llm True \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir checkpoints/llava-s2 \
+    --output_dir checkpoints/gllava-s2 \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \

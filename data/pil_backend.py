@@ -1,9 +1,11 @@
 "draw geometry shapes according to generated rules"
-import os, json, sys
-import numpy as np
-from typing import Any
-from PIL import Image, ImageDraw
+import json
 import random
+from typing import Any
+
+import numpy as np
+from PIL import Image, ImageDraw
+
 from common.args import data_args
 
 
@@ -44,7 +46,10 @@ class Figure:
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
-            self.__handle(rule, randomize=self.randomize, color=color)
+            try:
+                self.__handle(rule, randomize=self.randomize, color=color)
+            except:
+                print(index, rule)
         # print("All rules adapted.")
         if self.randomize:
             # print("Adding Noise...")
@@ -194,8 +199,7 @@ class Figure:
                 length_of_line = np.sqrt((x[0] - x[1]) ** 2 + (y[0] - y[1]) ** 2)
                 pixels_per_ascend = length_of_line // np.absolute(width[0] - width[1])
                 if pixels_per_ascend == 0:
-                    print("The line is too short to perform this redraw attempt. Reperform the attempt in auto mode.")
-                    self.__redraw_line(points, mode="auto")
+                    # print("The line is too short to perform this redraw attempt. Skip")
                     return
                 begin_point = 0 if width[0] < width[1] else 1
                 end_point = 1 if width[0] < width[1] else 0
@@ -436,8 +440,8 @@ class Figure:
             (
                 int(ellipse_x),
                 int(ellipse_y),
-                int(ellipse_x + rx),
-                int(ellipse_y + ry),
+                int(int(ellipse_x) + rx),
+                int(int(ellipse_y) + ry),
             ),
             mask=rotated,
         )
