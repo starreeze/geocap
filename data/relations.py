@@ -338,7 +338,7 @@ class EllipseRelationGenerator:
         ellipse_list = []
         if num_concentric is None:
             num_concentric = randint(1, 4)
-        
+
         for _ in range(num_concentric):
             if scale_factor is None:
                 scale_factor = uniform(0.6, 1.5)
@@ -373,7 +373,7 @@ class EllipseRelationGenerator:
         polygon_points = [self.ellipse.get_point(theta) for theta in theta_list]
         polygon = Polygon(points=polygon_points, special_info=special_polygon)
         polygon.to_simple_polygon()
-        
+
         while not polygon.check_angle():
             theta_list = [uniform(0, 2 * np.pi) for _ in range(num_points)]
             polygon_points = [self.ellipse.get_point(theta) for theta in theta_list]
@@ -444,15 +444,15 @@ class EllipseRelationGenerator:
         return circle, tangent_type
 
     def generate_volutions(self, initial_chamber: Ellipse) -> list[Ellipse]:
-        center = (initial_chamber.center[0]+normal(0, 3e-3), initial_chamber.center[1]+normal(0, 3e-3))
+        center = (initial_chamber.center[0] + normal(0, 3e-3), initial_chamber.center[1] + normal(0, 3e-3))
         minor_axis = initial_chamber.minor_axis * uniform(1.1, 1.6)
         major_axis = minor_axis * uniform(1.2, 2)
         rotation = normal(0, 0.02)
         volution_0 = Ellipse(center, major_axis, minor_axis, rotation)
-        
+
         volutions = [volution_0]
         num_volutions = randint(5, 15)
-        
+
         for _ in range(num_volutions):
             self.ellipse = volutions[-1]
             scale_factor = normal(1.5, 0.05)
@@ -463,30 +463,30 @@ class EllipseRelationGenerator:
             volutions.append(new_volution)
 
         for i, volution in enumerate(volutions):
-            volution.special_info = f'volution {i+1}. '
-        
+            volution.special_info = f"volution {i+1}. "
+
         return volutions
-    
+
     def generate_septa(self, volutions: list[Ellipse]) -> list[Ellipse]:
         septa_list = []
 
         num_septa = [randint(3, 60) for _ in range(20)]
         num_septa.sort()
         for i, volution in enumerate(volutions[:-1]):
-            next_volution = volutions[i+1]
+            next_volution = volutions[i + 1]
 
             angle_per_sec = (2 * np.pi) / num_septa[i]
             theta = uniform(0, 2 * np.pi)
             for _ in range(num_septa[i]):
                 theta = theta + angle_per_sec
-                p1 =  volution.get_point(theta)
+                p1 = volution.get_point(theta)
                 p2 = next_volution.get_point(theta)
                 interval = distance_2points(p1, p2)
 
-                center = (0.5*(p1[0]+p2[0]), 0.5*(p1[1]+p2[1]))
-                major_axis = uniform(0.5*interval, 0.9*interval)
-                minor_axis = uniform(0.6*major_axis, major_axis)
-                rotation = normal(theta, 0.2*theta)
+                center = (0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]))
+                major_axis = uniform(0.5 * interval, 0.9 * interval)
+                minor_axis = uniform(0.6 * major_axis, major_axis)
+                rotation = normal(theta, 0.2 * theta)
                 septa = Ellipse(center, major_axis, minor_axis, rotation, special_info=f"septa of volution {i+1}. ")
                 septa_list.append(septa)
 
