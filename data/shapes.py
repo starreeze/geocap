@@ -1,5 +1,5 @@
 from typing import Optional, Union
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
 from typing import Any
 import numpy as np
@@ -80,6 +80,20 @@ class Polygon(GSRule):
                 elif sign != (cp > 0):
                     return False
         return True
+    
+    def check_angle(self, thres=0.15*np.pi)->bool:
+        # Check if each angle is greater than thres
+        def angle_between(v1, v2):
+            return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+        angles = []
+        for i in range(len(self.points)):
+            v1 = np.array(self.points[i]) - np.array(self.points[i-1])
+            v2 = np.array(np.array(self.points[i]) - self.points[(i+1) % len(self.points)])
+            angles.append(angle_between(v1, v2))
+
+        min_angle = min(angles)
+        return min_angle > thres
 
     def to_simple_polygon(self):
         from .utils import polar_angle, distance_2points
@@ -257,7 +271,46 @@ class Spiral(GSRule):
 
 @dataclass
 class Fusiform(GSRule):
-    pass
+    # use two parabolas to get a fusiform
+    # y = 4 * p * (x-x_0)^2 + c
+    # focal_length: p, x_offset: x_0, y_offset: c
+    focal_length_1 : float = 0.0
+    x_offset_1: float = 0.0
+    y_offset_1: float = 0.0
+    focal_length_2 : float = 0.0
+    x_offset_2: float = 0.0
+    y_offset_2: float = 0.0
+    
+    center: tuple[float, float] = field(init=False)
+    ratio: float = field(init=False)
+
+    def __post_init__(self):
+        center_x = 0.5 * (self.x_offset_1 + self.x_offset_2)
+        center_y = 0.5 * (self.y_offset_1 + self.y_offset_2)
+        self.center = (center_x, center_y)
+
+        # Ensure two parabolas have intersections
+        assert self.focal_length_1 > 0 and self.focal_length_2 < 0
+        assert self.y_offset_1 < self.y_offset_2
+
+        # Calculate the intersection points by solving the quadratic equation y1 = y2
+        a = self.focal_length_1 - self.focal_length_2
+        b = 2 * (self.x_offset_2 * self.focal_length_2 - self.x_offset_1 * self.focal_length_1)
+        c = self.focal_length_1 * self.x_offset_1**2 + self.y_offset_1 - self.focal_length_2 * self.x_offset_2**2 - self.y_offset_2
+
+        discriminant = b**2 - 4 * a * c
+        x1 = (-b + np.sqrt(discriminant)) / (2 * a)
+        x2 = (-b - np.sqrt(discriminant)) / (2 * a)
+        width = abs(x2 - x1)
+        
+        height = abs(self.y_offset_2 - self.y_offset_1)
+        self.ratio = width / height if height != 0 else float('inf')
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"type": "fusiform"} | asdict(self)
+    
+    def get_bbox(self) -> list[tuple[float, float]]:
+        raise NotImplementedError
 
 
 class ShapeGenerator:
@@ -273,7 +326,7 @@ class ShapeGenerator:
         self.shape_prob = [x / sum(self.shape_prob) for x in self.shape_prob]
 
     def __call__(self) -> Polygon | Line | Ellipse | Spiral:
-        # generate a shape(GSRule) randomly
+        # Generate a shape(GSRule) randomly
         shape_type = np.random.choice(self.opt_shapes, p=self.shape_prob)
         if shape_type == "polygon":
             shape = self.generate_polygon()
@@ -294,7 +347,7 @@ class ShapeGenerator:
         
         polygon = Polygon(points)
         polygon.to_simple_polygon()
-        while not polygon.is_convex() or polygon.get_area() < 0.01:
+        while not polygon.is_convex() or polygon.get_area() < 0.01 or not polygon.check_angle():
             points = [(uniform(0.2, 0.8), uniform(0.2, 0.8)) for _ in range(num_points)]
             polygon = Polygon(points)
             polygon.to_simple_polygon()
@@ -347,7 +400,7 @@ class ShapeGenerator:
 
             special_ellipse = np.random.choice(["no", "circle"])
             if special_ellipse == "circle":
-                ellipse.to_circle(radius=minor_axis / 2)
+                ellipse.to_circle(radius=0.5*minor_axis)
             return ellipse
 
     def generate_spiral(self) -> Spiral:
@@ -360,3 +413,12 @@ class ShapeGenerator:
         phi = uniform(0, np.pi)
         sin_params = [epsilon, omega, phi]
         return Spiral(center, initial_radius, growth_rate, sin_params, max_theta)
+
+    def generate_initial_chamber(self) -> Ellipse:
+        center = (0.5+normal(0, 0.01), 0.5+normal(0, 0.01))
+        major_axis = normal(0.05, 0.01)
+        minor_axis = uniform(0.8*major_axis, major_axis)
+        rotation = uniform(0, np.pi)
+        special_info = "initial chamber. "
+        return Ellipse(center, major_axis, minor_axis, rotation, special_info)
+    
