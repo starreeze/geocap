@@ -1,9 +1,11 @@
 "draw geometry shapes according to generated rules"
-import os, json, sys
-import numpy as np
-from typing import Any
-from PIL import Image, ImageDraw
+import json
 import random
+from typing import Any
+
+import numpy as np
+from PIL import Image, ImageDraw
+
 from common.args import data_args
 
 

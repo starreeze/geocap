@@ -1,7 +1,7 @@
 from typing import Any
 import numpy as np
 from numpy.random import uniform, randint, normal
-from .shapes import Polygon, Line, Ellipse
+from .shapes import Polygon, Line, Ellipse, Fusiform
 from data.utils import (
     distance_2points,
     polar_angle,
@@ -128,7 +128,9 @@ class PolygonRelationGenerator:
             side_len = distance_2points(points[0], points[1])  # length of the shared edge
             mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
             new_point = (mid_point[0] + side_len * uniform(0.3, 1), mid_point[1] + side_len * uniform(0.3, 1))
-            polygon_list.append(Polygon([points[0], points[1], new_point], special_info="triangle"))
+            polygon = Polygon([points[0], points[1], new_point], special_info="triangle")
+            if polygon.check_angle():
+                polygon_list.append(polygon)
 
         return polygon_list
 
@@ -332,13 +334,16 @@ class EllipseRelationGenerator:
 
         return line
 
-    def get_concentric_ellipse(self) -> list[Ellipse]:
+    def get_concentric_ellipse(self, scale_factor=None, num_concentric=None) -> list[Ellipse]:
         ellipse_list = []
-        num_concentric = randint(1, 4)
+        if num_concentric is None:
+            num_concentric = randint(1, 4)
+
         for _ in range(num_concentric):
-            scale_factor = uniform(0.6, 1.5)
-            while 0.9 < scale_factor < 1.1:
+            if scale_factor is None:
                 scale_factor = uniform(0.6, 1.5)
+                while 0.9 < scale_factor < 1.1:
+                    scale_factor = uniform(0.6, 1.5)
             scaled_major_axis = self.ellipse.major_axis * scale_factor
             scaled_minor_axis = self.ellipse.minor_axis * scale_factor
             center = self.ellipse.center
@@ -368,6 +373,12 @@ class EllipseRelationGenerator:
         polygon_points = [self.ellipse.get_point(theta) for theta in theta_list]
         polygon = Polygon(points=polygon_points, special_info=special_polygon)
         polygon.to_simple_polygon()
+
+        while not polygon.check_angle():
+            theta_list = [uniform(0, 2 * np.pi) for _ in range(num_points)]
+            polygon_points = [self.ellipse.get_point(theta) for theta in theta_list]
+            polygon = Polygon(points=polygon_points, special_info=special_polygon)
+            polygon.to_simple_polygon()
         return polygon
 
     def get_circumscribed_polygon(self) -> Polygon:
@@ -431,3 +442,52 @@ class EllipseRelationGenerator:
         circle.to_circle(radius)
 
         return circle, tangent_type
+
+    def generate_volutions(self, initial_chamber: Ellipse) -> list[Ellipse]:
+        center = (initial_chamber.center[0] + normal(0, 3e-3), initial_chamber.center[1] + normal(0, 3e-3))
+        minor_axis = initial_chamber.minor_axis * uniform(1.1, 1.6)
+        major_axis = minor_axis * uniform(1.2, 2)
+        rotation = normal(0, 0.02)
+        volution_0 = Ellipse(center, major_axis, minor_axis, rotation)
+
+        volutions = [volution_0]
+        num_volutions = randint(5, 15)
+
+        for _ in range(num_volutions):
+            self.ellipse = volutions[-1]
+            scale_factor = normal(1.5, 0.05)
+            new_volution = self.get_concentric_ellipse(scale_factor, 1)[0]
+            new_volution.major_axis *= normal(1, 0.02)
+            if new_volution.major_axis > 1:
+                break
+            volutions.append(new_volution)
+
+        for i, volution in enumerate(volutions):
+            volution.special_info = f"volution {i+1}. "
+
+        return volutions
+
+    def generate_septa(self, volutions: list[Ellipse]) -> list[Ellipse]:
+        septa_list = []
+
+        num_septa = [randint(3, 60) for _ in range(20)]
+        num_septa.sort()
+        for i, volution in enumerate(volutions[:-1]):
+            next_volution = volutions[i + 1]
+
+            angle_per_sec = (2 * np.pi) / num_septa[i]
+            theta = uniform(0, 2 * np.pi)
+            for _ in range(num_septa[i]):
+                theta = theta + angle_per_sec
+                p1 = volution.get_point(theta)
+                p2 = next_volution.get_point(theta)
+                interval = distance_2points(p1, p2)
+
+                center = (0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]))
+                major_axis = uniform(0.5 * interval, 0.9 * interval)
+                minor_axis = uniform(0.6 * major_axis, major_axis)
+                rotation = normal(theta, 0.2 * theta)
+                septa = Ellipse(center, major_axis, minor_axis, rotation, special_info=f"septa of volution {i+1}. ")
+                septa_list.append(septa)
+
+        return septa_list
