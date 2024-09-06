@@ -4,19 +4,32 @@
 """wrapper on an iterable to allow interruption & auto resume, retrying and multiprocessing"""
 
 from __future__ import annotations
-import os
-import traceback
+
 import json
 import logging
-from typing import Any, BinaryIO, Callable, Iterable, Iterator, Literal, TextIO, TypeVar, IO, Sequence
+import os
+import traceback
+from functools import wraps
 from glob import glob
 from itertools import product
-from functools import wraps
 from multiprocessing import Lock, Process, synchronize
+from typing import (
+    IO,
+    Any,
+    BinaryIO,
+    Callable,
+    Generic,
+    Iterable,
+    Iterator,
+    Literal,
+    Sequence,
+    TextIO,
+    TypeVar,
+)
 
 # package info
 __name__ = __file__.split("/")[-1].split(".")[0]
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = "Starreeze"
 __license__ = "GPLv3"
 __url__ = "https://github.com/starreeze/server-tools"
@@ -44,10 +57,10 @@ def check_unfinished(run_name: str):
     return False
 
 
-class IterateWrapper:
+class IterateWrapper(Generic[DataType]):
     def __init__(
         self,
-        *data: Any,
+        *data: Iterable[DataType],
         mode: Literal["product", "zip"] = "product",
         restart=False,
         bar=0,
@@ -66,15 +79,10 @@ class IterateWrapper:
             convert_type: convert the data to this type
             run_name: name of the run to identify the checkpoint and output files
         """
-        if len(data) == 1:
-            if convert_type is not None:
-                self.data = convert_type(data[0])
-            else:
-                self.data = data[0]
-        elif mode == "product":
-            self.data = list(product(*data))
+        if mode == "product":
+            self.data: Sequence[DataType] = convert_type(product(*data))
         elif mode == "zip":
-            self.data = list(zip(*data))
+            self.data = convert_type(zip(*data))
         else:
             raise ValueError("mode must be 'product' or 'zip'")
         total_items = total_items if total_items is not None else len(self.data)
@@ -198,6 +206,7 @@ def _process_job(
     start_pos = process_idx * chunk_items
     end_pos = min(start_pos + chunk_items, total_items)
 
+    checkpoint += start_pos
     range_to_process = range(checkpoint, end_pos)
     range_checkpointed = range(start_pos, checkpoint)
     if bar:
@@ -233,7 +242,7 @@ def _process_job(
             assert isinstance(data, Sequence)
             item = data[i]
         retry_func(output, item, vars)
-        _write_ckpt(ckpt_tmpl.format(name=run_name), i + 1, process_idx, lock)
+        _write_ckpt(ckpt_tmpl.format(name=run_name), i + 1 - start_pos, process_idx, lock)
     if output is not None:
         output.close()
 
