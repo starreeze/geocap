@@ -113,3 +113,25 @@ head_end_pool = [
     "Your depiction should correctly represent where each shape is placed on the canvas.",
     "Your narrative should accurately detail the exact positioning of the shapes on the canvas. ",
 ]
+head_not_full_part1_pool = [
+    "Nevertheless, the numerical data listed below is incomplete, ",
+    "Yet, the figures supplied here are not exhaustive, ",
+    "Nonetheless, the numerical details given below are lacking, ",
+    "However, the information presented below in numerical form is not comprehensive, ",
+    "In spite of this, the numerical content below is not fully detailed, ",
+    "Yet, the numerical data provided is insufficient, ",
+    "However, the numerical details here are not exhaustive, ",
+    "Despite this, the numerical information supplied is not thorough, ",
+    "Nonetheless, the numerical data listed is not complete, ",
+]
+head_not_full_part2_pool = [
+    "and certain values for the graphs must still be extracted from the images. ",
+    "and additional numerical details from the graphs need to be interpreted from the pictures. ",
+    "with further data from the graphs required to be extracted from the visuals. ",
+    "and it is necessary to derive missing values from the graphical images. ",
+    "and some values for the graphs have to be obtained from the images. ",
+    "necessitating the extraction of remaining values from the depicted graphs. ",
+    "and more data from the graphs will need to be interpreted based on the images. ",
+    "and certain graph values must still be deduced from the visual representations. ",
+    "and there is a need to derive the remaining graph values from the images provided. ",
+]
