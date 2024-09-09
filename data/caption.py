@@ -449,6 +449,7 @@ def main():
     generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+    os.makedirs(data_args.caption_dir, exist_ok=True)
     caption(samples, generator, data_args.caption_path)
 
 

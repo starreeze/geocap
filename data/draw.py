@@ -61,6 +61,7 @@ def main():
         samples = json.load(f)[run_args.start_pos : run_args.end_pos]
         assert isinstance(samples, list)
     serial_version = draw_args.serial_version
+    os.makedirs(data_args.figure_dir, exist_ok=True)
     if serial_version:
         for idx, sample in enumerate(samples):
             draw_figure(
