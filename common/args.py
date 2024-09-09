@@ -89,8 +89,8 @@ class DrawArgs:
 
 @dataclass
 class CaptionArgs:
-    caption_batchsize: int = field(default=1)
-    caption_llm: str = field(default="llama3-70")
+    caption_batchsize: int = field(default=4)
+    caption_llm: str = field(default="llama3-8")
     numeric_ratio: float = field(default=0)
 
 
