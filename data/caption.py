@@ -177,6 +177,10 @@ def gen_position_description(shapes):
 
 
 def gen_user_input(rules):
+
+    seed = int(hashlib.md5(json.dumps(rules).encode("utf-8")).hexdigest(), 16)
+    random.seed(seed)
+
     ret_text = "TOTAL SHAPES: {}\n".format(len(rules["shapes"]))
     ret_text += "BEGIN SHAPES\n"
     polygon_special = [0, 0, 0, "triangle", "quadrilateral", "pentagon", "hexagon"]
@@ -185,6 +189,9 @@ def gen_user_input(rules):
     # if(len(rules["shapes"])==1):
     #     grid_pos[0]="center"
     relation_heads = []
+
+    filter_map = {}
+
     for i in range(len(rules["shapes"])):
         sep_line = grid_pos[i] + " "
         relation_head = grid_pos[i] + " "
@@ -220,7 +227,6 @@ def gen_user_input(rules):
             sep_line += shape["type"]
             relation_head += shape["type"]
         relation_heads.append(relation_head)
-        ret_text += sep_line
         special_shape = sep_line.split(" | ")
         if len(special_shape) > 1:
             shape_name = special_shape[0][len(grid_pos[i]) + 1 :]
@@ -234,6 +240,14 @@ def gen_user_input(rules):
                 if param_name not in special_shapes[shape_name]["params"].keys():
                     special_shapes[shape_name]["params"][param_name] = []
                 special_shapes[shape_name]["params"][param_name].append(param_value)
+            if shape_name not in filter_map.keys():
+                filter_map[shape_name] = []
+            rnd = random.random()
+            if rnd < caption_args.numeric_ratio:
+                filter_map[shape_name].append(len(special_shapes[shape_name]["positions"]) - 1)
+            else:
+                sep_line = shape_name
+        ret_text += sep_line
         ret_text += "\n"
     ret_text += "END SHAPES\n"
     ret_text += "BEGIN RELATIONS\n"
@@ -241,7 +255,31 @@ def gen_user_input(rules):
         sep_line = "{}, {} | {}\n".format(relation_heads[rel[0]], relation_heads[rel[1]], rel[2])
         ret_text += sep_line
     ret_text += "END RELATIONS"
-    return ret_text, gen_input(special_shapes)
+
+    def drop_shapes():
+        special_shapes_filtered = {}
+        is_full = True
+        for key in filter_map.keys():
+            if len(filter_map[key]) > 0:
+                special_shapes_filtered[key] = {"positions": [], "params": {}}
+                for arg in special_shapes[key]["params"].keys():
+                    special_shapes_filtered[key]["params"][arg] = []
+                for idx in filter_map[key]:
+                    special_shapes_filtered[key]["positions"].append(special_shapes[key]["positions"][idx])
+                    for arg in special_shapes[key]["params"].keys():
+                        special_shapes_filtered[key]["params"][arg].append(special_shapes[key]["params"][arg][idx])
+                if len(filter_map[key]) < len(special_shapes[key]["positions"]):
+                    special_shapes_filtered[key]["is_full"] = False
+                    is_full = False
+                else:
+                    special_shapes_filtered[key]["is_full"] = True
+            else:
+                is_full = False
+        return special_shapes_filtered, is_full, filter_map
+
+    special_shapes_filtered, is_full, filter_map = drop_shapes()
+
+    return ret_text, gen_input(special_shapes, filter_map, special_shapes_filtered, is_full)
 
 
 def decide_rel_pos(center_positions, x1, x2, y1, y2):
@@ -297,44 +335,8 @@ def group_by_position(positions):
     return count
 
 
-def gen_input(special_shapes: dict):
+def gen_input(special_shapes, filter_map, special_shapes_filtered: dict, is_full):
     head = "Please provide a fluent and detailed description of the geometric patterns in this image and their relationships. "
-    seed = int(hashlib.md5(json.dumps(special_shapes).encode("utf-8")).hexdigest(), 16)
-    random.seed(seed)
-
-    def gen_filter_map():
-        filter_map = {}
-        for key in special_shapes.keys():
-            filter_map[key] = []
-            for i in range(len(special_shapes[key]["positions"])):
-                rnd = random.random()
-                if rnd < caption_args.numeric_ratio:
-                    filter_map[key].append(i)
-        return filter_map
-
-    def drop_shapes():
-        filter_map = gen_filter_map()
-        special_shapes_filtered = {}
-        is_full = True
-        for key in filter_map.keys():
-            if len(filter_map[key]) > 0:
-                special_shapes_filtered[key] = {"positions": [], "params": {}}
-                for arg in special_shapes[key]["params"].keys():
-                    special_shapes_filtered[key]["params"][arg] = []
-                for idx in filter_map[key]:
-                    special_shapes_filtered[key]["positions"].append(special_shapes[key]["positions"][idx])
-                    for arg in special_shapes[key]["params"].keys():
-                        special_shapes_filtered[key]["params"][arg].append(special_shapes[key]["params"][arg][idx])
-                if len(filter_map[key]) < len(special_shapes[key]["positions"]):
-                    special_shapes_filtered[key]["is_full"] = False
-                    is_full = False
-                else:
-                    special_shapes_filtered[key]["is_full"] = True
-            else:
-                is_full = False
-        return special_shapes_filtered, is_full, filter_map
-
-    special_shapes_filtered, is_full, filter_map = drop_shapes()
 
     def choose_head(is_full):
         head_str = ""
@@ -359,10 +361,10 @@ def gen_input(special_shapes: dict):
                     + head_start_with_param_part2_pool[rnd_start_part2]
                     + head_end_pool[rnd_end]
                 )
-        if (not is_full) and (len(special_shapes_filtered.keys()) != 0):
-            rnd_not_full_part1 = random.randint(0, len(head_not_full_part1_pool) - 1)
-            rnd_not_full_part2 = random.randint(0, len(head_not_full_part2_pool) - 1)
-            head_str += head_not_full_part1_pool[rnd_not_full_part1] + head_not_full_part2_pool[rnd_not_full_part2]
+        # if (not is_full) and (len(special_shapes_filtered.keys()) != 0):
+        #     rnd_not_full_part1=random.randint(0, len(head_not_full_part1_pool) - 1)
+        #     rnd_not_full_part2=random.randint(0, len(head_not_full_part2_pool) - 1)
+        #     head_str += (head_not_full_part1_pool[rnd_not_full_part1] + head_not_full_part2_pool[rnd_not_full_part2])
         return head_str
 
     head = choose_head(is_full)
@@ -448,8 +450,10 @@ def gen_input(special_shapes: dict):
                     if len(param_names) == 1:
                         value = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
                         format_str_switch = plural_1_param_format_part
-                        if pos_idx == len(list(grouped_pos.keys())) - 1:
+                        if (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) > 1):
                             format_str_switch = plural_1_param_format_end
+                        elif (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) == 1):
+                            format_str_switch = plural_1_param_format_part[:-2] + ". "
                         final_str += format_str_switch.format(attr=param_names[0], pos=pos_name, shape=key, value=value)
                     elif len(param_names) == 2:
                         value1 = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
