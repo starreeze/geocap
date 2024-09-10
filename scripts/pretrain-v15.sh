@@ -5,7 +5,7 @@ deepspeed llava/train/train_mem.py \
     --deepspeed scripts/zero2.json \
     --model_name_or_path /home/nfs02/model/vicuna-7b-v1.5 \
     --version plain \
-    --data_path dataset/llava/pretrain.json \
+    --data_path dataset/llava/pure_n0.json \
     --image_folder dataset/geo-shapes \
     --vision_tower /home/nfs03/zhaof/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
@@ -16,7 +16,7 @@ deepspeed llava/train/train_mem.py \
     --bf16 True \
     --output_dir checkpoints/gllava-s1 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 4 \
     --evaluation_strategy "no" \

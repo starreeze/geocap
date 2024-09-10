@@ -1,10 +1,13 @@
 "generate rules for producing geometry shapes"
-import json, json_fix
-from common.args import data_args, rule_args
+import json
+import os
+
 from numpy.random import randint
 from tqdm import trange
-from data.shapes import ShapeGenerator
+
+from common.args import data_args, rule_args
 from data.relations import RelationGenerator
+from data.shapes import ShapeGenerator
 from data.utils import overlap_area
 
 
@@ -93,6 +96,7 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 
 def main():
     samples = generate_rules(data_args, rule_args)
+    os.makedirs(os.path.dirname(data_args.rules_path), exist_ok=True)
     save_rules(samples, data_args.rules_path)
 
 
