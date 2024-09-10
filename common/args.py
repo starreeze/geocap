@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import cast
+from typing import Iterable, cast
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
@@ -104,12 +104,18 @@ rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
-data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
-data_args.caption_path = os.path.join(
-    data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl"
+data_args.figure_prefix = (
+    data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
-data_args.llava_data_path = os.path.join(
-    data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json"
+data_args.caption_path = (
+    data_args.caption_path
+    if data_args.caption_path
+    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl")
+)
+data_args.llava_data_path = (
+    data_args.llava_data_path
+    if data_args.llava_data_path
+    else os.path.join(data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json")
 )
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
