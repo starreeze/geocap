@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Iterable, cast
+from typing import cast
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
@@ -110,7 +110,7 @@ data_args.figure_prefix = (
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
-    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl")
+    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl")
 )
 data_args.llava_data_path = (
     data_args.llava_data_path
