@@ -4,7 +4,7 @@ export PYTHONPATH=`pwd`
 
 deepspeed llava/train/train_mem.py  \
     --model_name_or_path /home/nfs02/model/vicuna-7b-v1.5 \
-    --deepspeed scripts/zero3_offload.json \
+    --deepspeed scripts/zero3.json \
     --version v1 \
     --data_path dataset/llava/plt_n0.5.json \
     --image_folder dataset/geo-shapes \
@@ -19,9 +19,9 @@ deepspeed llava/train/train_mem.py  \
     --bf16 True \
     --output_dir checkpoints/gllava-s2 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 8 \
+    --gradient_accumulation_steps 4 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
     --save_steps 100000 \
