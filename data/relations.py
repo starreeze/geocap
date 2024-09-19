@@ -512,7 +512,7 @@ class FusiformRelationGenerator:
         y_offset = self.fusiform.y_offset
         power = self.fusiform.power
         x_symmetric_axis = self.fusiform.x_symmetric_axis
-        sin_params = self.fusiform.sin_params
+        sin_params = [self.fusiform.sin_params[0], 3 * np.pi, np.pi]
         fusiform_list = []
 
         if num_concentric is None:

@@ -398,9 +398,9 @@ class Fusiform(GSRule):
 @dataclass
 class Fusiform_2(GSRule):
     # use symetric parabola-like curves to generate a fusiform
-    # x = 4*p * (y - y_0) ^ m + c => y = ((x-c) / 4*p) ** (1/m) + y_0
+    # x = 4*p * (y - y_0) ^ m + x_0 => y = ((x-x_0) / 4*p) ** (1/m) + y_0
     focal_length: float = 0.0  # p
-    x_offset: float = 0.0  # c
+    x_offset: float = 0.0  # x_0
     y_offset: float = 0.0  # y_0
     power: float = 0.0  # m
     x_symmetric_axis: float = 0.0
