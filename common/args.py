@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import cast
+from typing import cast, Literal
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
@@ -14,6 +14,7 @@ class DataArgs:
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
     num_basic_geo_samples: int = field(default=100000)
+    num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
 
     # some placeholder to be filled AFTER parsing args
@@ -35,6 +36,7 @@ class RunArgs:
 
 @dataclass
 class RuleArgs:
+    mode: Literal["basic", "fossil"] = field(default="basic")
     # max number of shapes in each sample
     max_num_shapes: int = field(default=10)
 
