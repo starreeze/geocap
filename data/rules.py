@@ -36,7 +36,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         numerical_info["num_volutions"] = len(volutions) - 1
         shapes.extend(volutions)
-        
+
         # Set tunnel angles for each volution
         tunnel_angle = normal(15, 3)  # initialize
         tunnel_angles = [tunnel_angle]

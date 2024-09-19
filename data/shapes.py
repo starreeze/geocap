@@ -296,7 +296,7 @@ class Fusiform(GSRule):
     def __post_init__(self):
         self.center = (self.x_offset, self.y_symmetric_axis)
 
-        self.data_points = int(1000/self.precision)
+        self.data_points = int(1000 / self.precision)
         x = np.linspace(0, 1, self.data_points)
         epsilon, omega, phi = self.sin_params
         sin_wave = epsilon * np.sin(omega * x + phi)
@@ -305,8 +305,8 @@ class Fusiform(GSRule):
 
         close_indices = np.where(np.abs(y1 - y2) < self.precision)[0]
         if len(close_indices) > 0:
-            left_intersection = int(close_indices[close_indices < self.data_points//2][-1])
-            right_intersection = int(close_indices[close_indices > self.data_points//2][0])
+            left_intersection = int(close_indices[close_indices < self.data_points // 2][-1])
+            right_intersection = int(close_indices[close_indices > self.data_points // 2][0])
 
             self.x_start = x[left_intersection]
             self.x_end = x[right_intersection]
@@ -363,9 +363,9 @@ class Fusiform(GSRule):
         y_parabola = 4 * self.focal_length * (x_range**2) + self.y_offset + sin_wave - self.y_symmetric_axis
 
         y_max, y_min = max(-y_parabola), min(y_parabola)
-        
+
         # Calculate points on the ray(with polar angle = theta)
-        if np.abs(theta-0.5*np.pi)<self.precision or np.abs(theta-1.5*np.pi)<self.precision:
+        if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
             y_line = None
         else:
             slope = np.tan(theta)
@@ -379,22 +379,21 @@ class Fusiform(GSRule):
             y_fusiform = y_parabola
             vertex_indice = np.where(y_fusiform == y_min)[0]
 
-
         if y_line is not None:
             intersection_indices = np.where(np.abs(y_fusiform - y_line) < self.precision)[0]
         else:
             intersection_indices = vertex_indice
 
         if 0.5 * np.pi <= theta < 1.5 * np.pi:
-            idx = int(intersection_indices[intersection_indices < self.data_points//1.8][0])
+            idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
         else:
-            idx = int(intersection_indices[intersection_indices > self.data_points//2.2][-1])
+            idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
 
         x = x_range[idx]
         y = y_fusiform[idx]
 
         return (x + self.center[0], y + self.center[1])
-    
+
 
 @dataclass
 class Fusiform_2(GSRule):
@@ -422,7 +421,7 @@ class Fusiform_2(GSRule):
 
         self.data_points = int(1000 / self.precision)
         x = np.linspace(0, 1, self.data_points)
-        x_left = x[:int(self.data_points/2)]
+        x_left = x[: int(self.data_points / 2)]
 
         left_intersection = np.argmin(np.abs(x - self.x_offset))
         self.x_start = x[left_intersection]
@@ -436,11 +435,11 @@ class Fusiform_2(GSRule):
             self.sin_params[1] = self.sin_params[1] / self.width  # omega
 
             epsilon, omega, phi = self.sin_params
-            sin_wave = epsilon * np.sin(omega * (x-self.x_start) + phi)
-            y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1/self.power) + self.y_offset
+            sin_wave = epsilon * np.sin(omega * (x - self.x_start) + phi)
+            y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
             y_right = np.flip(y_left)
             y1 = np.concatenate([y_left, y_right]) + sin_wave
-            y2 = 2*self.y_offset - y1
+            y2 = 2 * self.y_offset - y1
             self.height = max(y1[left_intersection:right_intersection]) - min(y2[left_intersection:right_intersection])
             self.ratio = self.width / self.height if self.height != 0 else float("inf")
 
@@ -456,24 +455,24 @@ class Fusiform_2(GSRule):
     def get_point(self, theta: float) -> tuple[float, float]:
         theta = theta % (2 * np.pi)
         x_range = np.linspace(0, 1, self.data_points)
-        x_left = x_range[:int(self.data_points/2)]
+        x_left = x_range[: int(self.data_points / 2)]
 
         epsilon, omega, phi = self.sin_params
-        sin_wave = epsilon * np.sin(omega * (x_range-self.x_start) + phi)
-        y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1/self.power) + self.y_offset
+        sin_wave = epsilon * np.sin(omega * (x_range - self.x_start) + phi)
+        y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
         y_right = np.flip(y_left)
         y_range = np.concatenate([y_left, y_right]) + sin_wave
-        y_upper = y_range[self.intersections[0]:self.intersections[1]]
+        y_upper = y_range[self.intersections[0] : self.intersections[1]]
 
-        y_max, y_min = max(y_upper), min(2*self.y_offset - y_upper)
-        
+        y_max, y_min = max(y_upper), min(2 * self.y_offset - y_upper)
+
         # Calculate points on the ray(with polar angle = theta)
-        if np.abs(theta-0.5*np.pi)<self.precision or np.abs(theta-1.5*np.pi)<self.precision:
+        if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
             y_line = None
         else:
             slope = np.tan(theta)
             y_line = slope * (x_range - self.center[0]) + self.center[1]
-            y_line = y_line[self.intersections[0]:self.intersections[1]]
+            y_line = y_line[self.intersections[0] : self.intersections[1]]
 
         # Calculate points on the fusiform(after offset)
         if 0 <= theta < np.pi:  # upper curve

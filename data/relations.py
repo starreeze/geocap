@@ -478,7 +478,7 @@ class FusiformRelationGenerator:
 
     def get_concentric_fusiform(self, scale_factor=None, num_concentric=None) -> list[Fusiform]:
         assert isinstance(self.fusiform, Fusiform)
-        
+
         center = self.fusiform.center
         focal_length = self.fusiform.focal_length
         x_offset = center[0]
@@ -502,9 +502,11 @@ class FusiformRelationGenerator:
 
         return fusiform_list
 
-    def get_concentric_fusiform_2(self, scale_factor: Optional[list], x_delta=None, num_concentric=None) -> list[Fusiform_2]:
+    def get_concentric_fusiform_2(
+        self, scale_factor: Optional[list], x_delta=None, num_concentric=None
+    ) -> list[Fusiform_2]:
         assert isinstance(self.fusiform, Fusiform_2)
-        
+
         focal_length = self.fusiform.focal_length
         x_offset = self.fusiform.x_offset
         y_offset = self.fusiform.y_offset
@@ -532,7 +534,7 @@ class FusiformRelationGenerator:
         return fusiform_list
 
     def generate_volutions(self, initial_chamber: Ellipse) -> list[Fusiform] | list[Fusiform_2]:
-        fusiform_type = np.random.choice([1,2])
+        fusiform_type = np.random.choice([1, 2])
         # fusiform_type = 1
         if fusiform_type == 1:
             volutions = self.generate_volutions_1(initial_chamber)
@@ -540,7 +542,7 @@ class FusiformRelationGenerator:
             volutions = self.generate_volutions_2(initial_chamber)
 
         return volutions
-    
+
     def generate_volutions_1(self, initial_chamber: Ellipse) -> list[Fusiform]:
         center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
         focal_length = normal(0.3, 0.03)
@@ -570,10 +572,10 @@ class FusiformRelationGenerator:
                 break
 
         return volutions
-    
+
     def generate_volutions_2(self, initial_chamber: Ellipse) -> list[Fusiform_2]:
         center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
-        
+
         volution_0 = None
         while volution_0 is None or not volution_0.is_closed():
             focal_length = normal(480, 60)
@@ -586,7 +588,7 @@ class FusiformRelationGenerator:
             phi = np.pi
             sin_params = [epsilon, omega, phi]
             volution_0 = Fusiform_2(
-                focal_length, x_offset, y_offset, power,x_symmetric_axis,sin_params, special_info="volution 0. "
+                focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. "
             )
         volutions = [volution_0]
 
@@ -639,7 +641,9 @@ class SeptaGenerator:
             init_septa_prob = max(0.2, uniform(0.3, 0.1))
         self.init_septa_prob = init_septa_prob
 
-    def generate_septa(self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2]) -> tuple[list[Ellipse | Polygon], list[int]]:
+    def generate_septa(
+        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2]
+    ) -> tuple[list[Ellipse | Polygon], list[int]]:
         fossil_center = volutions[0].center
         septa_list = []
         num_septa = [0 for _ in range(len(volutions) - 1)]
