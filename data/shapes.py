@@ -347,7 +347,7 @@ class Fusiform(GSRule):
         # self.ratio = width / height if height != 0 else float("inf")
 
     def to_dict(self) -> dict[str, Any]:
-        return {"type": "fusiform"} | asdict(self)
+        return {"type": "fusiform_1"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
         raise NotImplementedError
@@ -431,10 +431,11 @@ class Fusiform_2(GSRule):
             self.ratio = float("inf")
         else:
             right_intersection = np.where(np.isclose(x, self.x_end))[0][0]
+            self.intersections = [left_intersection, right_intersection]
             self.width = self.x_end - self.x_start
+            self.sin_params[1] = self.sin_params[1] / self.width  # omega
 
             epsilon, omega, phi = self.sin_params
-            omega = omega / self.width
             sin_wave = epsilon * np.sin(omega * (x-self.x_start) + phi)
             y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1/self.power) + self.y_offset
             y_right = np.flip(y_left)
@@ -444,7 +445,7 @@ class Fusiform_2(GSRule):
             self.ratio = self.width / self.height if self.height != 0 else float("inf")
 
     def to_dict(self) -> dict[str, Any]:
-        return {"type": "fusiform"} | asdict(self)
+        return {"type": "fusiform_2"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
         raise NotImplementedError
@@ -458,11 +459,11 @@ class Fusiform_2(GSRule):
         x_left = x_range[:int(self.data_points/2)]
 
         epsilon, omega, phi = self.sin_params
-        omega = omega / self.width
         sin_wave = epsilon * np.sin(omega * (x_range-self.x_start) + phi)
         y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1/self.power) + self.y_offset
         y_right = np.flip(y_left)
-        y_upper = np.concatenate([y_left, y_right]) + sin_wave
+        y_range = np.concatenate([y_left, y_right]) + sin_wave
+        y_upper = y_range[self.intersections[0]:self.intersections[1]]
 
         y_max, y_min = max(y_upper), min(2*self.y_offset - y_upper)
         
@@ -472,6 +473,7 @@ class Fusiform_2(GSRule):
         else:
             slope = np.tan(theta)
             y_line = slope * (x_range - self.center[0]) + self.center[1]
+            y_line = y_line[self.intersections[0]:self.intersections[1]]
 
         # Calculate points on the fusiform(after offset)
         if 0 <= theta < np.pi:  # upper curve
@@ -486,13 +488,14 @@ class Fusiform_2(GSRule):
         else:
             intersection_indices = vertex_indice
 
-        if 0.5 * np.pi <= theta < 1.5 * np.pi:
-            idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
-        else:
-            idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        idx = int(intersection_indices.mean() + self.intersections[0])
+        # if 0.5 * np.pi <= theta < 1.5 * np.pi:
+        #     idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
+        # else:
+        #     idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
 
         x = x_range[idx]
-        y = y_fusiform[idx]
+        y = y_range[idx]
 
         return (x, y)
 
