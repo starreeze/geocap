@@ -388,6 +388,7 @@ class Fusiform(GSRule):
             idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
         else:
             idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        # idx = int(intersection_indices.mean())
 
         x = x_range[idx]
         y = y_fusiform[idx]
@@ -454,15 +455,14 @@ class Fusiform_2(GSRule):
 
     def get_point(self, theta: float) -> tuple[float, float]:
         theta = theta % (2 * np.pi)
-        x_range = np.linspace(0, 1, self.data_points)
+        x_range = np.linspace(self.x_start, self.x_end, self.data_points)
         x_left = x_range[: int(self.data_points / 2)]
 
         epsilon, omega, phi = self.sin_params
         sin_wave = epsilon * np.sin(omega * (x_range - self.x_start) + phi)
         y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
         y_right = np.flip(y_left)
-        y_range = np.concatenate([y_left, y_right]) + sin_wave
-        y_upper = y_range[self.intersections[0] : self.intersections[1]]
+        y_upper = np.concatenate([y_left, y_right]) + sin_wave
 
         y_max, y_min = max(y_upper), min(2 * self.y_offset - y_upper)
 
@@ -472,7 +472,7 @@ class Fusiform_2(GSRule):
         else:
             slope = np.tan(theta)
             y_line = slope * (x_range - self.center[0]) + self.center[1]
-            y_line = y_line[self.intersections[0] : self.intersections[1]]
+            # y_line = y_line[self.intersections[0] : self.intersections[1]]
 
         # Calculate points on the fusiform(after offset)
         if 0 <= theta < np.pi:  # upper curve
@@ -487,14 +487,14 @@ class Fusiform_2(GSRule):
         else:
             intersection_indices = vertex_indice
 
-        idx = int(intersection_indices.mean() + self.intersections[0])
-        # if 0.5 * np.pi <= theta < 1.5 * np.pi:
-        #     idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
-        # else:
-        #     idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        if 0.5 * np.pi <= theta < 1.5 * np.pi:
+            idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
+        else:
+            idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        # idx = int(intersection_indices.mean() + self.intersections[0])
 
         x = x_range[idx]
-        y = y_range[idx]
+        y = y_upper[idx]
 
         return (x, y)
 
