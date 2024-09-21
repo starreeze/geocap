@@ -15,17 +15,21 @@ python run.py --module data.rules --num_basic_geo_samples 10  # default entry is
 python run.py --module data.format --action to_llava  # you can also specify the entry function (--action)
 ```
 
-## Generating rules for geometric shapes
+### Generating rules for geometric shapes / synthetic fossil samples
 
-Running the following command can generate rules in `dataset/rules.json`:
+Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 ```shell
 python run.py --module data.rules --num_basic_geo_samples 10
+```
+or generate rules for synthetic fossil samples:
+```shell
+python run.py --module data.rules --mode fossil --num_fossil_samples 10
 ```
 
 Each data sample contains two parts:
 - **shapes**: parameters and special information of each geometric shape. 
 - **relations**: relationship between two shapes in form of `[head_shape_idx, tail_shape_idx, relation_type]`
-### Example data sample
+#### Example data sample
 ```json
 {
    "shapes": [
