@@ -313,6 +313,50 @@ class Figure:
                     center_x, center_y, major, minor, line_width, color
                 )
 
+            case "fusiform_1":
+                x_offset = rule["x_offset"]
+                y_offset = rule["y_offset"]
+                fc = rule["focal_length"]
+                eps, ome, phi = rule["sin_params"]
+                x_start = rule["x_start"]
+                x_end = rule["x_end"]
+                y_sim = rule["y_symmetric_axis"]
+                self.__handle_fusiform_1(
+                    fc,
+                    x_offset,
+                    y_offset,
+                    eps,
+                    ome,
+                    phi,
+                    x_start,
+                    x_end,
+                    y_sim,
+                    color,
+                    line_width,
+                )
+
+            case "fusiform_2":
+                x_offset = rule["x_offset"]
+                y_offset = rule["y_offset"]
+                fc = rule["focal_length"]
+                eps, ome, phi = rule["sin_params"]
+                power = rule["power"]
+                x_start = rule["x_start"]
+                x_end = rule["x_end"]
+                self.__handle_fusiform_2(
+                    fc,
+                    x_offset,
+                    y_offset,
+                    power,
+                    eps,
+                    ome,
+                    phi,
+                    x_start,
+                    x_end,
+                    color,
+                    line_width,
+                )
+
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
 
@@ -476,6 +520,77 @@ class Figure:
         y = np.concat((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
 
         self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_fusiform_1(
+        self,
+        focal_length,
+        x_offset,
+        y_offset,
+        eps,
+        omega,
+        phi,
+        x_start,
+        x_end,
+        y_sim,
+        color,
+        line_width,
+    ):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
+
+        def f(x):
+            return (
+                4 * focal_length * (x - x_offset) ** 2
+                + y_offset
+                + eps * np.sin(omega * x + phi)
+            )
+
+        x = np.linspace(x_start, x_end, 1000)
+        y1 = f(x)
+        y2 = 2 * y_sim - y1
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_fusiform_2(
+        self,
+        focal_length,
+        x_offset,
+        y_offset,
+        power,
+        eps,
+        omega,
+        phi,
+        x_start,
+        x_end,
+        color,
+        line_width,
+    ):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
+
+        x = np.linspace(x_start, x_end, 1000)
+        x_left = x[:500]
+        sin_wave = eps * np.sin(omega * (x - x_start) + phi)
+        y_left = (np.abs(x_left - x_offset) / (4 * focal_length)) ** (
+            1 / power
+        ) + y_offset
+        y_right = np.flip(y_left)  # 得到开口向左的上半部分
+        y1 = np.concatenate([y_left, y_right]) + sin_wave
+        y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
