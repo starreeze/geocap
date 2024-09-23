@@ -73,7 +73,7 @@ class DrawArgs:
     backend: "str" = field(default="plt")
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
-    size: "tuple[float, float]" = field(default=(6.4, 6.4))
+    size: "tuple[float, float]" = field(default=(12.8, 12.8))
     dpi: int = field(default=100)
     line_weight: int = field(default=4)
     xkcd: bool = field(default=True)
