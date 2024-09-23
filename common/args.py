@@ -107,9 +107,7 @@ draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
 data_args.figure_prefix = (
-    data_args.figure_prefix
-    if data_args.figure_prefix
-    else (draw_args.backend if draw_args.randomize else "pure")
+    data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
 data_args.caption_path = (
     data_args.caption_path
