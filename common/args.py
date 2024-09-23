@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import cast
+from typing import cast, Literal
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
@@ -13,7 +13,8 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
-    num_basic_geo_samples: int = field(default=1000)
+    num_basic_geo_samples: int = field(default=100000)
+    num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
 
     # some placeholder to be filled AFTER parsing args
@@ -35,6 +36,7 @@ class RunArgs:
 
 @dataclass
 class RuleArgs:
+    mode: Literal["basic", "fossil"] = field(default="basic")
     # max number of shapes in each sample
     max_num_shapes: int = field(default=10)
 
@@ -89,8 +91,8 @@ class DrawArgs:
 
 @dataclass
 class CaptionArgs:
-    caption_batchsize: int = field(default=1)
-    caption_llm: str = field(default="llama3-70")
+    caption_batchsize: int = field(default=4)
+    caption_llm: str = field(default="llama3-8")
     numeric_ratio: float = field(default=0)
 
 
@@ -104,14 +106,26 @@ rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 
-data_args.figure_prefix = draw_args.backend if draw_args.randomize else "pure"
-data_args.caption_path = os.path.join(
-    data_args.caption_dir,
-    f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000}k.jsonl",
+data_args.figure_prefix = (
+    data_args.figure_prefix
+    if data_args.figure_prefix
+    else (draw_args.backend if draw_args.randomize else "pure")
 )
-data_args.llava_data_path = os.path.join(
-    data_args.llava_data_dir,
-    f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
+data_args.caption_path = (
+    data_args.caption_path
+    if data_args.caption_path
+    else os.path.join(
+        data_args.caption_dir,
+        f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl",
+    )
+)
+data_args.llava_data_path = (
+    data_args.llava_data_path
+    if data_args.llava_data_path
+    else os.path.join(
+        data_args.llava_data_dir,
+        f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
+    )
 )
 
 logging.basicConfig(

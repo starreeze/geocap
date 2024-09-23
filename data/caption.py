@@ -1,4 +1,5 @@
 "construct descriptions according to generated rules"
+
 import hashlib
 import json
 import math
@@ -176,6 +177,10 @@ def gen_position_description(shapes):
 
 
 def gen_user_input(rules):
+
+    seed = int(hashlib.md5(json.dumps(rules).encode("utf-8")).hexdigest(), 16)
+    random.seed(seed)
+
     ret_text = "TOTAL SHAPES: {}\n".format(len(rules["shapes"]))
     ret_text += "BEGIN SHAPES\n"
     polygon_special = [0, 0, 0, "triangle", "quadrilateral", "pentagon", "hexagon"]
@@ -184,6 +189,9 @@ def gen_user_input(rules):
     # if(len(rules["shapes"])==1):
     #     grid_pos[0]="center"
     relation_heads = []
+
+    filter_map = {}
+
     for i in range(len(rules["shapes"])):
         sep_line = grid_pos[i] + " "
         relation_head = grid_pos[i] + " "
@@ -219,7 +227,6 @@ def gen_user_input(rules):
             sep_line += shape["type"]
             relation_head += shape["type"]
         relation_heads.append(relation_head)
-        ret_text += sep_line
         special_shape = sep_line.split(" | ")
         if len(special_shape) > 1:
             shape_name = special_shape[0][len(grid_pos[i]) + 1 :]
@@ -233,6 +240,14 @@ def gen_user_input(rules):
                 if param_name not in special_shapes[shape_name]["params"].keys():
                     special_shapes[shape_name]["params"][param_name] = []
                 special_shapes[shape_name]["params"][param_name].append(param_value)
+            if shape_name not in filter_map.keys():
+                filter_map[shape_name] = []
+            rnd = random.random()
+            if rnd < caption_args.numeric_ratio:
+                filter_map[shape_name].append(len(special_shapes[shape_name]["positions"]) - 1)
+            else:
+                sep_line = shape_name
+        ret_text += sep_line
         ret_text += "\n"
     ret_text += "END SHAPES\n"
     ret_text += "BEGIN RELATIONS\n"
@@ -240,7 +255,31 @@ def gen_user_input(rules):
         sep_line = "{}, {} | {}\n".format(relation_heads[rel[0]], relation_heads[rel[1]], rel[2])
         ret_text += sep_line
     ret_text += "END RELATIONS"
-    return ret_text, gen_input(special_shapes)
+
+    def drop_shapes():
+        special_shapes_filtered = {}
+        is_full = True
+        for key in filter_map.keys():
+            if len(filter_map[key]) > 0:
+                special_shapes_filtered[key] = {"positions": [], "params": {}}
+                for arg in special_shapes[key]["params"].keys():
+                    special_shapes_filtered[key]["params"][arg] = []
+                for idx in filter_map[key]:
+                    special_shapes_filtered[key]["positions"].append(special_shapes[key]["positions"][idx])
+                    for arg in special_shapes[key]["params"].keys():
+                        special_shapes_filtered[key]["params"][arg].append(special_shapes[key]["params"][arg][idx])
+                if len(filter_map[key]) < len(special_shapes[key]["positions"]):
+                    special_shapes_filtered[key]["is_full"] = False
+                    is_full = False
+                else:
+                    special_shapes_filtered[key]["is_full"] = True
+            else:
+                is_full = False
+        return special_shapes_filtered, is_full, filter_map
+
+    special_shapes_filtered, is_full, filter_map = drop_shapes()
+
+    return ret_text, gen_input(special_shapes, filter_map, special_shapes_filtered, is_full)
 
 
 def decide_rel_pos(center_positions, x1, x2, y1, y2):
@@ -296,35 +335,39 @@ def group_by_position(positions):
     return count
 
 
-def gen_input(special_shapes: dict):
+def gen_input(special_shapes, filter_map, special_shapes_filtered: dict, is_full):
     head = "Please provide a fluent and detailed description of the geometric patterns in this image and their relationships. "
 
-    def choose_head():
-        seed = int(hashlib.md5(json.dumps(special_shapes).encode("utf-8")).hexdigest(), 16)
-        random.seed(seed)
+    def choose_head(is_full):
+        head_str = ""
         if len(special_shapes.keys()) == 0:
             rnd_start = random.randint(0, len(head_start_no_param_pool) - 1)
             rnd_end = random.randint(0, len(head_end_pool) - 1)
-            return head_start_no_param_pool[rnd_start] + head_end_pool[rnd_end]
+            head_str = head_start_no_param_pool[rnd_start] + head_end_pool[rnd_end]
         else:
             if random.random() > 0.5:
                 rnd_start = random.randint(0, len(head_start_no_param_pool) - 1)
                 rnd_part1 = random.randint(0, len(head_with_param_part1_pool) - 1)
                 rnd_end = random.randint(0, len(head_end_pool) - 1)
-                return (
+                head_str = (
                     head_start_no_param_pool[rnd_start] + head_with_param_part1_pool[rnd_part1] + head_end_pool[rnd_end]
                 )
             else:
                 rnd_start_part1 = random.randint(0, len(head_start_with_param_part1_pool) - 1)
                 rnd_start_part2 = random.randint(0, len(head_start_with_param_part2_pool) - 1)
                 rnd_end = random.randint(0, len(head_end_pool) - 1)
-                return (
+                head_str = (
                     head_start_with_param_part1_pool[rnd_start_part1]
                     + head_start_with_param_part2_pool[rnd_start_part2]
                     + head_end_pool[rnd_end]
                 )
+        # if (not is_full) and (len(special_shapes_filtered.keys()) != 0):
+        #     rnd_not_full_part1=random.randint(0, len(head_not_full_part1_pool) - 1)
+        #     rnd_not_full_part2=random.randint(0, len(head_not_full_part2_pool) - 1)
+        #     head_str += (head_not_full_part1_pool[rnd_not_full_part1] + head_not_full_part2_pool[rnd_not_full_part2])
+        return head_str
 
-    head = choose_head()
+    head = choose_head(is_full)
     single_1_param_format = "The {attr} of the {shape} is {value}. "
     single_2_param_format = "The {attr1} and {attr2} of the {shape} are {value1} and {value2}, respectively. "
     single_concentric_1_param_format = "The {attr}s of the {shape}s are {value}, respectively. "
@@ -358,32 +401,39 @@ def gen_input(special_shapes: dict):
 
     final_str = ""
     final_str += head
-    for key in special_shapes.keys():  # 特殊形状名称
+    for key in special_shapes_filtered.keys():  # 特殊形状名称
         rel_pos = gen_relative_position(special_shapes[key]["positions"])
+        rel_pos = [rel_pos[idx] for idx in filter_map[key]]
         grouped_pos = group_by_position(rel_pos)
-        if len(grouped_pos.keys()) == 1:  # 只有一种位置关系时不用指明位置
+        if (len(grouped_pos.keys()) == 1) and special_shapes_filtered[key]["is_full"]:  # 只有一种位置关系时不用指明位置
             for pos_name in grouped_pos.keys():
                 if len(grouped_pos[pos_name]) == 1:  # 只有一个形状
-                    param_names = list(special_shapes[key]["params"].keys())
+                    param_names = list(special_shapes_filtered[key]["params"].keys())
                     if len(param_names) == 1:
-                        value = special_shapes[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
+                        value = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
                         final_str += single_1_param_format.format(attr=param_names[0], shape=key, value=value)
                     elif len(param_names) == 2:
-                        value1 = special_shapes[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
-                        value2 = special_shapes[key]["params"][param_names[1]][grouped_pos[pos_name][0]]
+                        value1 = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
+                        value2 = special_shapes_filtered[key]["params"][param_names[1]][grouped_pos[pos_name][0]]
                         final_str += single_2_param_format.format(
                             attr1=param_names[0], attr2=param_names[1], shape=key, value1=value1, value2=value2
                         )
                 else:  # 同心
-                    param_names = list(special_shapes[key]["params"].keys())
+                    param_names = list(special_shapes_filtered[key]["params"].keys())
                     if len(param_names) == 1:
-                        value = [special_shapes[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]]
+                        value = [
+                            special_shapes_filtered[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]
+                        ]
                         final_str += single_concentric_1_param_format.format(
                             attr=param_names[0], shape=key, value=expand_values(value)
                         )
                     elif len(param_names) == 2:
-                        value1 = [special_shapes[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]]
-                        value2 = [special_shapes[key]["params"][param_names[1]][idx] for idx in grouped_pos[pos_name]]
+                        value1 = [
+                            special_shapes_filtered[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]
+                        ]
+                        value2 = [
+                            special_shapes_filtered[key]["params"][param_names[1]][idx] for idx in grouped_pos[pos_name]
+                        ]
                         final_str += single_concentric_2_param_format.format(
                             attr1=param_names[0],
                             attr2=param_names[1],
@@ -396,19 +446,23 @@ def gen_input(special_shapes: dict):
             for pos_idx in range(len(list(grouped_pos.keys()))):
                 pos_name = list(grouped_pos.keys())[pos_idx]
                 if len(grouped_pos[pos_name]) == 1:
-                    param_names = list(special_shapes[key]["params"].keys())
+                    param_names = list(special_shapes_filtered[key]["params"].keys())
                     if len(param_names) == 1:
-                        value = special_shapes[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
+                        value = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
                         format_str_switch = plural_1_param_format_part
-                        if pos_idx == len(list(grouped_pos.keys())) - 1:
+                        if (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) > 1):
                             format_str_switch = plural_1_param_format_end
+                        elif (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) == 1):
+                            format_str_switch = plural_1_param_format_part[:-2] + ". "
                         final_str += format_str_switch.format(attr=param_names[0], pos=pos_name, shape=key, value=value)
                     elif len(param_names) == 2:
-                        value1 = special_shapes[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
-                        value2 = special_shapes[key]["params"][param_names[1]][grouped_pos[pos_name][0]]
+                        value1 = special_shapes_filtered[key]["params"][param_names[0]][grouped_pos[pos_name][0]]
+                        value2 = special_shapes_filtered[key]["params"][param_names[1]][grouped_pos[pos_name][0]]
                         format_str_switch = plural_2_param_format_part
-                        if pos_idx == len(list(grouped_pos.keys())) - 1:
+                        if (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) > 1):
                             format_str_switch = plural_2_param_format_end
+                        elif (pos_idx == len(list(grouped_pos.keys())) - 1) and (len(list(grouped_pos.keys())) == 1):
+                            format_str_switch = plural_2_param_format_part[:-2] + ". "
                         final_str += format_str_switch.format(
                             attr1=param_names[0],
                             attr2=param_names[1],
@@ -418,9 +472,11 @@ def gen_input(special_shapes: dict):
                             value2=value2,
                         )
                 else:
-                    param_names = list(special_shapes[key]["params"].keys())
+                    param_names = list(special_shapes_filtered[key]["params"].keys())
                     if len(param_names) == 1:
-                        value = [special_shapes[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]]
+                        value = [
+                            special_shapes_filtered[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]
+                        ]
                         format_str_switch = plural_concentric_1_param_format_part
                         if pos_idx == len(list(grouped_pos.keys())) - 1:
                             format_str_switch = plural_concentric_1_param_format_end
@@ -428,8 +484,12 @@ def gen_input(special_shapes: dict):
                             attr=param_names[0], pos=pos_name, shape=key, value=expand_values(value)
                         )
                     elif len(param_names) == 2:
-                        value1 = [special_shapes[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]]
-                        value2 = [special_shapes[key]["params"][param_names[1]][idx] for idx in grouped_pos[pos_name]]
+                        value1 = [
+                            special_shapes_filtered[key]["params"][param_names[0]][idx] for idx in grouped_pos[pos_name]
+                        ]
+                        value2 = [
+                            special_shapes_filtered[key]["params"][param_names[1]][idx] for idx in grouped_pos[pos_name]
+                        ]
                         format_str_switch = plural_concentric_2_param_format_part
                         if pos_idx == len(list(grouped_pos.keys())) - 1:
                             format_str_switch = plural_concentric_2_param_format_end
@@ -449,6 +509,7 @@ def main():
     generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+    os.makedirs(data_args.caption_dir, exist_ok=True)
     caption(samples, generator, data_args.caption_path)
 
 
