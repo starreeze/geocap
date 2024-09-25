@@ -3,3 +3,4 @@ dataset
 *.bak
 .vscode
 common/iterwrap.ckpt
+*.ckpt

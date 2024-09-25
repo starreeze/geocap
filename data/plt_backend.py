@@ -123,7 +123,7 @@ class Figure:
                     x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
                     y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
                     for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
+                        if pos[0] < 0 or pos[0] >= self.shape[0] or pos[1] < 0 or pos[1] >= self.shape[1]:
                             continue
                         mask[int(pos[1])][int(pos[0])] = 1
             elif rule["type"] == "spiral":
@@ -259,6 +259,56 @@ class Figure:
                 spiral_x, spiral_y = rule["center"]
                 self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
 
+            case "spindle":
+                center_x, center_y = rule["center"]
+                major = rule["major_axis"]
+                minor = rule["minor_axis"]
+                self.__handle_spindle(center_x, center_y, major, minor, line_width, color)
+
+            case "fusiform_1":
+                x_offset = rule["x_offset"]
+                y_offset = rule["y_offset"]
+                fc = rule["focal_length"]
+                eps, ome, phi = rule["sin_params"]
+                x_start = rule["x_start"]
+                x_end = rule["x_end"]
+                y_sim = rule["y_symmetric_axis"]
+                self.__handle_fusiform_1(
+                    fc,
+                    x_offset,
+                    y_offset,
+                    eps,
+                    ome,
+                    phi,
+                    x_start,
+                    x_end,
+                    y_sim,
+                    color,
+                    line_width,
+                )
+
+            case "fusiform_2":
+                x_offset = rule["x_offset"]
+                y_offset = rule["y_offset"]
+                fc = rule["focal_length"]
+                eps, ome, phi = rule["sin_params"]
+                power = rule["power"]
+                x_start = rule["x_start"]
+                x_end = rule["x_end"]
+                self.__handle_fusiform_2(
+                    fc,
+                    x_offset,
+                    y_offset,
+                    power,
+                    eps,
+                    ome,
+                    phi,
+                    x_start,
+                    x_end,
+                    color,
+                    line_width,
+                )
+
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
 
@@ -285,7 +335,6 @@ class Figure:
             ln_wths = np.linspace(line_width / 2, line_width + line_width / 2, 50)
             x = np.linspace(points[0][0], points[1][0], 50)
             y = np.linspace(points[0][1], points[1][1], 50)
-            color = color
             for i in range(50):
                 self.ax.plot(
                     x[i : i + 2],
@@ -364,6 +413,124 @@ class Figure:
         x += spiral_x
         y += spiral_y
         self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_spindle(
+        self,
+        center_x: float,
+        center_y: float,
+        major_axis: float,
+        minor_axis: float,
+        line_width: int,
+        color: Any,
+    ):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
+        theta = np.arange(0, 2 * 3.1416, 0.01)
+        a = major_axis / 2
+        b = minor_axis / 2
+
+        rho = np.sqrt(1 / (np.cos(theta) ** 2 / a**2 + np.sin(theta) ** 2 / b**2))
+        rho1 = np.sqrt(np.abs((a / 10) ** 2 * np.sin(2 * (theta + 1.5708))))
+        rho2 = np.sqrt(np.abs((a / 10) ** 2 * np.sin(2 * theta)))
+        rho_list = rho - rho1 - rho2  # shift on pi/4s.
+
+        rho_ru = rho_list[np.where((theta < 3.1416 * 0.35))]
+        theta_ru = theta[np.where((theta < 3.1416 * 0.35))]
+        x_ru = (rho_ru) * np.cos(theta_ru) + center_x
+        y_ru = (rho_ru) * np.sin(theta_ru) + center_y
+
+        rho_rd = rho_list[np.where((theta > 3.1416 * 1.65))]
+        theta_rd = theta[np.where((theta > 3.1416 * 1.65))]
+        x_rd = (rho_rd) * np.cos(theta_rd) + center_x
+        y_rd = (rho_rd) * np.sin(theta_rd) + center_y
+
+        rho_l = rho_list[np.where((theta > 3.1416 * 0.65) & (theta < 3.1416 * 1.35))]
+        theta_l = theta[np.where((theta > 3.1416 * 0.65) & (theta < 3.1416 * 1.35))]
+        x_l = (rho_l) * np.cos(theta_l) + center_x
+        y_l = (rho_l) * np.sin(theta_l) + center_y
+
+        x_mu = np.linspace(x_ru[-1], x_l[0], num=5)
+        y_mu = np.linspace(y_ru[-1], y_l[0], num=5)
+
+        x_md = np.linspace(x_l[-1], x_rd[0], num=5)
+        y_md = np.linspace(y_l[-1], y_rd[0], num=5)
+
+        x = np.concat((x_ru, x_mu, x_l, x_md, x_rd), axis=None)
+        y = np.concat((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
+
+        self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_fusiform_1(
+        self,
+        focal_length,
+        x_offset,
+        y_offset,
+        eps,
+        omega,
+        phi,
+        x_start,
+        x_end,
+        y_sim,
+        color,
+        line_width,
+    ):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
+
+        def f(x):
+            return 4 * focal_length * (x - x_offset) ** 2 + y_offset + eps * np.sin(omega * x + phi)
+
+        x = np.linspace(x_start, x_end, 1000)
+        y1 = f(x)
+        y2 = 2 * y_sim - y1
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_fusiform_2(
+        self,
+        focal_length,
+        x_offset,
+        y_offset,
+        power,
+        eps,
+        omega,
+        phi,
+        x_start,
+        x_end,
+        color,
+        line_width,
+    ):
+        color = (
+            (
+                random.random(),
+                random.random(),
+                random.random(),
+            )
+            if color == None
+            else color
+        )
+
+        x = np.linspace(x_start, x_end, 1000)
+        x_left = x[:500]
+        sin_wave = eps * np.sin(omega * (x - x_start) + phi)
+        y_left = (np.abs(x_left - x_offset) / (4 * focal_length)) ** (1 / power) + y_offset
+        y_right = np.flip(y_left)  # 得到开口向左的上半部分
+        y1 = np.concatenate([y_left, y_right]) + sin_wave
+        y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
