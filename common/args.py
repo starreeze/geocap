@@ -31,7 +31,7 @@ class RunArgs:
     num_workers: int = field(default=32)
     progress_bar: bool = field(default=True)
     start_pos: int = field(default=0)
-    end_pos: int = field(default=1000)
+    end_pos: int = field(default=100000)
 
 
 @dataclass
@@ -75,7 +75,7 @@ class DrawArgs:
     backend: "str" = field(default="plt")
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
-    size: "tuple[float, float]" = field(default=(12.8, 12.8))
+    size: "tuple[float, float]" = field(default=(6.4, 6.4))
     dpi: int = field(default=100)
     line_weight: int = field(default=4)
     xkcd: bool = field(default=True)
@@ -112,24 +112,13 @@ data_args.figure_prefix = (
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
-    else os.path.join(
-        data_args.caption_dir,
-        f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl",
-    )
+    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl")
 )
 data_args.llava_data_path = (
     data_args.llava_data_path
     if data_args.llava_data_path
-    else os.path.join(
-        data_args.llava_data_dir,
-        f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
-    )
+    else os.path.join(data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json")
 )
 
-logging.basicConfig(
-    level=run_args.log_level,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler()],
-)
+logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
