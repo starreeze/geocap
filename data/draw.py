@@ -1,6 +1,6 @@
 import json
 import os
-
+from tqdm import tqdm
 import data.pil_backend as pld
 import data.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
@@ -48,7 +48,8 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
     draw_figure(
         idx_sample[1],
         os.path.join(
-            data_args.figure_dir, data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx_sample[0])
+            data_args.figure_dir,
+            data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx_sample[0]),
         ),
         draw_args.backend,
         draw_args.random_seed,
@@ -63,11 +64,12 @@ def main():
     serial_version = draw_args.serial_version
     os.makedirs(data_args.figure_dir, exist_ok=True)
     if serial_version:
-        for idx, sample in enumerate(samples):
+        for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,
                 os.path.join(
-                    data_args.figure_dir, data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx)
+                    data_args.figure_dir,
+                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,

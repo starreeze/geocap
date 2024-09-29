@@ -271,51 +271,232 @@ class Spiral(GSRule):
 
 @dataclass
 class Fusiform(GSRule):
-    # use two parabolas to get a fusiform
-    # y = 4 * p * (x-x_0)^2 + c
-    # focal_length: p, x_offset: x_0, y_offset: c
-    focal_length_1: float = 0.0
-    x_offset_1: float = 0.0
-    y_offset_1: float = 0.0
-    focal_length_2: float = 0.0
-    x_offset_2: float = 0.0
-    y_offset_2: float = 0.0
+    # use symetric parabolas to generate a fusiform
+    # y = 4*p * (x-x_0)^2 + c
+    focal_length: float = 0.0  # p
+    x_offset: float = 0.0  # x_0
+    y_offset: float = 0.0  # c
+    y_symmetric_axis: float = 0.0
 
+    # add sine wave
+    sin_params: list[float] = field(default_factory=list)
+
+    # focal_length_2: float = 0.0
+    # x_offset_2: float = 0.0
+    # y_offset_2: float = 0.0
+
+    x_start: float = 0.0
+    x_end: float = 1.0
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
+    special_info: str = ""
+
+    precision: float = 1e-2
 
     def __post_init__(self):
-        center_x = 0.5 * (self.x_offset_1 + self.x_offset_2)
-        center_y = 0.5 * (self.y_offset_1 + self.y_offset_2)
-        self.center = (center_x, center_y)
+        self.center = (self.x_offset, self.y_symmetric_axis)
 
-        # Ensure two parabolas have intersections
-        assert self.focal_length_1 > 0 and self.focal_length_2 < 0
-        assert self.y_offset_1 < self.y_offset_2
+        self.data_points = int(1000 / self.precision)
+        x = np.linspace(0, 1, self.data_points)
+        epsilon, omega, phi = self.sin_params
+        sin_wave = epsilon * np.sin(omega * x + phi)
+        y1 = 4 * self.focal_length * (x - self.x_offset) ** 2 + self.y_offset + sin_wave
+        y2 = 2 * self.y_symmetric_axis - y1
 
-        # Calculate the intersection points by solving the quadratic equation y1 = y2
-        a = self.focal_length_1 - self.focal_length_2
-        b = 2 * (self.x_offset_2 * self.focal_length_2 - self.x_offset_1 * self.focal_length_1)
-        c = (
-            self.focal_length_1 * self.x_offset_1**2
-            + self.y_offset_1
-            - self.focal_length_2 * self.x_offset_2**2
-            - self.y_offset_2
-        )
+        close_indices = np.where(np.abs(y1 - y2) < self.precision)[0]
+        if len(close_indices) > 0:
+            left_intersection = int(close_indices[close_indices < self.data_points // 2][-1])
+            right_intersection = int(close_indices[close_indices > self.data_points // 2][0])
 
-        discriminant = b**2 - 4 * a * c
-        x1 = (-b + np.sqrt(discriminant)) / (2 * a)
-        x2 = (-b - np.sqrt(discriminant)) / (2 * a)
-        width = abs(x2 - x1)
+            self.x_start = x[left_intersection]
+            self.x_end = x[right_intersection]
+            width = abs(self.x_end - self.x_start)
 
-        height = abs(self.y_offset_2 - self.y_offset_1)
-        self.ratio = width / height if height != 0 else float("inf")
+            height = 2 * (self.y_symmetric_axis - self.y_offset - sin_wave.min())
+            self.ratio = width / height if height != 0 else float("inf")
+        else:
+            self.ratio = float("inf")
+
+        """
+        v0 for two parabolas to generate a fusiform
+        """
+        # center_x = 0.5 * (self.x_offset_1 + self.x_offset_2)
+        # center_y = 0.5 * (self.y_offset_1 + self.y_offset_2)
+        # self.center = (center_x, center_y)
+
+        # # Ensure two parabolas have intersections
+        # assert self.focal_length_1 > 0 and self.focal_length_2 < 0
+        # assert self.y_offset_1 < self.y_offset_2
+
+        # # Calculate the intersection points by solving the quadratic equation y1 = y2
+        # a = self.focal_length_1 - self.focal_length_2
+        # b = 2 * (self.x_offset_2 * self.focal_length_2 - self.x_offset_1 * self.focal_length_1)
+        # c = (
+        #     self.focal_length_1 * self.x_offset_1**2
+        #     + self.y_offset_1
+        #     - self.focal_length_2 * self.x_offset_2**2
+        #     - self.y_offset_2
+        # )
+
+        # discriminant = b**2 - 4 * a * c
+        # x1 = (-b + np.sqrt(discriminant)) / (2 * a)
+        # x2 = (-b - np.sqrt(discriminant)) / (2 * a)
+        # width = abs(x2 - x1)
+
+        # height = abs(self.y_offset_2 - self.y_offset_1)
+        # self.ratio = width / height if height != 0 else float("inf")
 
     def to_dict(self) -> dict[str, Any]:
-        return {"type": "fusiform"} | asdict(self)
+        return {"type": "fusiform_1"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
         raise NotImplementedError
+
+    def is_closed(self) -> bool:
+        return self.ratio < 1e3
+
+    def get_point(self, theta: float) -> tuple[float, float]:
+        theta = theta % (2 * np.pi)
+        x_range = np.linspace(-0.5, 0.5, self.data_points)
+        epsilon, omega, phi = self.sin_params
+        sin_wave = epsilon * np.sin(omega * (x_range + self.x_offset) + phi)
+        y_parabola = 4 * self.focal_length * (x_range**2) + self.y_offset + sin_wave - self.y_symmetric_axis
+
+        y_max, y_min = max(-y_parabola), min(y_parabola)
+
+        # Calculate points on the ray(with polar angle = theta)
+        if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
+            y_line = None
+        else:
+            slope = np.tan(theta)
+            y_line = slope * x_range
+
+        # Calculate points on the fusiform(before offset)
+        if 0 <= theta < np.pi:  # upper parabola
+            y_fusiform = -y_parabola
+            vertex_indice = np.where(y_fusiform == y_max)[0]
+        else:  # lower parabola
+            y_fusiform = y_parabola
+            vertex_indice = np.where(y_fusiform == y_min)[0]
+
+        if y_line is not None:
+            intersection_indices = np.where(np.abs(y_fusiform - y_line) < self.precision)[0]
+        else:
+            intersection_indices = vertex_indice
+
+        if 0.5 * np.pi <= theta < 1.5 * np.pi:
+            idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
+        else:
+            idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        # idx = int(intersection_indices.mean())
+
+        x = x_range[idx]
+        y = y_fusiform[idx]
+
+        return (x + self.center[0], y + self.center[1])
+
+
+@dataclass
+class Fusiform_2(GSRule):
+    # use symetric parabola-like curves to generate a fusiform
+    # x = 4*p * (y - y_0) ^ m + x_0 => y = ((x-x_0) / 4*p) ** (1/m) + y_0
+    focal_length: float = 0.0  # p
+    x_offset: float = 0.0  # x_0
+    y_offset: float = 0.0  # y_0
+    power: float = 0.0  # m
+    x_symmetric_axis: float = 0.0
+
+    # add sine wave
+    sin_params: list[float] = field(default_factory=list)
+
+    x_start: float = 0.0
+    x_end: float = 1.0
+    center: tuple[float, float] = field(init=False)
+    ratio: float = field(init=False)
+    special_info: str = ""
+
+    precision: float = 1e-2
+
+    def __post_init__(self):
+        self.center = (self.x_symmetric_axis, self.y_offset)
+
+        self.data_points = int(1000 / self.precision)
+        x = np.linspace(0, 1, self.data_points)
+        x_left = x[: int(self.data_points / 2)]
+
+        left_intersection = np.argmin(np.abs(x - self.x_offset))
+        self.x_start = x[left_intersection]
+        self.x_end = 2 * self.x_symmetric_axis - self.x_start
+        if self.x_start == 0.0 or self.x_end > 1.0:
+            self.ratio = float("inf")
+        else:
+            right_intersection = np.where(np.isclose(x, self.x_end))[0][0]
+            self.intersections = [left_intersection, right_intersection]
+            self.width = self.x_end - self.x_start
+            self.sin_params[1] = self.sin_params[1] / self.width  # omega
+
+            epsilon, omega, phi = self.sin_params
+            sin_wave = epsilon * np.sin(omega * (x - self.x_start) + phi)
+            y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
+            y_right = np.flip(y_left)
+            y1 = np.concatenate([y_left, y_right]) + sin_wave
+            y2 = 2 * self.y_offset - y1
+            self.height = max(y1[left_intersection:right_intersection]) - min(y2[left_intersection:right_intersection])
+            self.ratio = self.width / self.height if self.height != 0 else float("inf")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"type": "fusiform_2"} | asdict(self)
+
+    def get_bbox(self) -> list[tuple[float, float]]:
+        raise NotImplementedError
+
+    def is_closed(self) -> bool:
+        return self.ratio < 1e3
+
+    def get_point(self, theta: float) -> tuple[float, float]:
+        theta = theta % (2 * np.pi)
+        x_range = np.linspace(self.x_start, self.x_end, self.data_points)
+        x_left = x_range[: int(self.data_points / 2)]
+
+        epsilon, omega, phi = self.sin_params
+        sin_wave = epsilon * np.sin(omega * (x_range - self.x_start) + phi)
+        y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
+        y_right = np.flip(y_left)
+        y_upper = np.concatenate([y_left, y_right]) + sin_wave
+
+        y_max, y_min = max(y_upper), min(2 * self.y_offset - y_upper)
+
+        # Calculate points on the ray(with polar angle = theta)
+        if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
+            y_line = None
+        else:
+            slope = np.tan(theta)
+            y_line = slope * (x_range - self.center[0]) + self.center[1]
+            # y_line = y_line[self.intersections[0] : self.intersections[1]]
+
+        # Calculate points on the fusiform(after offset)
+        if 0 <= theta < np.pi:  # upper curve
+            y_fusiform = y_upper
+            vertex_indice = np.where(y_fusiform == y_max)[0]
+        else:  # lower curve
+            y_fusiform = 2 * self.y_offset - y_upper
+            vertex_indice = np.where(y_fusiform == y_min)[0]
+
+        if y_line is not None:
+            intersection_indices = np.where(np.abs(y_fusiform - y_line) < self.precision)[0]
+        else:
+            intersection_indices = vertex_indice
+
+        if 0.5 * np.pi <= theta < 1.5 * np.pi:
+            idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
+        else:
+            idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
+        # idx = int(intersection_indices.mean() + self.intersections[0])
+
+        x = x_range[idx]
+        y = y_upper[idx]
+
+        return (x, y)
 
 
 class ShapeGenerator:
@@ -401,12 +582,12 @@ class ShapeGenerator:
         else:
             center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
             major_axis = normal(0.5, 0.1)
-            minor_axis = uniform(0.3 * major_axis, major_axis)
+            minor_axis = uniform(0.3 * major_axis, 0.95 * major_axis)
             rotation = uniform(0, np.pi)
             ellipse = Ellipse(center, major_axis, minor_axis, rotation)
             while ellipse.get_area() < 0.01:
                 major_axis = normal(0.5, 0.1)
-                minor_axis = uniform(0.3 * major_axis, major_axis)
+                minor_axis = uniform(0.3 * major_axis, 0.95 * major_axis)
                 ellipse = Ellipse(center, major_axis, minor_axis, rotation)
 
             special_ellipse = np.random.choice(["no", "circle"])
@@ -424,6 +605,18 @@ class ShapeGenerator:
         phi = uniform(0, np.pi)
         sin_params = [epsilon, omega, phi]
         return Spiral(center, initial_radius, growth_rate, sin_params, max_theta)
+
+    def generate_fusiform(self) -> Fusiform:
+        focal_length = normal(0.3, 0.03)
+        x_offset = normal(0.5, 0.01)
+        y_offset = normal(0.4, 0.03)
+        y_symmetric_axis = normal(0.5, 0.01)
+
+        epsilon = normal(0.1, 0.02)
+        omega = normal(3 * np.pi, 0.1)
+        phi = normal(0, 0.01)
+        sin_params = [epsilon, omega, phi]
+        return Fusiform(focal_length, x_offset, y_offset, y_symmetric_axis, sin_params)
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.01), 0.5 + normal(0, 0.01))
