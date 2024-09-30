@@ -1,19 +1,27 @@
 import argparse
-import torch
-from tqdm import tqdm
 import json
 import os
-from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from llava.conversation import conv_templates, SeparatorStyle
-from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
-from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
-
-from PIL import Image
+from io import BytesIO
 
 import requests
+import torch
 from PIL import Image
-from io import BytesIO
+from tqdm import tqdm
+
+from llava.constants import (
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+    IMAGE_TOKEN_INDEX,
+)
+from llava.conversation import SeparatorStyle, conv_templates
+from llava.mm_utils import (
+    KeywordsStoppingCriteria,
+    get_model_name_from_path,
+    tokenizer_image_token,
+)
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
 
 
 def load_image(image_file):
@@ -28,14 +36,10 @@ def load_image(image_file):
 def eval_model(args):
     # Model
     disable_torch_init()
-
-    ############## modify for correct loading
-    model_name = "llava"
-    tokenizer, model, image_processor, context_len = load_pretrained_model(
-        args.model_path, args.model_base, model_name, device="cuda:0"
-    )
+    model_path = os.path.expanduser(args.model_path)
+    model_name = get_model_name_from_path(model_path)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
     os.makedirs(os.path.dirname(args.answers_file), exist_ok=True)
-    ############## end
 
     with open(args.questions_file) as f:
         llvqa_data = json.load(f)
@@ -103,15 +107,11 @@ def eval_model(args):
                 stopping_criteria=[stopping_criteria],
             )
 
-        input_token_len = input_ids.shape[1]
-        n_diff_input_output = (input_ids != output_ids[:, :input_token_len]).sum().item()
-        if n_diff_input_output > 0:
-            print(f"[Warning] {n_diff_input_output} output_ids are not the same as the input_ids")
-        outputs = tokenizer.batch_decode(output_ids[:, input_token_len:], skip_special_tokens=True)[0]
-        outputs = outputs.strip()
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
         if outputs.endswith(stop_str):
             outputs = outputs[: -len(stop_str)]
         outputs = outputs.strip()
+
         llddata["response"] = outputs
         with open(args.answers_file, "a") as wf:
             json.dump(llddata, wf)
