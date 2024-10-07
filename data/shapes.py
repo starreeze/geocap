@@ -494,7 +494,7 @@ class Fusiform_2(GSRule):
         # idx = int(intersection_indices.mean() + self.intersections[0])
 
         x = x_range[idx]
-        y = y_upper[idx]
+        y = y_fusiform[idx]
 
         return (x, y)
 

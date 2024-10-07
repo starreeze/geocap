@@ -545,11 +545,11 @@ class FusiformRelationGenerator:
 
     def generate_volutions_1(self, initial_chamber: Ellipse) -> list[Fusiform]:
         center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
-        focal_length = normal(0.3, 0.03)
+        focal_length = normal(0.2, 0.02)
         x_offset = 0.5
-        y_offset = center[1] + uniform(0, 0.03)
+        y_offset = center[1] + uniform(0.01, 0.03)
         y_symmetric_axis = center[1]
-        epsilon = normal(0.1, 0.02)
+        epsilon = normal(0.03, 0.01)
         omega = 3 * np.pi
         phi = 0
         # phi = normal(0, 0.01)
@@ -578,12 +578,12 @@ class FusiformRelationGenerator:
 
         volution_0 = None
         while volution_0 is None or not volution_0.is_closed():
-            focal_length = normal(480, 60)
+            focal_length = normal(540, 60)
             x_offset = center[0] - normal(0.05, 0.01)
             y_offset = center[1]
             power = normal(3.6, 0.2)
             x_symmetric_axis = center[0]
-            epsilon = normal(0.006, 0.001)
+            epsilon = normal(0.004, 0.001)
             omega = 3 * np.pi
             phi = np.pi
             sin_params = [epsilon, omega, phi]
@@ -595,7 +595,7 @@ class FusiformRelationGenerator:
         num_volutions = randint(4, 15)
         for i in range(num_volutions):
             self.fusiform = volutions[-1]
-            scale_factor = [normal(0.5, 0.1), normal(1.5, 0.2)]
+            scale_factor = [normal(0.6, 0.1), normal(1.3, 0.1)]
             x_delta = normal(-0.07, 0.01)
             new_volution = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)[0]
             if new_volution.is_closed():
