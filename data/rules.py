@@ -26,7 +26,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
         volution_type = choice(["ellipse", "fusiform"], p=[0.2, 0.8])
-        # volution_type = "fusiform"
+        # volution_type = "ellipse"
         if volution_type == "ellipse":
             volution_generator = relation_generator.ellipse_relation_generator
         elif volution_type == "fusiform":
@@ -46,11 +46,16 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
             tunnel_angles.append(tunnel_angle)
         numerical_info["tunnel_angles"] = tunnel_angles
 
-        # Generate septa
+        # Generate chomata
         septa_generator = SeptaGenerator()
-        septa_list, num_septa = septa_generator.generate_septa(volutions)
-        shapes.extend(septa_list)
-        numerical_info["num_septa"] = num_septa
+        chomata_list = septa_generator.generate_chomata(volutions, tunnel_angles)
+        shapes.extend(chomata_list)
+
+        # Generate septa
+        # septa_generator = SeptaGenerator()
+        # septa_list, num_septa = septa_generator.generate_septa(volutions)
+        # shapes.extend(septa_list)
+        # numerical_info["num_septa"] = num_septa
 
         shapes_dict = [shape.to_dict() for shape in shapes]
 

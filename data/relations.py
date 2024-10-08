@@ -447,7 +447,7 @@ class EllipseRelationGenerator:
     def generate_volutions(self, initial_chamber: Ellipse) -> list[Ellipse]:
         center = (initial_chamber.center[0] + normal(0, 3e-3), initial_chamber.center[1] + normal(0, 3e-3))
         minor_axis = initial_chamber.minor_axis * uniform(1.1, 1.6)
-        major_axis = minor_axis * uniform(1.2, 2)
+        major_axis = minor_axis * uniform(1.5, 3)
         rotation = normal(0, 0.02)
         volution_0 = Ellipse(center, major_axis, minor_axis, rotation, special_info="volution 0. ")
 
@@ -535,7 +535,7 @@ class FusiformRelationGenerator:
 
     def generate_volutions(self, initial_chamber: Ellipse) -> list[Fusiform] | list[Fusiform_2]:
         fusiform_type = np.random.choice([1, 2])
-        # fusiform_type = 1
+        # fusiform_type = 2
         if fusiform_type == 1:
             volutions = self.generate_volutions_1(initial_chamber)
         elif fusiform_type == 2:
@@ -547,9 +547,9 @@ class FusiformRelationGenerator:
         center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
         focal_length = normal(0.2, 0.02)
         x_offset = 0.5
-        y_offset = center[1] + uniform(0.01, 0.03)
+        y_offset = center[1] - normal(0.01, 2e-3)
         y_symmetric_axis = center[1]
-        epsilon = normal(0.03, 0.01)
+        epsilon = max(0.01, normal(0.02, 0.01))
         omega = 3 * np.pi
         phi = 0
         # phi = normal(0, 0.01)
@@ -563,7 +563,7 @@ class FusiformRelationGenerator:
 
         for i in range(num_volutions):
             self.fusiform = volutions[-1]
-            scale_factor = max(1.15, normal(1.15, 0.05))
+            scale_factor = max(1.1, normal(1.1, 0.03))
             new_volution = self.get_concentric_fusiform(scale_factor, 1)[0]
             if new_volution.is_closed():
                 new_volution.special_info = f"volution {i+1}. "
@@ -578,12 +578,13 @@ class FusiformRelationGenerator:
 
         volution_0 = None
         while volution_0 is None or not volution_0.is_closed():
-            focal_length = normal(540, 60)
-            x_offset = center[0] - normal(0.05, 0.01)
+            focal_length = normal(1600, 200)
+            x_offset = center[0] - normal(0.06, 0.01)
             y_offset = center[1]
-            power = normal(3.6, 0.2)
+            power = max(3.0, normal(3.2, 0.2))
             x_symmetric_axis = center[0]
-            epsilon = normal(0.004, 0.001)
+            epsilon = normal(2e-3, 5e-4)
+            # epsilon = 0
             omega = 3 * np.pi
             phi = np.pi
             sin_params = [epsilon, omega, phi]
@@ -595,7 +596,7 @@ class FusiformRelationGenerator:
         num_volutions = randint(4, 15)
         for i in range(num_volutions):
             self.fusiform = volutions[-1]
-            scale_factor = [normal(0.6, 0.1), normal(1.3, 0.1)]
+            scale_factor = [normal(0.6, 0.1), normal(1.5, 0.1)]
             x_delta = normal(-0.07, 0.01)
             new_volution = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)[0]
             if new_volution.is_closed():
@@ -641,6 +642,41 @@ class SeptaGenerator:
             init_septa_prob = max(0.2, uniform(0.3, 0.1))
         self.init_septa_prob = init_septa_prob
 
+    def generate_chomata(
+        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2], tunnel_angles: list[float]
+    ) -> list[Ellipse | Polygon]:
+        fossil_center = volutions[0].center
+        chomata_list = []
+
+        # Add chomatas by volutions
+        mid_angle = normal(0.5 * np.pi, 0.1)
+        for i, volution in enumerate(volutions[:-1]):
+            next_volution = volutions[i + 1]
+            tunnel_angle = (tunnel_angles[i] / 180) * np.pi
+
+            thetas = [
+                mid_angle + 0.5 * tunnel_angle,
+                mid_angle - 0.5 * tunnel_angle,
+                mid_angle + np.pi + 0.5 * tunnel_angle,
+                mid_angle + np.pi - 0.5 * tunnel_angle,
+            ]
+            chomata_type = np.random.choice(["ellipse", "polygon"])
+            size = "small"
+            for theta in thetas:
+                interval, center = self.get_interval_center(volution, next_volution, theta)
+
+                if chomata_type == "ellipse":
+                    chomata = self.one_ellipse_septa(interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black")
+                elif chomata_type == "polygon":
+                    chomata = self.one_polygon_septa(interval, center, theta, volution, next_volution, size=size, fill_mode="black")
+                chomata.special_info = f"chomata of volution {i+1}. "
+                chomata_list.append(chomata)
+
+        return chomata_list
+
+    def generate_axial_filling(self):
+        pass
+
     def generate_septa(
         self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2]
     ) -> tuple[list[Ellipse | Polygon], list[int]]:
@@ -679,9 +715,9 @@ class SeptaGenerator:
                     _, center = self.get_interval_center(volution, next_volution, theta)
 
                     if septa_type == "ellipse":
-                        septa = self.one_ellipse_septa(interval, center, fossil_center, theta, mode="inner", size=size)
+                        septa = self.one_ellipse_septa(interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black")
                     elif septa_type == "polygon":
-                        septa = self.one_polygon_septa(interval, center, theta, volution, next_volution, size=size)
+                        septa = self.one_polygon_septa(interval, center, theta, volution, next_volution, size=size, fill_mode="black")
                     septa.special_info = f"septa of volution {i+1}. "
                     septa_list.append(septa)
                     num_septa[i] += 1
@@ -738,6 +774,7 @@ class SeptaGenerator:
         theta: float,
         mode: Literal["outer", "inner"],
         size: Literal["big", "small"],
+        fill_mode: Literal["no", "white", "black"],
     ) -> Ellipse:
         if size == "big":
             major_axis = uniform(0.6 * interval, 0.8 * interval)
@@ -754,7 +791,7 @@ class SeptaGenerator:
         elif mode == "outer":
             septa_center = np.array(center) - vec_centers * (margin / distance_2points(fossil_center, center))
 
-        ellipse = Ellipse(tuple(septa_center), major_axis, minor_axis, rotation)
+        ellipse = Ellipse(tuple(septa_center), major_axis, minor_axis, rotation, fill_mode=fill_mode)
         return ellipse
 
     def one_polygon_septa(
@@ -765,6 +802,7 @@ class SeptaGenerator:
         volution: Ellipse | Fusiform | Fusiform_2,
         next_volution: Ellipse | Fusiform | Fusiform_2,
         size: Literal["big", "small"],
+        fill_mode: Literal["no", "white", "black"],
     ) -> Polygon:
         p1 = volution.get_point(theta + uniform(0.05, 0.1))
         p2 = volution.get_point(theta - uniform(0.05, 0.1))
@@ -828,6 +866,6 @@ class SeptaGenerator:
             p4 = (p4[0] + normal(0, 0.1 * interval), p4[1] + normal(0, 0.1 * interval))
             points = [p1, p2, p3, p4, p5, p6]
 
-        polygon = Polygon(points)
+        polygon = Polygon(points, fill_mode=fill_mode)
         polygon.to_simple_polygon()
         return polygon

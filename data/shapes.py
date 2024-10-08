@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
 from typing import Any
@@ -31,6 +31,7 @@ class GSRule(ABC):
 class Polygon(GSRule):
     points: list[tuple[float, float]]
     special_info: str = ""
+    fill_mode: Literal["no", "white", "black"] = "no"
 
     def to_dict(self) -> dict[str, Any]:
         return {"type": "polygon"} | asdict(self)
@@ -158,6 +159,7 @@ class Ellipse(GSRule):
     minor_axis: float = 0
     rotation: float = 0  # e.g., pi/3
     special_info: str = ""
+    fill_mode: Literal["no", "white", "black"] = "no"
 
     def to_dict(self) -> dict[str, Any]:
         return {"type": "ellipse"} | asdict(self)
@@ -290,10 +292,10 @@ class Fusiform(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-
-    precision: float = 1e-2
+    fill_mode: Literal["no", "white", "black"] = "no"
 
     def __post_init__(self):
+        self.precision: float = 1e-2
         self.center = (self.x_offset, self.y_symmetric_axis)
 
         self.data_points = int(1000 / self.precision)
@@ -414,10 +416,10 @@ class Fusiform_2(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-
-    precision: float = 1e-2
+    fill_mode: Literal["no", "white", "black"] = "no"
 
     def __post_init__(self):
+        self.precision: float = 1e-2
         self.center = (self.x_symmetric_axis, self.y_offset)
 
         self.data_points = int(1000 / self.precision)
@@ -620,7 +622,7 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.01), 0.5 + normal(0, 0.01))
-        major_axis = normal(0.05, 0.01)
+        major_axis = max(0.02, normal(0.03, 0.01))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber. "
