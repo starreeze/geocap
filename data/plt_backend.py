@@ -211,7 +211,13 @@ class Figure:
             case "polygon":
                 points: list = rule["points"]
                 assert len(points) >= 3, "There should be more than 3 points within a polygon."
-                self.__handle_polygon(points, line_width, color)
+                if rule["fill_mode"] == "no":
+                    trans = (0, 0, 0, 0)
+                elif rule["fill_mode"] == "white":
+                    trans = (1, 1, 1, 1)
+                elif rule["fill_mode"] == "black":
+                    trans = (0, 0, 0, 1)
+                self.__handle_polygon(points, line_width, color, trans)
 
             case "line":
                 points: list = rule["points"]
@@ -245,7 +251,13 @@ class Figure:
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
                 alpha = rule["rotation"] * 180 / np.pi
-                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color)
+                if rule["fill_mode"] == "no":
+                    trans = (0, 0, 0, 0)
+                elif rule["fill_mode"] == "white":
+                    trans = (1, 1, 1, 1)
+                elif rule["fill_mode"] == "black":
+                    trans = (0, 0, 0, 1)
+                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans)
 
             case "spiral":
                 # r = a + b\theta
@@ -352,6 +364,7 @@ class Figure:
         alpha: float,
         line_width: int,
         color: Any,
+        transparency: tuple = (0, 0, 0, 0),
     ):
         color = (random.random(), random.random(), random.random()) if color == None else color
         if major < minor:
@@ -363,12 +376,12 @@ class Figure:
                 minor,
                 angle=alpha,
                 edgecolor=color,
-                facecolor=(0, 0, 0, 0),
+                facecolor=transparency,
                 linewidth=line_width * (self.shape[0] / 640),
             )
         )
 
-    def __handle_polygon(self, points: list, line_width: int, color: Any):
+    def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
         color = (
             (
                 random.random(),
@@ -384,7 +397,7 @@ class Figure:
                 closed=True,
                 edgecolor=color,
                 linewidth=line_width * (self.shape[0] / 640),
-                facecolor=(0, 0, 0, 0),
+                facecolor=trans,
             )
         )
 
