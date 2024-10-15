@@ -1,5 +1,6 @@
 from typing import Any, Literal, Optional
 import numpy as np
+from numpy.typing import NDArray
 from numpy.random import uniform, randint, normal
 from .shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2
 from data.utils import (
@@ -444,25 +445,46 @@ class EllipseRelationGenerator:
 
         return circle, tangent_type
 
-    def generate_volutions(self, initial_chamber: Ellipse) -> list[Ellipse]:
+    def generate_volutions(
+        self, initial_chamber: Ellipse, volution_type: Literal["concentric", "swing"]
+    ) -> list[Ellipse]:
         center = (initial_chamber.center[0] + normal(0, 3e-3), initial_chamber.center[1] + normal(0, 3e-3))
         minor_axis = initial_chamber.minor_axis * uniform(1.1, 1.6)
         major_axis = minor_axis * uniform(1.5, 3)
         rotation = normal(0, 0.02)
         volution_0 = Ellipse(center, major_axis, minor_axis, rotation, special_info="volution 0. ")
 
-        volutions = [volution_0]
-        num_volutions = randint(4, 15)
+        if "concentric" in volution_type:
+            volutions = [volution_0]
+        elif "swing" in volution_type:
+            volution_0_swing = Ellipse(
+                center, major_axis * 1.1, minor_axis * 1.1, rotation, special_info="volution 0. "
+            )
+            volutions = [volution_0, volution_0_swing]
 
+        num_volutions = randint(4, 15)
         for i in range(num_volutions):
             self.ellipse = volutions[-1]
-            scale_factor = normal(1.3, 0.05)
-            new_volution = self.get_concentric_ellipse(scale_factor, 1)[0]
-            new_volution.major_axis *= normal(1, 0.02)
-            new_volution.special_info = f"volution {i+1}. "
-            if new_volution.major_axis > 1:
-                break
-            volutions.append(new_volution)
+            scale_factor = normal(1.5, 0.1)
+            if "concentric" in volution_type:
+                new_volutions = self.get_concentric_ellipse(scale_factor, 1)
+            elif "swing" in volution_type:
+                new_volutions = self.get_concentric_ellipse(np.sqrt(scale_factor), 2)
+
+            for new_volution in new_volutions:
+                new_volution.major_axis *= normal(1, 0.02)
+                new_volution.special_info = f"volution {i+1}. "
+                if new_volution.major_axis < 1:
+                    volutions.append(new_volution)
+
+        if "swing" in volution_type:
+            for i, volution in enumerate(volutions):
+                volution.fill_mode = "white"
+                volution.center = (
+                    (center[0], center[1] + 0.08 * volution.minor_axis)
+                    if i % 2 == 0
+                    else (center[0], center[1] - 0.08 * volution.minor_axis)
+                )
 
         return volutions
 
@@ -503,7 +525,7 @@ class FusiformRelationGenerator:
         return fusiform_list
 
     def get_concentric_fusiform_2(
-        self, scale_factor: Optional[list], x_delta=None, num_concentric=None
+        self, scale_factor: Optional[NDArray[Any]], x_delta=None, num_concentric=None
     ) -> list[Fusiform_2]:
         assert isinstance(self.fusiform, Fusiform_2)
 
@@ -512,15 +534,16 @@ class FusiformRelationGenerator:
         y_offset = self.fusiform.y_offset
         power = self.fusiform.power
         x_symmetric_axis = self.fusiform.x_symmetric_axis
-        sin_params = [self.fusiform.sin_params[0], 3 * np.pi, np.pi]
+        
         fusiform_list = []
 
         if num_concentric is None:
             num_concentric = randint(1, 4)
 
         for _ in range(num_concentric):
+            sin_params = [self.fusiform.sin_params[0], 3 * np.pi, np.pi]
             if scale_factor is None:
-                scale_factor = [uniform(0.6, 1.5), uniform(0.6, 1.5)]
+                scale_factor = np.array([uniform(0.6, 1.5), uniform(0.6, 1.5)])
             if x_delta is None:
                 x_delta = normal(0.06, 0.01)
 
@@ -533,79 +556,128 @@ class FusiformRelationGenerator:
 
         return fusiform_list
 
-    def generate_volutions(self, initial_chamber: Ellipse) -> list[Fusiform] | list[Fusiform_2]:
+    def generate_volutions(
+        self, initial_chamber: Ellipse, volution_type: Literal["concentric", "swing"]
+    ) -> list[Fusiform] | list[Fusiform_2]:
         fusiform_type = np.random.choice([1, 2])
         # fusiform_type = 2
         if fusiform_type == 1:
-            volutions = self.generate_volutions_1(initial_chamber)
+            volutions = self.generate_volutions_1(initial_chamber, volution_type)
         elif fusiform_type == 2:
-            volutions = self.generate_volutions_2(initial_chamber)
+            volutions = self.generate_volutions_2(initial_chamber, volution_type)
 
         return volutions
 
-    def generate_volutions_1(self, initial_chamber: Ellipse) -> list[Fusiform]:
-        center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
-        focal_length = normal(0.2, 0.02)
-        x_offset = 0.5
-        y_offset = center[1] - normal(0.01, 2e-3)
-        y_symmetric_axis = center[1]
-        epsilon = max(0.01, normal(0.02, 0.01))
-        omega = 3 * np.pi
-        phi = 0
-        # phi = normal(0, 0.01)
-        sin_params = [epsilon, omega, phi]
-        volution_0 = Fusiform(
-            focal_length, x_offset, y_offset, y_symmetric_axis, sin_params, special_info="volution 0. "
-        )
+    def generate_volutions_1(
+        self, initial_chamber: Ellipse, volution_type: Literal["concentric", "swing"]
+    ) -> list[Fusiform]:
+        volution_0 = self.get_random_fusiform(initial_chamber, fusiform_type=1)
+        assert isinstance(volution_0, Fusiform)
 
-        volutions = [volution_0]
+        if "concentric" in volution_type:
+            volutions = [volution_0]
+        elif "swing" in volution_type:
+            volution_0_swing = self.get_random_fusiform(initial_chamber, fusiform_type=1)
+            volutions = [volution_0, volution_0_swing]
+
         num_volutions = randint(4, 15)
-
         for i in range(num_volutions):
             self.fusiform = volutions[-1]
             scale_factor = max(1.1, normal(1.1, 0.03))
-            new_volution = self.get_concentric_fusiform(scale_factor, 1)[0]
-            if new_volution.is_closed():
-                new_volution.special_info = f"volution {i+1}. "
-                volutions.append(new_volution)
-            else:
-                break
+            if "concentric" in volution_type:
+                new_volutions = self.get_concentric_fusiform(scale_factor, 1)
+            elif "swing" in volution_type:
+                new_volutions = self.get_concentric_fusiform(np.sqrt(scale_factor), 2)
 
+            for new_volution in new_volutions:
+                if new_volution.is_closed():
+                    new_volution.special_info = f"volution {i+1}. "
+                    volutions.append(new_volution)
+
+        if "swing" in volution_type:
+            for i, volution in enumerate(volutions):
+                volution.fill_mode = "white"
+                volution.y_symmetric_axis = (
+                    volution.y_symmetric_axis + 0.05 * volution.height
+                    if i % 2 == 0
+                    else volution.y_symmetric_axis - 0.05 * volution.height
+                )
+                volution.y_offset = (
+                    volution.y_offset + 0.05 * volution.height
+                    if i % 2 == 0
+                    else volution.y_offset - 0.05 * volution.height
+                )
         return volutions
 
-    def generate_volutions_2(self, initial_chamber: Ellipse) -> list[Fusiform_2]:
-        center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
+    def generate_volutions_2(
+        self, initial_chamber: Ellipse, volution_type: Literal["concentric", "swing"]
+    ) -> list[Fusiform_2]:
+        volution_0 = self.get_random_fusiform(initial_chamber, fusiform_type=2)
+        assert isinstance(volution_0, Fusiform_2)
 
-        volution_0 = None
-        while volution_0 is None or not volution_0.is_closed():
-            focal_length = normal(1600, 200)
-            x_offset = center[0] - normal(0.06, 0.01)
-            y_offset = center[1]
-            power = max(3.0, normal(3.2, 0.2))
-            x_symmetric_axis = center[0]
-            epsilon = normal(2e-3, 5e-4)
-            # epsilon = 0
-            omega = 3 * np.pi
-            phi = np.pi
-            sin_params = [epsilon, omega, phi]
-            volution_0 = Fusiform_2(
-                focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. "
-            )
-        volutions = [volution_0]
+        if "concentric" in volution_type:
+            volutions = [volution_0]
+        elif "swing" in volution_type:
+            volution_0_swing = self.get_random_fusiform(initial_chamber, fusiform_type=2)
+            volutions = [volution_0, volution_0_swing]
 
         num_volutions = randint(4, 15)
         for i in range(num_volutions):
             self.fusiform = volutions[-1]
-            scale_factor = [normal(0.6, 0.1), normal(1.5, 0.1)]
+            scale_factor = np.array([normal(0.6, 0.1), normal(1.5, 0.1)])
             x_delta = normal(-0.07, 0.01)
-            new_volution = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)[0]
-            if new_volution.is_closed():
-                new_volution.special_info = f"volution {i+1}. "
-                volutions.append(new_volution)
-            else:
-                break
+            if "concentric" in volution_type:
+                new_volutions = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)
+            elif "swing" in volution_type:
+                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor), 0.5*x_delta, 2)
+            
+            for new_volution in new_volutions:
+                if new_volution.is_closed():
+                    new_volution.special_info = f"volution {i+1}. "
+                    volutions.append(new_volution)
 
+        if "swing" in volution_type:
+            for i, volution in enumerate(volutions):
+                volution.fill_mode = "white"
+                volution.y_offset = (
+                    volution.y_offset + 0.05 * volution.height
+                    if i % 2 == 0
+                    else volution.y_offset - 0.05 * volution.height
+                )
+        
         return volutions
+
+    def get_random_fusiform(self, initial_chamber: Ellipse, fusiform_type: int) -> Fusiform | Fusiform_2:
+        center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
+        volution_0 = None
+        while volution_0 is None or not volution_0.is_closed():
+            if fusiform_type == 1:
+                focal_length = normal(0.2, 0.02)
+                x_offset = 0.5
+                y_offset = center[1] - normal(0.01, 2e-3)
+                y_symmetric_axis = center[1]
+                epsilon = max(0.01, normal(0.02, 0.01))
+                omega = 3 * np.pi
+                phi = 0
+                # phi = normal(0, 0.01)
+                sin_params = [epsilon, omega, phi]
+                volution_0 = Fusiform(
+                    focal_length, x_offset, y_offset, y_symmetric_axis, sin_params, special_info="volution 0. "
+                )
+            elif fusiform_type == 2:
+                focal_length = normal(1600, 200)
+                x_offset = center[0] - normal(0.06, 0.01)
+                y_offset = center[1]
+                power = max(3.0, normal(3.2, 0.2))
+                x_symmetric_axis = center[0]
+                epsilon = normal(2e-3, 5e-4)
+                # epsilon = 0
+                omega = 3 * np.pi
+                phi = np.pi
+                sin_params = [epsilon, omega, phi]
+                volution_0 = Fusiform_2(focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. ")
+
+        return volution_0
 
     """
     old version: homogeneous septas with fixed num_septa
@@ -643,32 +715,45 @@ class SeptaGenerator:
         self.init_septa_prob = init_septa_prob
 
     def generate_chomata(
-        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2], tunnel_angles: list[float]
+        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2], tunnel_angles: list[float], volution_type: Literal['concentric', 'swing']
     ) -> list[Ellipse | Polygon]:
         fossil_center = volutions[0].center
         chomata_list = []
 
         # Add chomatas by volutions
-        mid_angle = normal(0.5 * np.pi, 0.1)
-        for i, volution in enumerate(volutions[:-1]):
-            next_volution = volutions[i + 1]
+        step = 1 if "concentric" in volution_type else 2
+        for i, volution in enumerate(volutions[:-step]):
+            mid_angle = normal(0.5 * np.pi, 0.1)
+            next_volution = volutions[i + step]
             tunnel_angle = (tunnel_angles[i] / 180) * np.pi
 
-            thetas = [
+            thetas_upper = [
                 mid_angle + 0.5 * tunnel_angle,
                 mid_angle - 0.5 * tunnel_angle,
+            ]
+            thetas_lower = [
                 mid_angle + np.pi + 0.5 * tunnel_angle,
                 mid_angle + np.pi - 0.5 * tunnel_angle,
             ]
             chomata_type = np.random.choice(["ellipse", "polygon"])
             size = "small"
+
+            if "concentric" in volution_type:
+                thetas = thetas_upper + thetas_lower
+            elif "swing" in volution_type:
+                thetas = thetas_upper if i%2==0 else thetas_lower
+
             for theta in thetas:
                 interval, center = self.get_interval_center(volution, next_volution, theta)
 
                 if chomata_type == "ellipse":
-                    chomata = self.one_ellipse_septa(interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black")
+                    chomata = self.one_ellipse_septa(
+                        interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black"
+                    )
                 elif chomata_type == "polygon":
-                    chomata = self.one_polygon_septa(interval, center, theta, volution, next_volution, size=size, fill_mode="black")
+                    chomata = self.one_polygon_septa(
+                        interval, center, theta, volution, next_volution, size=size, fill_mode="black"
+                    )
                 chomata.special_info = f"chomata of volution {i+1}. "
                 chomata_list.append(chomata)
 
@@ -715,9 +800,13 @@ class SeptaGenerator:
                     _, center = self.get_interval_center(volution, next_volution, theta)
 
                     if septa_type == "ellipse":
-                        septa = self.one_ellipse_septa(interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black")
+                        septa = self.one_ellipse_septa(
+                            interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black"
+                        )
                     elif septa_type == "polygon":
-                        septa = self.one_polygon_septa(interval, center, theta, volution, next_volution, size=size, fill_mode="black")
+                        septa = self.one_polygon_septa(
+                            interval, center, theta, volution, next_volution, size=size, fill_mode="black"
+                        )
                     septa.special_info = f"septa of volution {i+1}. "
                     septa_list.append(septa)
                     num_septa[i] += 1

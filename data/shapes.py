@@ -312,10 +312,10 @@ class Fusiform(GSRule):
 
             self.x_start = x[left_intersection]
             self.x_end = x[right_intersection]
-            width = abs(self.x_end - self.x_start)
+            self.width = abs(self.x_end - self.x_start)
 
-            height = 2 * (self.y_symmetric_axis - self.y_offset - sin_wave.min())
-            self.ratio = width / height if height != 0 else float("inf")
+            self.height = 2 * (self.y_symmetric_axis - self.y_offset - sin_wave.min())
+            self.ratio = self.width / self.height if self.height != 0 else float("inf")
         else:
             self.ratio = float("inf")
 
@@ -395,7 +395,7 @@ class Fusiform(GSRule):
         x = x_range[idx]
         y = y_fusiform[idx]
 
-        return (x + self.center[0], y + self.center[1])
+        return (x + self.x_offset, y + self.y_symmetric_axis)
 
 
 @dataclass
@@ -473,7 +473,7 @@ class Fusiform_2(GSRule):
             y_line = None
         else:
             slope = np.tan(theta)
-            y_line = slope * (x_range - self.center[0]) + self.center[1]
+            y_line = slope * (x_range - self.x_symmetric_axis) + self.y_offset
             # y_line = y_line[self.intersections[0] : self.intersections[1]]
 
         # Calculate points on the fusiform(after offset)
@@ -622,7 +622,7 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.01), 0.5 + normal(0, 0.01))
-        major_axis = max(0.02, normal(0.03, 0.01))
+        major_axis = max(0.03, normal(0.03, 0.01))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber. "
