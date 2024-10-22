@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 import numpy as np
 from numpy.random import randint, uniform, normal
-from data.utils import distance_2points
+from data.utils import distance_2points, distance_point_to_line
+from data.curve import Curve
 
 
 @dataclass
@@ -499,6 +500,67 @@ class Fusiform_2(GSRule):
         y = y_fusiform[idx]
 
         return (x, y)
+
+
+@dataclass
+class CustomedShape(GSRule):
+    """Customed shape composed of 4 bezier curves"""
+
+    curves: list[Curve]
+
+    vertices: list[tuple[float, float]] = field(init=False)
+    center: tuple[float, float] = field(init=False)
+    ratio: float = field(init=False)
+    special_info: str = ""
+    fill_mode: Literal["no", "white", "black"] = "no"
+
+    def __post_init__(self):
+        # Verify that the shape is closed
+        assert len(self.curves) == 4, "CustomedShape has to consist 4 curves"
+        for i in range(4):
+            assert (
+                self.curves[i].control_points[-1] == self.curves[(i + 1) % 4].control_points[0]
+            ), f"Curve {i + 1} does not connect to Curve {i}"
+
+        self.vertices = [curve.control_points[0] for curve in self.curves]
+        self.curve_points = np.concatenate([curve.control_points for curve in self.curves], axis=0)
+
+        center = np.mean(self.curve_points, axis=0)
+        self.center = tuple(center)
+
+        self.width = abs(self.vertices[0][0] - self.vertices[2][0])
+        self.height = abs(self.vertices[1][1] - self.vertices[3][1])
+        self.ratio = self.width / self.height if self.height != 0 else float("inf")
+
+    def to_dict(self) -> dict[str, Any]:
+        all_dict = asdict(self)
+
+        control_points_list = []
+        for curve_dict in all_dict["curves"]:
+            control_points = curve_dict["control_points"]
+            control_points_list.append(control_points)
+
+        new_dict = {k: v for k, v in asdict(self).items() if "curves" not in k}
+        return {"type": "curves"} | {"control_points": control_points_list} | new_dict
+
+    def get_bbox(self) -> list[tuple[float, float]]:
+        raise NotImplementedError
+
+    def get_point(self, theta: float) -> tuple[float, float]:
+        theta = theta % (2 * np.pi)
+        if np.isclose(theta, 0.5 * np.pi):
+            return self.vertices[1]
+        elif np.isclose(theta, 1.5 * np.pi):
+            return self.vertices[3]
+        else:
+            slope = np.tan(theta)
+            intercept = self.center[1] - slope * self.center[0]
+            line = (slope, intercept)
+
+        distances = [distance_point_to_line(point, line) for point in self.curve_points]
+        min_distance_idx = np.argmin(distances)
+        point = self.curve_points[min_distance_idx]
+        return tuple(point)
 
 
 class ShapeGenerator:

@@ -2,7 +2,8 @@ from typing import Any, Literal, Optional
 import numpy as np
 from numpy.typing import NDArray
 from numpy.random import uniform, randint, normal
-from .shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2
+from .shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2, CustomedShape
+from .curve import Curve
 from data.utils import (
     distance_2points,
     polar_angle,
@@ -534,7 +535,7 @@ class FusiformRelationGenerator:
         y_offset = self.fusiform.y_offset
         power = self.fusiform.power
         x_symmetric_axis = self.fusiform.x_symmetric_axis
-        
+
         fusiform_list = []
 
         if num_concentric is None:
@@ -629,8 +630,8 @@ class FusiformRelationGenerator:
             if "concentric" in volution_type:
                 new_volutions = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)
             elif "swing" in volution_type:
-                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor), 0.5*x_delta, 2)
-            
+                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor), 0.5 * x_delta, 2)
+
             for new_volution in new_volutions:
                 if new_volution.is_closed():
                     new_volution.special_info = f"volution {i+1}. "
@@ -644,7 +645,7 @@ class FusiformRelationGenerator:
                     if i % 2 == 0
                     else volution.y_offset - 0.05 * volution.height
                 )
-        
+
         return volutions
 
     def get_random_fusiform(self, initial_chamber: Ellipse, fusiform_type: int) -> Fusiform | Fusiform_2:
@@ -675,7 +676,9 @@ class FusiformRelationGenerator:
                 omega = 3 * np.pi
                 phi = np.pi
                 sin_params = [epsilon, omega, phi]
-                volution_0 = Fusiform_2(focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. ")
+                volution_0 = Fusiform_2(
+                    focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. "
+                )
 
         return volution_0
 
@@ -708,6 +711,136 @@ class FusiformRelationGenerator:
     #     return septa_list, num_septa[: len(volutions) - 1]
 
 
+class CustomedShapeGenerator:
+    def __init__(self, rule_args) -> None:
+        self.rule_args = rule_args
+
+    def generate_relation(self, customed_shape: CustomedShape) -> tuple[Any, str]:
+        self.customed_shape = customed_shape
+        return None, "none"
+
+    def get_concentric_customed_shape(self, scale_factor=None, num_concentric=None, randomize=True) -> list[CustomedShape]:
+        customed_shape_list = []
+        if num_concentric is None:
+            num_concentric = randint(1, 4)
+
+        for _ in range(num_concentric):
+            if scale_factor is None:
+                scale_factor = uniform(0.6, 1.5)
+                while 0.9 < scale_factor < 1.1:
+                    scale_factor = uniform(0.6, 1.5)
+
+            scaled_curves = []
+            for curve in self.customed_shape.curves:
+                new_scale_factor = scale_factor * normal(1, 0.03) if randomize else scale_factor
+                scaled_control_points = []
+                for i, point in enumerate(curve.control_points):                        
+                    # Translate the point relative to the center of the customed_shape
+                    translated_point = (
+                        point[0] - self.customed_shape.center[0],
+                        point[1] - self.customed_shape.center[1],
+                    )
+                    # Scale the translated point
+                    if i == 0 or i == 3:  # for start and end point, no randomize
+                        scaled_point = (translated_point[0] * scale_factor, translated_point[1] * scale_factor)
+                    else:
+                        scaled_point = (translated_point[0] * new_scale_factor, translated_point[1] * new_scale_factor)
+                    # Translate the scaled point back to the original coordinate system
+                    final_point = (
+                        scaled_point[0] + self.customed_shape.center[0],
+                        scaled_point[1] + self.customed_shape.center[1],
+                    )
+                    scaled_control_points.append(final_point)
+                scaled_curves.append(Curve(scaled_control_points))
+
+            special_info = self.customed_shape.special_info
+            customed_shape = CustomedShape(scaled_curves, special_info)
+            customed_shape_list.append(customed_shape)
+
+        return customed_shape_list
+
+    def generate_volutions(self, initial_chamber: Ellipse, volution_type: Literal["concentric", "swing"]) -> list[CustomedShape]:
+        volution_0 = self.get_random_customed_shape(initial_chamber)
+
+        if "concentric" in volution_type:
+            volutions = [volution_0]
+        elif "swing" in volution_type:
+            volution_0_swing = self.get_random_customed_shape(initial_chamber)
+            volutions = [volution_0, volution_0_swing]
+
+        num_volutions = randint(4, 15)
+        for i in range(num_volutions):
+            self.customed_shape = volutions[-1]
+            scale_factor = normal(1.5, 0.1)
+
+            if "concentric" in volution_type:
+                new_volutions = self.get_concentric_customed_shape(scale_factor, 1)
+            elif "swing" in volution_type:
+                new_volutions = self.get_concentric_customed_shape(np.sqrt(scale_factor), 2)
+
+            for new_volution in new_volutions:
+                new_volution.special_info = f"volution {i+1}. "
+                if new_volution.width < 1 and new_volution.height < 1:
+                    volutions.append(new_volution)
+
+        if "swing" in volution_type:
+            for i, volution in enumerate(volutions):
+                swing_vector = np.array([0, 0.05 * volution.height])
+                volution.fill_mode = "white"
+
+                new_vertices = []
+                for vertice in volution.vertices:
+                    new_vertice = np.array(vertice) + swing_vector if i%2==0 else np.array(vertice) - swing_vector
+                    new_vertices.append(new_vertice.tolist())
+                volution.vertices = new_vertices
+                
+                for curve in volution.curves:
+                    new_points = np.array(curve.control_points) + swing_vector if i%2==0 else np.array(curve.control_points) - swing_vector
+                    curve.control_points = [tuple(new_point) for new_point in new_points]
+
+        return volutions
+
+    def get_random_customed_shape(self, initial_chamber: Ellipse) -> CustomedShape:
+        center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
+        x0, y0 = center
+        major_r = initial_chamber.major_axis * normal(1.2, 0.1)
+        minor_r = initial_chamber.minor_axis * normal(0.6, 0.05)
+
+        # add random translation on left and right vertices
+        y_trans_1 = uniform(-0.5, 0.5) * major_r
+        y_trans_2 = uniform(-0.5, 0.5) * major_r
+
+        control_points_list = []
+        for i in range(4):
+            angle = i * np.pi / 2
+            r_noise = normal(0, 0.03 * major_r)
+            a_noise = normal(0.17 * np.pi, 0.02 * np.pi)
+            p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle)]
+            if i == 0:
+                p0[1] += y_trans_1
+            elif i == 2:
+                p0[1] += y_trans_2
+            p1 = [
+                x0 + (major_r + r_noise) * np.cos(angle + a_noise),
+                y0 + (minor_r + r_noise) * np.sin(angle + a_noise),
+            ]
+            p2 = [
+                x0 + (major_r + r_noise) * np.cos(angle + 2 * a_noise),
+                y0 + (minor_r + r_noise) * np.sin(angle + 2 * a_noise),
+            ]
+            p3 = [x0 + major_r * np.cos(angle + 0.5 * np.pi), y0 + minor_r * np.sin(angle + 0.5 * np.pi)]
+            if i == 3:
+                p3[1] += y_trans_1
+            elif i == 1:
+                p3[1] += y_trans_2
+            
+            control_points = [tuple(p) for p in [p0, p1, p2, p3]]
+            control_points_list.append(control_points)
+
+        curves = [Curve(control_points) for control_points in control_points_list]
+        return CustomedShape(curves, special_info="volution 0. ")
+
+
 class SeptaGenerator:
     def __init__(self, init_septa_prob=None) -> None:
         if init_septa_prob is None:
@@ -715,7 +848,10 @@ class SeptaGenerator:
         self.init_septa_prob = init_septa_prob
 
     def generate_chomata(
-        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2], tunnel_angles: list[float], volution_type: Literal['concentric', 'swing']
+        self,
+        volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape],
+        tunnel_angles: list[float],
+        volution_type: Literal["concentric", "swing"],
     ) -> list[Ellipse | Polygon]:
         fossil_center = volutions[0].center
         chomata_list = []
@@ -725,7 +861,7 @@ class SeptaGenerator:
         for i, volution in enumerate(volutions[:-step]):
             mid_angle = normal(0.5 * np.pi, 0.1)
             next_volution = volutions[i + step]
-            tunnel_angle = (tunnel_angles[i] / 180) * np.pi
+            tunnel_angle = (tunnel_angles[i // step] / 180) * np.pi
 
             thetas_upper = [
                 mid_angle + 0.5 * tunnel_angle,
@@ -741,7 +877,7 @@ class SeptaGenerator:
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower
             elif "swing" in volution_type:
-                thetas = thetas_upper if i%2==0 else thetas_lower
+                thetas = thetas_upper if i % 2 == 0 else thetas_lower
 
             for theta in thetas:
                 interval, center = self.get_interval_center(volution, next_volution, theta)
@@ -754,16 +890,15 @@ class SeptaGenerator:
                     chomata = self.one_polygon_septa(
                         interval, center, theta, volution, next_volution, size=size, fill_mode="black"
                     )
-                chomata.special_info = f"chomata of volution {i+1}. "
+                chomata.special_info = f"chomata of volution {(i+1)//step}. "
                 chomata_list.append(chomata)
 
         return chomata_list
 
-    def generate_axial_filling(self):
-        pass
-
     def generate_septa(
-        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2]
+        self, 
+        volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape],
+        volution_type: Literal["concentric", "swing"],
     ) -> tuple[list[Ellipse | Polygon], list[int]]:
         fossil_center = volutions[0].center
         septa_list = []
@@ -772,8 +907,9 @@ class SeptaGenerator:
         prob_scaler = normal(1.3, 0.1)
 
         # Add septa between volutions
-        for i, volution in enumerate(volutions[:-1]):
-            next_volution = volutions[i + 1]
+        step = 1 if "concentric" in volution_type else 2
+        for i, volution in enumerate(volutions[:-step]):
+            next_volution = volutions[i + step]
             prob = init_septa_prob * (prob_scaler**i)  # more septas in outer volutions
 
             interval, center = self.get_interval_center(volution, next_volution, theta=0.5 * np.pi)
@@ -801,13 +937,13 @@ class SeptaGenerator:
 
                     if septa_type == "ellipse":
                         septa = self.one_ellipse_septa(
-                            interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black"
+                            interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="no"
                         )
                     elif septa_type == "polygon":
                         septa = self.one_polygon_septa(
-                            interval, center, theta, volution, next_volution, size=size, fill_mode="black"
+                            interval, center, theta, volution, next_volution, size=size, fill_mode="no"
                         )
-                    septa.special_info = f"septa of volution {i+1}. "
+                    septa.special_info = f"septa of volution {(i+1)//step}. "
                     septa_list.append(septa)
                     num_septa[i] += 1
         # print(f"num_septa stage 1: {num_septa}")
@@ -847,7 +983,10 @@ class SeptaGenerator:
         return septa_list, num_septa
 
     def get_interval_center(
-        self, volution: Ellipse | Fusiform | Fusiform_2, next_volution: Ellipse | Fusiform | Fusiform_2, theta: float
+        self,
+        volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
+        next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
+        theta: float,
     ) -> tuple[float, tuple[Any, Any]]:
         p1 = volution.get_point(theta)
         p2 = next_volution.get_point(theta)
@@ -888,8 +1027,8 @@ class SeptaGenerator:
         interval: float,
         center: tuple[float, float],
         theta: float,
-        volution: Ellipse | Fusiform | Fusiform_2,
-        next_volution: Ellipse | Fusiform | Fusiform_2,
+        volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
+        next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
         size: Literal["big", "small"],
         fill_mode: Literal["no", "white", "black"],
     ) -> Polygon:
@@ -958,3 +1097,14 @@ class SeptaGenerator:
         polygon = Polygon(points, fill_mode=fill_mode)
         polygon.to_simple_polygon()
         return polygon
+
+    def generate_axial_filling(
+        self, volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape]
+    ) -> list[dict]:
+        axial_filling = []
+        for i in range(2):
+            end_volution = randint(len(volutions) // 2, len(volutions))
+            start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
+            end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
+            axial_filling.append({"start_angle": start_angle, "end_angle": end_angle, "end_volution": end_volution})
+        return axial_filling
