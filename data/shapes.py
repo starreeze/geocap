@@ -353,7 +353,9 @@ class Fusiform(GSRule):
         return {"type": "fusiform_1"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
-        raise NotImplementedError
+        y_max = self.y_symmetric_axis + 0.5 * self.height
+        y_min = self.y_symmetric_axis - 0.5 * self.height
+        return [(self.x_start, y_max), (self.x_end, y_min)]
 
     def is_closed(self) -> bool:
         return self.ratio < 1e3
@@ -451,7 +453,9 @@ class Fusiform_2(GSRule):
         return {"type": "fusiform_2"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
-        raise NotImplementedError
+        y_max = self.y_offset + 0.5 * self.height
+        y_min = self.y_offset - 0.5 * self.height
+        return [(self.x_start, y_max), (self.x_end, y_min)]
 
     def is_closed(self) -> bool:
         return self.ratio < 1e3
@@ -544,7 +548,11 @@ class CustomedShape(GSRule):
         return {"type": "curves"} | {"control_points": control_points_list} | new_dict
 
     def get_bbox(self) -> list[tuple[float, float]]:
-        raise NotImplementedError
+        x_min = self.vertices[2][0]
+        y_max = self.vertices[1][1]
+        x_max = self.vertices[0][0]
+        y_min = self.vertices[3][1]
+        return [(x_min, y_max), (x_max, y_min)]
 
     def get_point(self, theta: float) -> tuple[float, float]:
         theta = theta % (2 * np.pi)
@@ -689,3 +697,37 @@ class ShapeGenerator:
         rotation = uniform(0, np.pi)
         special_info = "initial chamber. "
         return Ellipse(center, major_axis, minor_axis, rotation, special_info)
+
+    def generate_axial_filling(self, num_volutions: int) -> list[dict]:
+        axial_filling = []
+        for i in range(2):
+            start_volution = randint(0, max(1, num_volutions // 4))
+            end_volution = randint(num_volutions // 2, num_volutions)
+            start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
+            end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
+            axial_filling.append(
+                {
+                    "start_angle": start_angle,
+                    "end_angle": end_angle,
+                    "start_volution": start_volution,
+                    "end_volution": end_volution,
+                }
+            )
+        return axial_filling
+
+    def generate_poles_folds(self, num_volutions: int) -> list[dict]:
+        poles_folds = []
+        for i in range(2):
+            start_volution = randint(num_volutions // 2, num_volutions)
+            end_volution = num_volutions
+            start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
+            end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
+            poles_folds.append(
+                {
+                    "start_angle": start_angle,
+                    "end_angle": end_angle,
+                    "start_volution": start_volution,
+                    "end_volution": end_volution,
+                }
+            )
+        return poles_folds
