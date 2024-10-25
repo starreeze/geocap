@@ -19,7 +19,7 @@ import math
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
     chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
@@ -41,19 +41,19 @@ class CustomDataset(Dataset):
         image_file = line["image"]
         qs = line["text"]
         if self.model_config.mm_use_im_start_end:
-            qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs
+            qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + "\n" + qs
         else:
-            qs = DEFAULT_IMAGE_TOKEN + '\n' + qs
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
 
         conv = conv_templates[args.conv_mode].copy()
         conv.append_message(conv.roles[0], qs)
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
-        image = Image.open(os.path.join(self.image_folder, image_file)).convert('RGB')
+        image = Image.open(os.path.join(self.image_folder, image_file)).convert("RGB")
         image_tensor = process_images([image], self.image_processor, self.model_config)[0]
 
-        input_ids = tokenizer_image_token(prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt')
+        input_ids = tokenizer_image_token(prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
 
         return input_ids, image_tensor, image.size
 
@@ -72,7 +72,9 @@ def collate_fn(batch):
 def create_data_loader(questions, image_folder, tokenizer, image_processor, model_config, batch_size=1, num_workers=4):
     assert batch_size == 1, "batch_size must be 1"
     dataset = CustomDataset(questions, image_folder, tokenizer, image_processor, model_config)
-    data_loader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False, collate_fn=collate_fn)
+    data_loader = DataLoader(
+        dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False, collate_fn=collate_fn
+    )
     return data_loader
 
 
@@ -89,9 +91,11 @@ def eval_model(args):
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
     ans_file = open(answers_file, "w")
 
-    if 'plain' in model_name and 'finetune' not in model_name.lower() and 'mmtag' not in args.conv_mode:
-        args.conv_mode = args.conv_mode + '_mmtag'
-        print(f'It seems that this is a plain model, but it is not using a mmtag prompt, auto switching to {args.conv_mode}.')
+    if "plain" in model_name and "finetune" not in model_name.lower() and "mmtag" not in args.conv_mode:
+        args.conv_mode = args.conv_mode + "_mmtag"
+        print(
+            f"It seems that this is a plain model, but it is not using a mmtag prompt, auto switching to {args.conv_mode}."
+        )
 
     data_loader = create_data_loader(questions, args.image_folder, tokenizer, image_processor, model.config)
 
@@ -99,31 +103,40 @@ def eval_model(args):
         idx = line["question_id"]
         cur_prompt = line["text"]
 
-        input_ids = input_ids.to(device='cuda', non_blocking=True)
+        input_ids = input_ids.to(device="cuda", non_blocking=True)
 
         with torch.inference_mode():
             output_ids = model.generate(
                 input_ids,
-                images=image_tensor.to(dtype=torch.float16, device='cuda', non_blocking=True),
+                images=image_tensor.to(dtype=torch.float16, device="cuda", non_blocking=True),
                 image_sizes=image_sizes,
                 do_sample=True if args.temperature > 0 else False,
                 temperature=args.temperature,
                 top_p=args.top_p,
                 num_beams=args.num_beams,
                 max_new_tokens=args.max_new_tokens,
-                use_cache=True)
+                use_cache=True,
+            )
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         ans_id = shortuuid.uuid()
-        ans_file.write(json.dumps({"question_id": idx,
-                                   "prompt": cur_prompt,
-                                   "text": outputs,
-                                   "answer_id": ans_id,
-                                   "model_id": model_name,
-                                   "metadata": {}}) + "\n")
+        ans_file.write(
+            json.dumps(
+                {
+                    "question_id": idx,
+                    "prompt": cur_prompt,
+                    "text": outputs,
+                    "answer_id": ans_id,
+                    "model_id": model_name,
+                    "metadata": {},
+                }
+            )
+            + "\n"
+        )
         # ans_file.flush()
     ans_file.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

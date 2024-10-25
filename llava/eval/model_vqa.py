@@ -18,7 +18,7 @@ import math
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
     chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [lst[i:i+chunk_size] for i in range(0, len(lst), chunk_size)]
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
@@ -44,18 +44,18 @@ def eval_model(args):
         qs = line["text"]
         cur_prompt = qs
         if model.config.mm_use_im_start_end:
-            qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs
+            qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + "\n" + qs
         else:
-            qs = DEFAULT_IMAGE_TOKEN + '\n' + qs
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
 
         conv = conv_templates[args.conv_mode].copy()
         conv.append_message(conv.roles[0], qs)
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
 
-        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt").unsqueeze(0).cuda()
 
-        image = Image.open(os.path.join(args.image_folder, image_file)).convert('RGB')
+        image = Image.open(os.path.join(args.image_folder, image_file)).convert("RGB")
         image_tensor = process_images([image], image_processor, model.config)[0]
 
         with torch.inference_mode():
@@ -69,19 +69,28 @@ def eval_model(args):
                 num_beams=args.num_beams,
                 # no_repeat_ngram_size=3,
                 max_new_tokens=1024,
-                use_cache=True)
+                use_cache=True,
+            )
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         ans_id = shortuuid.uuid()
-        ans_file.write(json.dumps({"question_id": idx,
-                                   "prompt": cur_prompt,
-                                   "text": outputs,
-                                   "answer_id": ans_id,
-                                   "model_id": model_name,
-                                   "metadata": {}}) + "\n")
+        ans_file.write(
+            json.dumps(
+                {
+                    "question_id": idx,
+                    "prompt": cur_prompt,
+                    "text": outputs,
+                    "answer_id": ans_id,
+                    "model_id": model_name,
+                    "metadata": {},
+                }
+            )
+            + "\n"
+        )
         ans_file.flush()
     ans_file.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
