@@ -285,6 +285,14 @@ class Figure:
                 x_start = rule["x_start"]
                 x_end = rule["x_end"]
                 y_sim = rule["y_symmetric_axis"]
+
+                if rule["fill_mode"] == "no":
+                    trans = (0, 0, 0, 0)
+                elif rule["fill_mode"] == "white":
+                    trans = (1, 1, 1, 1)
+                elif rule["fill_mode"] == "black":
+                    trans = (0, 0, 0, 1)
+
                 self.__handle_fusiform_1(
                     fc,
                     x_offset,
@@ -296,6 +304,7 @@ class Figure:
                     x_end,
                     y_sim,
                     color,
+                    trans,
                     line_width,
                 )
 
@@ -307,6 +316,14 @@ class Figure:
                 power = rule["power"]
                 x_start = rule["x_start"]
                 x_end = rule["x_end"]
+
+                if rule["fill_mode"] == "no":
+                    trans = (0, 0, 0, 0)
+                elif rule["fill_mode"] == "white":
+                    trans = (1, 1, 1, 1)
+                elif rule["fill_mode"] == "black":
+                    trans = (0, 0, 0, 1)
+
                 self.__handle_fusiform_2(
                     fc,
                     x_offset,
@@ -318,8 +335,15 @@ class Figure:
                     x_start,
                     x_end,
                     color,
+                    trans,
                     line_width,
                 )
+
+            case "curves":
+                curves = rule["curves"]
+                for curve in curves:
+                    control_points = curve["control_points"]
+                    self.__handle_curve(control_points)
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -492,6 +516,7 @@ class Figure:
         x_end,
         y_sim,
         color,
+        trans,
         line_width,
     ):
         color = (
@@ -510,6 +535,8 @@ class Figure:
         x = np.linspace(x_start, x_end, 1000)
         y1 = f(x)
         y2 = 2 * y_sim - y1
+        for index in range(len(x)):
+            self.ax.plot((x[index], x[index]), (y1[index], y2[index]), linewidth=1, color=trans)
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
 
     def __handle_fusiform_2(
@@ -524,6 +551,7 @@ class Figure:
         x_start,
         x_end,
         color,
+        trans,
         line_width,
     ):
         color = (
@@ -543,7 +571,24 @@ class Figure:
         y_right = np.flip(y_left)  # 得到开口向左的上半部分
         y1 = np.concatenate([y_left, y_right]) + sin_wave
         y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
+        for index in range(len(x)):
+            self.ax.plot((x[index], x[index]), (y1[index], y2[index]), linewidth=5, color=trans)
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
+
+    def __handle_curve(self, control_points):
+        curve_points = []
+        t_values = np.linspace(0, 1, 100)
+        for t in t_values:
+            one_minus_t = 1 - t
+            point = (
+                one_minus_t**3 * np.array(control_points[0])
+                + 3 * one_minus_t**2 * t * np.array(control_points[1])
+                + 3 * one_minus_t * t**2 * np.array(control_points[2])
+                + t**3 * np.array(control_points[3])
+            )
+            curve_points.append(tuple(point))
+        curve_points = np.array(curve_points)
+        self.ax.plot(curve_points[:, 0], curve_points[:, 1])
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
