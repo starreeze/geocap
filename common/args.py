@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import cast, Literal
+from typing import Literal, cast
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
@@ -37,8 +37,8 @@ class RunArgs:
 @dataclass
 class RuleArgs:
     mode: Literal["basic", "fossil"] = field(default="basic")
-    # max number of shapes in each sample
     max_num_shapes: int = field(default=10)
+    output_fp_precision: int = field(default=6)
 
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
