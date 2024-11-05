@@ -26,9 +26,9 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
         # volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.2, 0.3, 0.5])
-        volution_type = choice(["concentric", "swing"])
+        # volution_type = choice(["concentric", "swing"])
         volution_shape = "customed_shape"
-        # volution_type = "swing"
+        volution_type = "concentric"
         if volution_shape == "ellipse":
             volution_generator = relation_generator.ellipse_relation_generator
         elif volution_shape == "fusiform":
@@ -48,7 +48,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
-        tunnel_angle = normal(12, 3)  # initialize
+        tunnel_angle = normal(18, 2)  # initialize
         tunnel_angles = []
         for _ in range(int(num_volutions)):
             scale_factor = normal(1.1, 0.1)
@@ -60,21 +60,12 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["tunnel_angles"] = tunnel_angles[tunnel_start_idx:]
 
         # Generate chomata
-        septa_generator = SeptaGenerator()
+        # septa_generator = SeptaGenerator()
+        septa_generator = SeptaGenerator(init_septa_prob=1)
         chomata_list = septa_generator.generate_chomata(
             volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
         )
-        shapes.extend(chomata_list)
-
-        # Generate septa
-        have_septa_folds = choice([True, False])
-        # have_septa_folds = False
-        if have_septa_folds:
-            septa_folds, num_septa = septa_generator.generate_septa(volutions, volution_type, int(num_volutions))
-            shapes.extend(septa_folds)
-        else:
-            num_septa = [0 for _ in range(int(num_volutions))]
-        numerical_info["num_septa"] = num_septa
+        # shapes.extend(chomata_list)
 
         # Generate axial filling
         axial_filling = shape_generator.generate_axial_filling(int(num_volutions))
@@ -82,11 +73,26 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         # Generate septa folds at poles
         poles_folds = shape_generator.generate_poles_folds(int(num_volutions))
 
+        # Generate other septa folds
+        have_septa_folds = choice([True, False])
+        have_septa_folds = True
+        if have_septa_folds:
+            septa_folds, num_septa = septa_generator.generate_septa(
+                volutions, volution_type, int(num_volutions), axial_filling, global_gap=0.7
+            )
+            shapes.extend(septa_folds)
+            septa_folds = [shape.to_dict() for shape in septa_folds]
+        else:
+            septa_folds = []
+            num_septa = [0 for _ in range(int(num_volutions))]
+        numerical_info["num_septa"] = num_septa
+
         shapes_dict = [shape.to_dict() for shape in shapes]
         results.append(
             {
                 "shapes": shapes_dict,
                 "axial_filling": axial_filling,
+                "septa_folds": septa_folds,
                 "poles_folds": poles_folds,
                 "numerical_info": numerical_info,
             }

@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 import numpy as np
 from numpy.random import randint, uniform, normal
+import matplotlib.pyplot as plt
 from data.utils import distance_2points, distance_point_to_line
-from data.curve import Curve
 
 
 @dataclass
@@ -507,6 +507,58 @@ class Fusiform_2(GSRule):
 
 
 @dataclass
+class Curve:
+    """Cubic Bézier curve for controllable shapes."""
+
+    control_points: list[tuple[float, float]]
+    special_info: str = ""
+    fill_mode: Literal["no", "white", "black"] = "no"
+
+    def __post_init__(self):
+        self.num_points = 100
+        # Ensure there are exactly 4 control points for a cubic curve
+        assert len(self.control_points) == 4, "A cubic Bézier curve requires exactly 4 control points."
+
+        # Unpack control points
+        p0, p1, p2, p3 = self.control_points
+
+        # Precompute curve points
+        self.curve_points = self._compute_curve_points(p0, p1, p2, p3)
+
+    def to_dict(self):
+        return {"type": "curves", "control_points": [self.control_points]}
+
+    def _compute_curve_points(self, p0, p1, p2, p3):
+        """Computes points along the cubic Bézier curve"""
+        curve_points = []
+        t_values = np.linspace(0, 1, self.num_points)
+
+        for t in t_values:
+            one_minus_t = 1 - t
+            point = (
+                one_minus_t**3 * np.array(p0)
+                + 3 * one_minus_t**2 * t * np.array(p1)
+                + 3 * one_minus_t * t**2 * np.array(p2)
+                + t**3 * np.array(p3)
+            )
+            curve_points.append(tuple(point))
+
+        return curve_points
+
+    def plot_curve(self, figure_id=0):
+        plt.figure(figure_id)
+        # Separate the points into x and y components
+        curve_points = np.array(self.curve_points)
+        x_vals = curve_points[:, 0]
+        y_vals = curve_points[:, 1]
+        plt.plot(x_vals, y_vals)
+
+        # Plot the control points
+        control_x_vals, control_y_vals = zip(*self.control_points)
+        plt.plot(control_x_vals, control_y_vals, "ro--")
+
+
+@dataclass
 class CustomedShape(GSRule):
     """Customed shape composed of 4 bezier curves"""
 
@@ -527,7 +579,7 @@ class CustomedShape(GSRule):
             ), f"Curve {i + 1} does not connect to Curve {i}"
 
         self.vertices = [curve.control_points[0] for curve in self.curves]
-        self.curve_points = np.concatenate([curve.control_points for curve in self.curves], axis=0)
+        self.curve_points = np.concatenate([curve.curve_points for curve in self.curves], axis=0)
 
         center = np.mean(self.curve_points, axis=0)
         self.center = tuple(center)
@@ -565,9 +617,14 @@ class CustomedShape(GSRule):
             intercept = self.center[1] - slope * self.center[0]
             line = (slope, intercept)
 
-        distances = [distance_point_to_line(point, line) for point in self.curve_points]
+        quarter_size = len(self.curve_points) // 4
+        quarter_idx = theta // (0.5 * np.pi)  # i_th curve
+        start_idx = int(quarter_size * quarter_idx)
+        end_idx = int(quarter_size * (quarter_idx + 1))
+        distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
         min_distance_idx = np.argmin(distances)
-        point = self.curve_points[min_distance_idx]
+        point = self.curve_points[start_idx + min_distance_idx]
+
         return tuple(point)
 
 
@@ -692,7 +749,7 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.01), 0.5 + normal(0, 0.01))
-        major_axis = max(0.03, normal(0.03, 0.01))
+        major_axis = max(0.02, normal(0.02, 6e-3))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber. "
@@ -700,19 +757,42 @@ class ShapeGenerator:
 
     def generate_axial_filling(self, num_volutions: int) -> list[dict]:
         axial_filling = []
+
         for i in range(2):
             start_volution = randint(0, max(1, num_volutions // 4))
             end_volution = randint(num_volutions // 2, num_volutions)
-            start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
-            end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
-            axial_filling.append(
-                {
-                    "start_angle": start_angle,
-                    "end_angle": end_angle,
-                    "start_volution": start_volution,
-                    "end_volution": end_volution,
-                }
-            )
+            start_angle_main = -normal(0.2, 0.03) * np.pi + i * np.pi
+            end_angle_main = normal(0.2, 0.03) * np.pi + i * np.pi
+
+            axial_filling_main = {
+                "type": "main",
+                "start_angle": start_angle_main,
+                "end_angle": end_angle_main,
+                "start_volution": start_volution,
+                "end_volution": end_volution,
+            }
+            axial_filling.append(axial_filling_main)
+
+            # generate extension of axial fillilng
+            max_extend_angle1 = (start_angle_main - (i - 0.5) * np.pi) % (2 * np.pi)
+            axial_filling_extend1 = {
+                "type": "extension",
+                "start_angle": start_angle_main - max_extend_angle1 * normal(0.6, 0.1),
+                "end_angle": start_angle_main,
+                "start_volution": 0,
+                "end_volution": randint(end_volution, num_volutions + 1),
+            }
+            max_extend_angle2 = ((0.5 - i) * np.pi - end_angle_main) % (2 * np.pi)
+            axial_filling_extend2 = {
+                "type": "extension",
+                "start_angle": end_angle_main,
+                "end_angle": end_angle_main + max_extend_angle2 * normal(0.6, 0.1),
+                "start_volution": 0,
+                "end_volution": randint(end_volution, num_volutions + 1),
+            }
+            axial_filling.append(axial_filling_extend1)
+            axial_filling.append(axial_filling_extend2)
+
         return axial_filling
 
     def generate_poles_folds(self, num_volutions: int) -> list[dict]:
