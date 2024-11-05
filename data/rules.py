@@ -2,7 +2,7 @@
 import json
 import os
 
-from numpy.random import randint, choice, normal
+from numpy.random import choice, normal, randint
 from tqdm import trange
 
 from common.args import data_args, rule_args
@@ -180,9 +180,16 @@ def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.2) -> bool:
     return True
 
 
+class FloatJSONEncoder(json.JSONEncoder):
+    def encode(self, obj):
+        if isinstance(obj, float):
+            return f"%.{rule_args.output_fp_precision}f" % obj
+        return super().encode(obj)
+
+
 def save_rules(rules: list[dict[str, list]], output_file: str):
     with open(output_file, "w") as f:
-        json.dump(rules, f, default=vars)
+        json.dump(rules, f, default=vars, cls=FloatJSONEncoder)
 
 
 def main():

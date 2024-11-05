@@ -18,18 +18,24 @@ python run.py --module data.format --action to_llava  # you can also specify the
 ### Generating rules for geometric shapes / synthetic fossil samples
 
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
+
 ```shell
 python run.py --module data.rules --num_basic_geo_samples 10
 ```
+
 or generate rules for synthetic fossil samples:
+
 ```shell
 python run.py --module data.rules --mode fossil --num_fossil_samples 10
 ```
 
 Each data sample contains two parts:
-- **shapes**: parameters and special information of each geometric shape. 
+
+- **shapes**: parameters and special information of each geometric shape.
 - **relations**: relationship between two shapes in form of `[head_shape_idx, tail_shape_idx, relation_type]`
+
 #### Example data sample
+
 ```json
 {
    "shapes": [
@@ -53,8 +59,9 @@ Each data sample contains two parts:
 ```
 
 You can control the generation process with the following arguments:
+
 - max_num_shapes: the maximum number of shapes in each sample. Default is 10
-and there are arguments for controling the proportion of different shapes and relations, for example:
+  and there are arguments for controling the proportion of different shapes and relations, for example:
 - polygon_shape_level: the proportion of polygon in all shapes
 - line_shape_level: the proportion of line in all shapes
 - ...
@@ -66,6 +73,7 @@ and there are arguments for controling the proportion of different shapes and re
 Each 'level' argument is an integer (with a default value) representing the relative level within its shape/relation block. For more details, please refer to `RuleArgs` in `common/args.py`. All 'level' arguments will be transformed into probabilities using L1 normalization (sum normalization).
 
 If more ellipse is expected, you can set a higher level for ellipse_shape_level:
+
 ```shell
 python run.py --module data.rules --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
 ```
@@ -93,17 +101,18 @@ To use `plt_backend.py`, the following arguments are expected:
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
 
 To simply generate a picture with default settings, use the following command:
+
 ```shell
 python run.py --module data.draw --backend plt
 ```
-If you would like to use another version, please edit `args.py` and refer to `pil_backend.py`. Most arguments are the same.
 
 ### Running caption
-    
-    python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM Path} ]
 
-The default value of `BatchSize` is 1.
-The default value of `LLM Path` is `/home/nfs02/model/llama-3.1-70b-instruct`
+```shell
+python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
+```
+
+Only part of the shapes will add numeric values, controlled by ${ratio}.
 
 ## Contributing
 
