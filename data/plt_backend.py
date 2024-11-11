@@ -218,11 +218,19 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_polygon(points, line_width, color, trans)
 
             case "line":
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(
                     (
                         (leftwise_endpoint[0], leftwise_endpoint[1]),
@@ -237,14 +245,22 @@ class Figure:
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
                 farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
-
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
                     line_width,
                     color,
                 )
+
             case "segment":
                 points: list = rule["points"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(points, line_width, color)
 
             case "ellipse":
@@ -258,6 +274,10 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans)
 
             case "spiral":
@@ -270,12 +290,20 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
 
             case "spindle":
                 center_x, center_y = rule["center"]
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_spindle(center_x, center_y, major, minor, line_width, color)
 
             case "fusiform_1":
@@ -293,7 +321,10 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
-
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_fusiform_1(
                     fc,
                     x_offset,
@@ -325,6 +356,11 @@ class Figure:
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
 
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
+
                 self.__handle_fusiform_2(
                     fc,
                     x_offset,
@@ -343,11 +379,11 @@ class Figure:
             case "curves":
                 curves = rule["control_points"]
                 try:
-                    width = rule["width"]
+                    line_width = rule["width"]
                 except:
-                    width = 5
+                    pass  # keep the original data
                 for curve in curves:
-                    self.__handle_curve(curve, width)
+                    self.__handle_curve(curve, line_width)
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
