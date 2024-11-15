@@ -503,7 +503,9 @@ class FusiformRelationGenerator:
 
         return None, "none"
 
-    def get_concentric_fusiform(self, scale_factor=None, delta_y=0.1, num_concentric=None) -> list[Fusiform]:
+    def get_concentric_fusiform(
+        self, scale_factor: list[float] = [], delta_y: float = 0.1, num_concentric: int = 1
+    ) -> list[Fusiform]:
         assert isinstance(self.fusiform, Fusiform)
 
         center = self.fusiform.center
@@ -514,11 +516,8 @@ class FusiformRelationGenerator:
         sin_params = self.fusiform.sin_params.copy()
         fusiform_list = []
 
-        if num_concentric is None:
-            num_concentric = randint(1, 4)
-
         for _ in range(num_concentric):
-            if scale_factor is None:
+            if not scale_factor:
                 scale_factor = [uniform(0.6, 1.5), uniform(1.2, 2.0)]
 
             focal_length = focal_length * scale_factor[0]
@@ -531,7 +530,7 @@ class FusiformRelationGenerator:
         return fusiform_list
 
     def get_concentric_fusiform_2(
-        self, scale_factor: Optional[NDArray[Any]], x_delta=None, num_concentric=None
+        self, scale_factor: list[float] = [], x_delta: float = -0.1, num_concentric: int = 1
     ) -> list[Fusiform_2]:
         assert isinstance(self.fusiform, Fusiform_2)
 
@@ -543,15 +542,10 @@ class FusiformRelationGenerator:
 
         fusiform_list = []
 
-        if num_concentric is None:
-            num_concentric = randint(1, 4)
-
         for _ in range(num_concentric):
             sin_params = [self.fusiform.sin_params[0], 3 * np.pi, np.pi]
-            if scale_factor is None:
-                scale_factor = np.array([uniform(0.6, 1.5), uniform(0.6, 1.5)])
-            if x_delta is None:
-                x_delta = normal(0.06, 0.01)
+            if not scale_factor:
+                scale_factor = [uniform(0.6, 1.5), uniform(0.6, 1.5)]
 
             focal_length = focal_length * scale_factor[0]
             sin_params[0] = sin_params[0] * scale_factor[1]
@@ -596,7 +590,7 @@ class FusiformRelationGenerator:
             if "concentric" in volution_type:
                 new_volutions = self.get_concentric_fusiform(scale_factor, delta_y, 1)
             elif "swing" in volution_type:
-                new_volutions = self.get_concentric_fusiform(np.sqrt(scale_factor), 0.5 * delta_y, 2)
+                new_volutions = self.get_concentric_fusiform(np.sqrt(scale_factor).tolist(), 0.5 * delta_y, 2)
 
             for new_volution in new_volutions:
                 if new_volution.is_closed():
@@ -631,7 +625,7 @@ class FusiformRelationGenerator:
             volution_0_swing = self.get_random_fusiform(initial_chamber, fusiform_type=2)
             volutions = [volution_0, volution_0_swing]
 
-        scale_factor = np.array([normal(0.6, 0.1), uniform(1.2, 1.5)])
+        scale_factor = [normal(0.6, 0.1), uniform(1.2, 1.5)]
         x_delta = uniform(-0.05, -0.02)
 
         max_num_volutions = randint(5, 13)
@@ -642,7 +636,7 @@ class FusiformRelationGenerator:
             if "concentric" in volution_type:
                 new_volutions = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)
             elif "swing" in volution_type:
-                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor), 0.5 * x_delta, 2)
+                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor).tolist(), 0.5 * x_delta, 2)
 
             for new_volution in new_volutions:
                 if new_volution.is_closed():
