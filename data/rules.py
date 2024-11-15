@@ -73,7 +73,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         chomata_list = septa_generator.generate_chomata(
             volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
         )
-        # shapes.extend(chomata_list)
+        shapes.extend(chomata_list)
 
         # Generate axial filling
         axial_filling = shape_generator.generate_axial_filling(int(num_volutions))
@@ -83,7 +83,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate other septa folds
         have_septa_folds = choice([True, False])
-        have_septa_folds = True
+        # have_septa_folds = True
         if have_septa_folds:
             global_gap = normal(0.8, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
