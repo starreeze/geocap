@@ -6,7 +6,13 @@ from numpy.random import choice, normal, randint
 from tqdm import trange
 
 from common.args import data_args, rule_args
-from data.relations import RelationGenerator, SeptaGenerator, CustomedShapeGenerator
+from data.relations import (
+    RelationGenerator,
+    SeptaGenerator,
+    EllipseRelationGenerator,
+    FusiformRelationGenerator,
+    CustomedShapeGenerator,
+)
 from data.shapes import ShapeGenerator
 from data.utils import overlap_area
 
@@ -22,17 +28,19 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate initial chamber(a small ellipse in the center of the canvas)
         initial_chamber = shape_generator.generate_initial_chamber()
+        fossil_center = initial_chamber.center
+        numerical_info["center"] = fossil_center
         shapes.append(initial_chamber)
 
         # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
-        # volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.2, 0.3, 0.5])
-        # volution_type = choice(["concentric", "swing"])
-        volution_shape = "customed_shape"
+        volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
+        volution_type = choice(["concentric", "swing"])
+        # volution_shape = "ellipse"
         volution_type = "concentric"
         if volution_shape == "ellipse":
-            volution_generator = relation_generator.ellipse_relation_generator
+            volution_generator = EllipseRelationGenerator(rule_args)
         elif volution_shape == "fusiform":
-            volution_generator = relation_generator.fusiform_relation_generator
+            volution_generator = FusiformRelationGenerator(rule_args)
         elif volution_shape == "customed_shape":
             volution_generator = CustomedShapeGenerator(rule_args)
 
@@ -77,8 +85,9 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         have_septa_folds = choice([True, False])
         have_septa_folds = True
         if have_septa_folds:
+            global_gap = normal(0.8, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
-                volutions, volution_type, int(num_volutions), axial_filling, global_gap=0.7
+                volutions, volution_type, int(num_volutions), axial_filling, global_gap
             )
             shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
