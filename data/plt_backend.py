@@ -73,6 +73,7 @@ class Figure:
             self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
             # print("Adding Perlin Noise...")
             mask = self.__get_perlin_mask()
+            # ↑Currently Buggy?
             self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save_release(self, path: str):
@@ -217,11 +218,19 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_polygon(points, line_width, color, trans)
 
             case "line":
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(
                     (
                         (leftwise_endpoint[0], leftwise_endpoint[1]),
@@ -236,14 +245,22 @@ class Figure:
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
                 farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
-
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(
                     ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
                     line_width,
                     color,
                 )
+
             case "segment":
                 points: list = rule["points"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_line(points, line_width, color)
 
             case "ellipse":
@@ -257,6 +274,10 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans)
 
             case "spiral":
@@ -269,12 +290,20 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
 
             case "spindle":
                 center_x, center_y = rule["center"]
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_spindle(center_x, center_y, major, minor, line_width, color)
 
             case "fusiform_1":
@@ -292,7 +321,10 @@ class Figure:
                     trans = (1, 1, 1, 1)
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
-
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
                 self.__handle_fusiform_1(
                     fc,
                     x_offset,
@@ -324,6 +356,11 @@ class Figure:
                 elif rule["fill_mode"] == "black":
                     trans = (0, 0, 0, 1)
 
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass
+
                 self.__handle_fusiform_2(
                     fc,
                     x_offset,
@@ -340,10 +377,13 @@ class Figure:
                 )
 
             case "curves":
-                curves = rule["curves"]
+                curves = rule["control_points"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass  # keep the original data
                 for curve in curves:
-                    control_points = curve["control_points"]
-                    self.__handle_curve(control_points)
+                    self.__handle_curve(curve, line_width)
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
@@ -575,7 +615,7 @@ class Figure:
             self.ax.plot((x[index], x[index]), (y1[index], y2[index]), linewidth=5, color=trans)
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
 
-    def __handle_curve(self, control_points):
+    def __handle_curve(self, control_points, width: int = 5):
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:
@@ -588,7 +628,11 @@ class Figure:
             )
             curve_points.append(tuple(point))
         curve_points = np.array(curve_points)
-        self.ax.plot(curve_points[:, 0], curve_points[:, 1])
+        self.ax.plot(
+            curve_points[:, 0],
+            curve_points[:, 1],
+            linewidth=width * (self.shape[0] / 640),
+        )
 
     def __line_extend(self, points: list) -> tuple:
         if points[0][0] == points[1][0]:
