@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import interp1d
+from scipy.misc import derivative
 
 
 def distance_2points(point1: tuple[float, float], point2: tuple[float, float]) -> float:
@@ -140,3 +142,34 @@ def overlap_area(bbox1, bbox2) -> float:
     overlap_area = overlap_width * overlap_height
 
     return overlap_area
+
+
+def get_tangent_line(
+    tangent_point: tuple[float, float], curve_points: list[tuple[float, float]]
+) -> tuple[float, float]:
+    assert tangent_point in curve_points, "tangent point is not on the curve"
+
+    x, y = zip(*curve_points)
+
+    curve_func = interp1d(x, y, kind="cubic", fill_value="extrapolate")
+
+    slope = derivative(curve_func, tangent_point[0], dx=1e-6)
+
+    y_target = curve_func(tangent_point[0])
+    intercept = y_target - slope * tangent_point[0]
+
+    return (slope, intercept)
+
+
+def find_perpendicular_line(line: tuple[float, float], point: tuple[float, float]):
+    slope, intercept = line
+    x, y = point
+
+    if np.abs(slope) > 1e-3:
+        perpendicular_slope = -1 / slope
+        perpendicular_intercept = y - perpendicular_slope * x
+    else:
+        perpendicular_slope = float("inf")
+        perpendicular_intercept = x
+
+    return perpendicular_slope, perpendicular_intercept

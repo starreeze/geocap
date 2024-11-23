@@ -6,7 +6,13 @@ from numpy.random import choice, normal, randint
 from tqdm import trange
 
 from common.args import data_args, rule_args
-from data.relations import RelationGenerator, SeptaGenerator
+from data.relations import (
+    RelationGenerator,
+    SeptaGenerator,
+    EllipseRelationGenerator,
+    FusiformRelationGenerator,
+    CustomedShapeGenerator,
+)
 from data.shapes import ShapeGenerator
 from data.utils import overlap_area
 
@@ -22,43 +28,84 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate initial chamber(a small ellipse in the center of the canvas)
         initial_chamber = shape_generator.generate_initial_chamber()
+        fossil_center = initial_chamber.center
+        numerical_info["center"] = fossil_center
         shapes.append(initial_chamber)
 
         # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
-        volution_type = choice(["ellipse", "fusiform"], p=[0.2, 0.8])
-        # volution_type = "fusiform"
-        if volution_type == "ellipse":
-            volution_generator = relation_generator.ellipse_relation_generator
-        elif volution_type == "fusiform":
-            volution_generator = relation_generator.fusiform_relation_generator
+        volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
+        volution_type = choice(["concentric", "swing"])
+        # volution_shape = "ellipse"
+        volution_type = "concentric"
+        if volution_shape == "ellipse":
+            volution_generator = EllipseRelationGenerator(rule_args)
+        elif volution_shape == "fusiform":
+            volution_generator = FusiformRelationGenerator(rule_args)
+        elif volution_shape == "customed_shape":
+            volution_generator = CustomedShapeGenerator(rule_args)
 
-        volutions = volution_generator.generate_volutions(initial_chamber)
+        volutions = volution_generator.generate_volutions(initial_chamber, volution_type)
 
-        numerical_info["num_volutions"] = len(volutions) - 1
+        num_volutions = len(volutions) - 1 if "concentric" in volution_type else len(volutions) / 2 - 1
+        numerical_info["num_volutions"] = float(num_volutions)
+
+        fossil_bbox = volutions[-1].get_bbox()
+        numerical_info["fossil_bbox"] = fossil_bbox
+
         shapes.extend(volutions)
+        shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
-        tunnel_angle = normal(15, 3)  # initialize
-        tunnel_angles = [tunnel_angle]
-        for i in range(len(volutions)):
+        tunnel_angle = normal(18, 2)  # initialize
+        tunnel_angles = []
+        for _ in range(int(num_volutions)):
             scale_factor = normal(1.1, 0.1)
             tunnel_angle *= scale_factor
             tunnel_angles.append(tunnel_angle)
-        numerical_info["tunnel_angles"] = tunnel_angles
 
-        # Generate septa
-        septa_generator = SeptaGenerator()
-        septa_list, num_septa = septa_generator.generate_septa(volutions)
-        shapes.extend(septa_list)
+        tunnel_start_idx = randint(0, 4)
+        numerical_info["tunnel_start_idx"] = tunnel_start_idx
+        numerical_info["tunnel_angles"] = tunnel_angles[tunnel_start_idx:]
+
+        # Generate chomata
+        # septa_generator = SeptaGenerator()
+        septa_generator = SeptaGenerator(init_septa_prob=1)
+        chomata_list = septa_generator.generate_chomata(
+            volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
+        )
+        shapes.extend(chomata_list)
+
+        # Generate axial filling
+        axial_filling = shape_generator.generate_axial_filling(int(num_volutions))
+
+        # Generate septa folds at poles
+        poles_folds = shape_generator.generate_poles_folds(int(num_volutions))
+
+        # Generate other septa folds
+        have_septa_folds = choice([True, False])
+        # have_septa_folds = True
+        if have_septa_folds:
+            global_gap = normal(0.8, 0.1)
+            septa_folds, num_septa = septa_generator.generate_septa(
+                volutions, volution_type, int(num_volutions), axial_filling, global_gap
+            )
+            shapes.extend(septa_folds)
+            septa_folds = [shape.to_dict() for shape in septa_folds]
+        else:
+            septa_folds = []
+            num_septa = [0 for _ in range(int(num_volutions))]
         numerical_info["num_septa"] = num_septa
 
         shapes_dict = [shape.to_dict() for shape in shapes]
-
-        img_width = normal(5.0, 1.0)
-        img_height = img_width * normal(0.6, 0.1)
-        img_size = [img_width, img_height]
-        numerical_info["img_size"] = img_size
-        results.append({"shapes": shapes_dict, "numerical_info": numerical_info})
+        results.append(
+            {
+                "shapes": shapes_dict,
+                "axial_filling": axial_filling,
+                "septa_folds": septa_folds,
+                "poles_folds": poles_folds,
+                "numerical_info": numerical_info,
+            }
+        )
 
     assert len(results) == data_args.num_fossil_samples
     return results
