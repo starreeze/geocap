@@ -13,6 +13,7 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
+    stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
     num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
