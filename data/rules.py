@@ -2,6 +2,7 @@
 import json
 import os
 
+import numpy as np
 from numpy.random import choice, normal, randint
 from tqdm import trange
 
@@ -19,7 +20,6 @@ from data.utils import overlap_area
 
 def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
     shape_generator = ShapeGenerator(rule_args)
-    relation_generator = RelationGenerator(rule_args)
     results = []
 
     for _ in trange(data_args.num_fossil_samples):
@@ -33,8 +33,10 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         shapes.append(initial_chamber)
 
         # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
-        volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
-        volution_type = choice(["concentric", "swing"])
+
+        # volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
+        volution_shape = choice(["fusiform", "customed_shape"], p=[0.3, 0.7])
+        # volution_type = choice(["concentric", "swing"])
         # volution_shape = "ellipse"
         volution_type = "concentric"
         if volution_shape == "ellipse":
@@ -76,10 +78,13 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         shapes.extend(chomata_list)
 
         # Generate axial filling
-        axial_filling = shape_generator.generate_axial_filling(int(num_volutions))
+        if np.random.rand() < rule_args.prob_has_axial_filling:
+            axial_filling = shape_generator.generate_axial_filling(int(num_volutions), rule_args)
+        else:
+            axial_filling = []
 
         # Generate septa folds at poles
-        poles_folds = shape_generator.generate_poles_folds(int(num_volutions))
+        poles_folds = shape_generator.generate_poles_folds(int(num_volutions), axial_filling, rule_args)
 
         # Generate other septa folds
         have_septa_folds = choice([True, False])
@@ -89,7 +94,6 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
             septa_folds, num_septa = septa_generator.generate_septa(
                 volutions, volution_type, int(num_volutions), axial_filling, global_gap
             )
-            shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
         else:
             septa_folds = []
