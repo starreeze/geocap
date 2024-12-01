@@ -37,6 +37,8 @@ class RunArgs:
 @dataclass
 class RuleArgs:
     mode: Literal["basic", "fossil"] = field(default="basic")
+    prob_has_axial_filling: float = field(default=0.8)
+    overlap_axial_and_poles_folds: bool = False
     max_num_shapes: int = field(default=10)
     output_fp_precision: int = field(default=6)
 

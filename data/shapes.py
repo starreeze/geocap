@@ -981,13 +981,16 @@ class ShapeGenerator:
         special_info = "initial chamber. "
         return Ellipse(center, major_axis, minor_axis, rotation, special_info)
 
-    def generate_axial_filling(self, num_volutions: int) -> list[dict]:
+    def generate_axial_filling(self, num_volutions: int, rule_args) -> list[dict]:
         axial_filling = []
 
         for i in range(2):
             start_volution = randint(0, max(1, num_volutions // 4))
-            # end_volution = randint(num_volutions // 2, num_volutions)
-            end_volution = num_volutions
+
+            if rule_args.overlap_axial_and_poles_folds:
+                end_volution = num_volutions
+            else:
+                end_volution = randint(num_volutions // 2, num_volutions)
 
             start_angle_main = -normal(0.1, 0.02) * np.pi + i * np.pi
             end_angle_main = normal(0.1, 0.02) * np.pi + i * np.pi
@@ -1023,10 +1026,13 @@ class ShapeGenerator:
 
         return axial_filling
 
-    def generate_poles_folds(self, num_volutions: int) -> list[dict]:
+    def generate_poles_folds(self, num_volutions: int, axial_filling: list, rule_args) -> list[dict]:
         poles_folds = []
         for i in range(2):
-            start_volution = randint(num_volutions // 2, num_volutions)
+            if not rule_args.overlap_axial_and_poles_folds and axial_filling:
+                start_volution = axial_filling[3 * i]["end_volution"]
+            else:
+                start_volution = randint(num_volutions // 2, num_volutions)
             end_volution = num_volutions
             start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
             end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
