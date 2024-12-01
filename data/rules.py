@@ -206,9 +206,9 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 
 
 def main():
-    if "basic" in rule_args.mode:
+    if data_args.stage == 1:
         samples = generate_rules(data_args, rule_args)
-    elif "fossil" in rule_args.mode:
+    elif data_args.stage == 2:
         samples = generate_fossil_rules(data_args, rule_args)
 
     os.makedirs(os.path.dirname(data_args.rules_path), exist_ok=True)

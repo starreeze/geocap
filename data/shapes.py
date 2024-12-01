@@ -268,7 +268,7 @@ class Ellipse(GSRule):
         y_rot = x * sin_angle + y * cos_angle
 
         # Ensure the point is on the ellipse
-        assert np.isclose((x_rot / a) ** 2 + (y_rot / b) ** 2, 1), "The point is not on the ellipse"
+        assert np.abs((x_rot / a) ** 2 + (y_rot / b) ** 2 - 1) < 1e-4, "The point is not on the ellipse"
 
         # Gradient of the ellipse at the point
         dx, dy = -y_rot / (b**2), x_rot / (a**2)
@@ -287,6 +287,7 @@ class Ellipse(GSRule):
         self.major_axis = self.radius * 2
         self.minor_axis = self.radius * 2
         self.rotation = 0
+        self.adjust_curve_points()
 
 
 # TODO: add more types
