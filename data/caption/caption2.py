@@ -7,11 +7,11 @@ import os
 import random
 from typing import Any
 
-from data.caption_2nd.shell import Shell
-from data.caption_2nd.volution import Volution
-from data.caption_2nd.tunnel import Tunnel
-from data.caption_2nd.proloculus import Proloculus
-from data.caption_2nd.chomata import Chomata
+from data.caption.caption_2nd.shell import Shell
+from data.caption.caption_2nd.volution import Volution
+from data.caption.caption_2nd.tunnel import Tunnel
+from data.caption.caption_2nd.proloculus import Proloculus
+from data.caption.caption_2nd.chomata import Chomata
 import re
 from common.args import caption_args, data_args, run_args
 
