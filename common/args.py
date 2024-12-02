@@ -37,7 +37,7 @@ class RunArgs:
 
 @dataclass
 class RuleArgs:
-    output_fp_precision: int = field(default=6)
+    output_fp_precision: int = field(default=4)
 
     """args for stage 1"""
     max_num_shapes: int = field(default=10)

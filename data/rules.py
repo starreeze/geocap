@@ -193,16 +193,19 @@ def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.2) -> bool:
     return True
 
 
-class FloatJSONEncoder(json.JSONEncoder):
-    def encode(self, obj):
-        if isinstance(obj, float):
-            return f"%.{rule_args.output_fp_precision}f" % obj
-        return super().encode(obj)
+def round_floats(obj, precision=2):
+    if isinstance(obj, float):
+        return round(obj, precision)
+    if isinstance(obj, dict):
+        return {k: round_floats(v, precision) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [round_floats(x, precision) for x in obj]
+    return obj
 
 
 def save_rules(rules: list[dict[str, list]], output_file: str):
     with open(output_file, "w") as f:
-        json.dump(rules, f, default=vars, cls=FloatJSONEncoder)
+        json.dump(round_floats(rules, rule_args.output_fp_precision), f)
 
 
 def main():
