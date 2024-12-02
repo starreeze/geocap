@@ -684,12 +684,17 @@ def gen_data_input(skeleton):
 
 
 def main():
-    model_name, model_size = caption_args.caption_llm.split("-")
-    generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
-    with open(data_args.rules_path, "r") as f:
-        samples = json.load(f)[run_args.start_pos : run_args.end_pos]
-    os.makedirs(data_args.caption_dir, exist_ok=True)
-    caption(samples, generator, data_args.caption_path)
+    if data_args.stage == 1:
+        model_name, model_size = caption_args.caption_llm.split("-")
+        generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
+        with open(data_args.rules_path, "r") as f:
+            samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+        os.makedirs(data_args.caption_dir, exist_ok=True)
+        caption(samples, generator, data_args.caption_path)
+    elif data_args.stage == 2:
+        import data.caption.caption2
+
+        data.caption.caption2.main()
 
 
 if __name__ == "__main__":

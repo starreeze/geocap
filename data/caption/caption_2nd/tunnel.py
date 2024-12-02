@@ -1,5 +1,5 @@
-from data.caption_2nd.params import *
-from data.caption_2nd.base import BaseFeature
+from data.caption.caption_2nd.params import *
+from data.caption.caption_2nd.base import BaseFeature
 
 
 class Tunnel(BaseFeature):
