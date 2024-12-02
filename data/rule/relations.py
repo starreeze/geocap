@@ -2,8 +2,8 @@ from typing import Any, Literal, Optional
 import numpy as np
 from numpy.typing import NDArray
 from numpy.random import uniform, randint, normal
-from .shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2, Curve, CustomedShape
-from data.utils import (
+from ..shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2, Curve, CustomedShape
+from data.rule.utils import (
     distance_2points,
     polar_angle,
     line_given2points,

@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from common.args import caption_args, data_args, run_args
 from common.llm import LLMGenerator, generator_mapping, model_path_mapping
-from common.prompt import *
+from data.caption.prompt import *
 
 center_size_ratio = 1 / 3
 

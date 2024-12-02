@@ -7,7 +7,7 @@ from numpy.random import choice, normal, randint
 from tqdm import trange
 
 from common.args import data_args, rule_args
-from data.relations import (
+from data.rule.relations import (
     RelationGenerator,
     SeptaGenerator,
     EllipseRelationGenerator,
@@ -15,7 +15,7 @@ from data.relations import (
     CustomedShapeGenerator,
 )
 from data.shapes import ShapeGenerator
-from data.utils import overlap_area
+from data.rule.utils import overlap_area
 
 
 def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
