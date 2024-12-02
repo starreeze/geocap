@@ -37,12 +37,10 @@ class RunArgs:
 
 @dataclass
 class RuleArgs:
-    mode: Literal["basic", "fossil"] = field(default="basic")
-    prob_has_axial_filling: float = field(default=0.8)
-    overlap_axial_and_poles_folds: bool = False
-    max_num_shapes: int = field(default=10)
     output_fp_precision: int = field(default=6)
 
+    """args for stage 1"""
+    max_num_shapes: int = field(default=10)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
@@ -70,6 +68,10 @@ class RuleArgs:
     ellipse_concentric_level: int = field(default=3)
     ellipse_circumscribed_level: int = field(default=3)
     ellipse_inscribed_level: int = field(default=3)
+
+    """args for stage 2"""
+    prob_has_axial_filling: float = field(default=0.8)
+    overlap_axial_and_poles_folds: bool = False
 
 
 @dataclass
