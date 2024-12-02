@@ -1,8 +1,8 @@
 import json
 import os
 from tqdm import tqdm
-import data.pil_backend as pld
-import data.plt_backend as ptd
+import data.draw.pil_backend as pld
+import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
 from common.iterwrap import iterate_wrapper
 

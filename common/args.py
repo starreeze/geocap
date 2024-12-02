@@ -13,6 +13,7 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
+    stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
     num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
@@ -36,10 +37,10 @@ class RunArgs:
 
 @dataclass
 class RuleArgs:
-    mode: Literal["basic", "fossil"] = field(default="basic")
-    max_num_shapes: int = field(default=10)
-    output_fp_precision: int = field(default=6)
+    output_fp_precision: int = field(default=4)
 
+    """args for stage 1"""
+    max_num_shapes: int = field(default=10)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
@@ -67,6 +68,10 @@ class RuleArgs:
     ellipse_concentric_level: int = field(default=3)
     ellipse_circumscribed_level: int = field(default=3)
     ellipse_inscribed_level: int = field(default=3)
+
+    """args for stage 2"""
+    prob_has_axial_filling: float = field(default=0.8)
+    overlap_axial_and_poles_folds: bool = False
 
 
 @dataclass

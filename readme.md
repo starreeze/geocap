@@ -11,7 +11,7 @@ Requirements are provided in `deploy/requirements.txt`. It's recommended to use 
 A `run.py` is provided for running a module. This is an elegant workaround for importing errors from different packages. Examples:
 
 ```shell
-python run.py --module data.rules --num_basic_geo_samples 10  # default entry is main()
+python run.py --module data.rule.generate --num_basic_geo_samples 10  # default entry is main()
 python run.py --module data.format --action to_llava  # you can also specify the entry function (--action)
 ```
 
@@ -20,13 +20,13 @@ python run.py --module data.format --action to_llava  # you can also specify the
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 
 ```shell
-python run.py --module data.rules --num_basic_geo_samples 10
+python run.py --module data.rule.generate --num_basic_geo_samples 10
 ```
 
 or generate rules for synthetic fossil samples:
 
 ```shell
-python run.py --module data.rules --mode fossil --num_fossil_samples 10
+python run.py --module data.rule.generate --mode fossil --num_fossil_samples 10
 ```
 
 Each data sample contains two parts:
@@ -38,23 +38,17 @@ Each data sample contains two parts:
 
 ```json
 {
-   "shapes": [
-      {
-         "type": "line",
-         ...
-      },
-      {
-         "type": "ellipse",
-         ...
-      },
-   ],
-   "relations": [
-      [
-         0,
-         1,
-         "tangent line"
-      ]
-   ]
+  "shapes": [
+    {
+      "type": "line"
+      //...
+    },
+    {
+      "type": "ellipse"
+      //...
+    }
+  ],
+  "relations": [[0, 1, "tangent line"]]
 }
 ```
 
@@ -75,7 +69,7 @@ Each 'level' argument is an integer (with a default value) representing the rela
 If more ellipse is expected, you can set a higher level for ellipse_shape_level:
 
 ```shell
-python run.py --module data.rules --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
+python run.py --module data.rule.generate --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
 ```
 
 ### Running Module 'draw'
@@ -113,6 +107,26 @@ python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --cap
 ```
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
+
+## Implementation detail
+
+### Rule
+
+generate random rules with conditions.
+
+write how you generate rules here...
+
+### Draw
+
+draw shapes according to the rule.
+
+write how you implement, e.g., adding noise...
+
+### Caption
+
+generate image captions according to the rule.
+
+write how you convert rules to intermediate format and generate captions...
 
 ## Contributing
 
