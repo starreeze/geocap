@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 from numpy.random import randint, uniform, normal
 import matplotlib.pyplot as plt
-from data.rule.utils import distance_2points, distance_point_to_line, polar_angle, distance_2points
+from data.rule.utils import distance_2points, distance_point_to_line, polar_angle, distance_2points, get_tangent_line
 
 
 @dataclass
@@ -86,7 +86,7 @@ class Polygon(GSRule):
     def check_angle(self, thres=0.15 * np.pi) -> bool:
         # Check if each angle is greater than thres
         def angle_between(v1, v2):
-            return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+            return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
 
         angles = []
         for i in range(len(self.points)):
@@ -217,40 +217,41 @@ class Ellipse(GSRule):
         elif np.isclose(theta, 1.5 * np.pi):
             return self.curve_points[int(3 * n // 4)]
         else:
-            slope = np.tan(theta)
+            slope = np.tan(theta + self.rotation)
             intercept = self.center[1] - slope * self.center[0]
             line = (slope, intercept)
 
         quarter_size = len(self.curve_points) // 4
         quarter_idx = theta // (0.5 * np.pi)  # i_th curve
-        start_idx = int(quarter_size * quarter_idx)
-        end_idx = int(quarter_size * (quarter_idx + 1))
+        start_idx = int(quarter_size * quarter_idx * 0.8)
+        end_idx = int(quarter_size * (quarter_idx + 1) * 1.2)
+
         distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
         min_distance_idx = np.argmin(distances)
         point = self.curve_points[start_idx + min_distance_idx]
 
         return tuple(point)
 
-    # def get_point(self, theta=None) -> tuple[float, float]:
-    #     if theta is None:
-    #         theta = np.random.uniform(0, 2 * np.pi)
+    def get_point_stage1(self, theta=None) -> tuple[float, float]:
+        if theta is None:
+            theta = np.random.uniform(0, 2 * np.pi)
 
-    #     # Parametric equations for the ellipse without rotation
-    #     x = 0.5 * self.major_axis * np.cos(theta)
-    #     y = 0.5 * self.minor_axis * np.sin(theta)
+        # Parametric equations for the ellipse without rotation
+        x = 0.5 * self.major_axis * np.cos(theta)
+        y = 0.5 * self.minor_axis * np.sin(theta)
 
-    #     # Rotate the point by the ellipse's rotation angle
-    #     cos_angle = np.cos(self.rotation)
-    #     sin_angle = np.sin(self.rotation)
+        # Rotate the point by the ellipse's rotation angle
+        cos_angle = np.cos(self.rotation)
+        sin_angle = np.sin(self.rotation)
 
-    #     x_rot = x * cos_angle - y * sin_angle
-    #     y_rot = x * sin_angle + y * cos_angle
+        x_rot = x * cos_angle - y * sin_angle
+        y_rot = x * sin_angle + y * cos_angle
 
-    #     # Translate the point by the ellipse's center
-    #     x_final = x_rot + self.center[0]
-    #     y_final = y_rot + self.center[1]
+        # Translate the point by the ellipse's center
+        x_final = x_rot + self.center[0]
+        y_final = y_rot + self.center[1]
 
-    #     return (x_final, y_final)
+        return (x_final, y_final)
 
     def get_tangent_line(self, point: tuple[float, float]) -> tuple[float, float]:
         a = 0.5 * self.major_axis
@@ -277,6 +278,9 @@ class Ellipse(GSRule):
 
         slope = dy_rot / dx_rot
         intercept = point[1] - slope * point[0]
+        if slope > 1e5:
+            slope = float("inf")
+            intercept = point[0]
         return (slope, intercept)
 
     def to_circle(self, radius: float):

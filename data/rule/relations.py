@@ -361,8 +361,9 @@ class EllipseRelationGenerator:
         special_polygon = np.random.choice(["", "rectangle", "equilateral triangle"])
         if "rectangle" in special_polygon:
             rot = self.ellipse.rotation
-            theta_0 = rot - np.pi * uniform(0.1, 0.4)
-            theta_1 = rot + np.pi * uniform(0.1, 0.4)
+            random_angle = np.pi * uniform(0.1, 0.4)
+            theta_0 = rot - random_angle
+            theta_1 = rot + random_angle
             theta_list = [theta_0, theta_1, theta_0 + np.pi, theta_1 + np.pi]
         elif "equilateral" in special_polygon and "circle" in self.ellipse.special_info:
             theta_0 = uniform(0, np.pi)
