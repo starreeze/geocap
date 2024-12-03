@@ -20,13 +20,13 @@ python run.py --module data.format --action to_llava  # you can also specify the
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 
 ```shell
-python run.py --module data.rule.generate --num_basic_geo_samples 10
+python run.py --module data.rule.generate --stage 1 --num_basic_geo_samples 10
 ```
 
 or generate rules for synthetic fossil samples:
 
 ```shell
-python run.py --module data.rule.generate --mode fossil --num_fossil_samples 10
+python run.py --module data.rule.generate --stage 2 --num_fossil_samples 10
 ```
 
 Each data sample contains two parts:

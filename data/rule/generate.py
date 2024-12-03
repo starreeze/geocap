@@ -14,7 +14,7 @@ from data.rule.relations import (
     FusiformRelationGenerator,
     CustomedShapeGenerator,
 )
-from data.shapes import ShapeGenerator
+from data.rule.shapes import ShapeGenerator
 from data.rule.utils import overlap_area
 
 
