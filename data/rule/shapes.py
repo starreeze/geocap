@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 from numpy.random import randint, uniform, normal
 import matplotlib.pyplot as plt
-from data.rule.utils import distance_2points, distance_point_to_line
+from data.rule.utils import distance_2points, distance_point_to_line, polar_angle, distance_2points
 
 
 @dataclass
@@ -98,8 +98,6 @@ class Polygon(GSRule):
         return min_angle > thres
 
     def to_simple_polygon(self):
-        from .rule.utils import polar_angle, distance_2points
-
         n = len(self.points)
         center = (
             sum([p[0] for p in self.points]) / n,
