@@ -338,7 +338,7 @@ class EllipseRelationGenerator:
         return line
 
     def get_concentric_ellipse(self, scale_factor=None, num_concentric=None) -> list[Ellipse]:
-        ellipse_list = []
+        ellipse_list = [self.ellipse]
         if num_concentric is None:
             num_concentric = randint(1, 4)
 
@@ -347,15 +347,15 @@ class EllipseRelationGenerator:
                 scale_factor = uniform(0.6, 1.5)
                 while 0.9 < scale_factor < 1.1:
                     scale_factor = uniform(0.6, 1.5)
-            scaled_major_axis = self.ellipse.major_axis * scale_factor
-            scaled_minor_axis = self.ellipse.minor_axis * scale_factor
+            scaled_major_axis = ellipse_list[-1].major_axis * scale_factor
+            scaled_minor_axis = ellipse_list[-1].minor_axis * scale_factor
             center = self.ellipse.center
             rotation = self.ellipse.rotation
 
             special_info = self.ellipse.special_info
             ellipse = Ellipse(center, scaled_major_axis, scaled_minor_axis, rotation, special_info)
             ellipse_list.append(ellipse)
-        return ellipse_list
+        return ellipse_list[1:]
 
     def get_inscribed_polygon(self, special_polygon="") -> Polygon:
         special_polygon = np.random.choice(["", "rectangle", "equilateral triangle"])
