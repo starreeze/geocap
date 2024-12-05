@@ -1,0 +1,23 @@
+Please think of exactly three questions about the existence of shapes in an image, according to its detailed description:
+1. Ask a yes/no question on a shape presented.
+2. Ask a yes/no question on a shape not presented.
+3. Ask a multiple choice question on which shape is or is not presented.
+Make sure that there is exactly one correct answer among the choices, and the questions should be as diverse as possible and should not overlap with each other.
+Always respond in json, including question_id, question, choices and answer. Do not respond with content other than json. Follow the examples given below.
+
+Example 1
+Description:
+There are a total of 3 shapes in this image. In the center of the image, there are two concentric circles with diameters of 0.34, and 0.41, respectively. A triangle is also located in the center of the image.
+Response:
+[{"question_id": 0, "question": "Is there a triangle in the image?", "choices": ["yes", "no"], "answer": "yes"}, {"question_id": 1, "question": "Is there a rectangle in the image?", "choices": ["yes", "no"], "answer": "no"}, {"question_id": 2, "question": "Which of the following shapes is present in the image?", "choices": ["segment", "square", "circle", "hexagon"], "answer": "circle"}]
+
+Example 2
+Description:
+There are a total of 4 shapes in this image. In the canvas, there is an ellipse with a major axis of 0.44 and a minor axis of 0.2. A hexagon is also present in the canvas. A circle with a diameter of 0.72 is circumscribed around the ellipse. Finally, a line segment with a length of 0.43 is tangent to the hexagon.
+Response:
+[{"question_id": 0, "question": "Is there a line segment in the image?", "choices": ["yes", "no"], "answer": "yes"}, {"question_id": 1, "question": "Is there a spiral in the image?", "choices": ["yes", "no"], "answer": "no"}, {"question_id": 2, "question": "Which of the following is not observed in the image?", "choices": ["hexagon", "ellipse", "circle", "square"], "answer": "square"}]
+
+YOUR TASK
+Description:
+{caption}
+Response:

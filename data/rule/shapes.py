@@ -1,11 +1,12 @@
-from typing import Optional, Union, Literal
-from dataclasses import dataclass, asdict, field
 from abc import ABC, abstractmethod
-from typing import Any
-import numpy as np
-from numpy.random import randint, uniform, normal
+from dataclasses import asdict, dataclass, field
+from typing import Any, Literal, Optional
+
 import matplotlib.pyplot as plt
-from data.rule.utils import distance_2points, distance_point_to_line, polar_angle, distance_2points, get_tangent_line
+import numpy as np
+from numpy.random import normal, randint, uniform
+
+from data.rule.utils import distance_2points, distance_point_to_line, polar_angle
 
 
 @dataclass
@@ -20,12 +21,49 @@ class GSRule(ABC):
         # return bounding box in form of xyxy
         pass
 
-    def bbox_from_points(self, points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    @abstractmethod
+    def get_area(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_centroid(self) -> tuple[float, float]:
+        pass
+
+    @staticmethod
+    def bbox_from_points(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
         min_x = min(x for x, y in points)
         max_x = max(x for x, y in points)
         min_y = min(y for x, y in points)
         max_y = max(y for x, y in points)
         return [(min_x, max_y), (max_x, min_y)]
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> "GSRule":
+        shape_type = data.get("type", "")
+        if shape_type == "polygon":
+            return Polygon(
+                points=data["points"], special_info=data.get("special_info", ""), fill_mode=data.get("fill_mode", "no")
+            )
+        elif shape_type == "line":
+            return Line(type=data["type"], points=data["points"])
+        elif shape_type == "ellipse":
+            return Ellipse(
+                center=data["center"],
+                major_axis=data.get("major_axis", 0),
+                minor_axis=data.get("minor_axis", 0),
+                rotation=data.get("rotation", 0),
+                special_info=data.get("special_info", ""),
+                fill_mode=data.get("fill_mode", "no"),
+            )
+        elif shape_type == "spiral":
+            return Spiral(
+                center=data["center"],
+                initial_radius=data["initial_radius"],
+                growth_rate=data["growth_rate"],
+                sin_params=data["sin_params"],
+                max_theta=data["max_theta"],
+            )
+        raise ValueError(f"Unknown shape type: {shape_type}")
 
 
 @dataclass
@@ -41,17 +79,29 @@ class Polygon(GSRule):
         return self.bbox_from_points(self.points)
 
     def get_area(self) -> float:
-        if "triangle" in self.special_info:
-            A, B, C = self.points
-            a = distance_2points(B, C)
-            b = distance_2points(A, C)
-            c = distance_2points(A, B)
-            s = (a + b + c) / 2
-            area = np.sqrt(s * (s - a) * (s - b) * (s - c))
-        else:
-            bbox = self.get_bbox()
-            area = (bbox[1][0] - bbox[0][0]) * (bbox[0][1] - bbox[1][1])
+        n = len(self.points)
+        area = 0.0
+        for i in range(n):
+            x_i, y_i = self.points[i]
+            x_next, y_next = self.points[(i + 1) % n]
+            area += x_i * y_next - x_next * y_i
+        area = abs(area) / 2.0
         return area
+
+    def get_centroid(self) -> tuple[float, float]:
+        A = self.get_area()
+        C_x = 0
+        C_y = 0
+        n = len(self.points)
+        for i in range(n):
+            x_i, y_i = self.points[i]
+            x_next, y_next = self.points[(i + 1) % n]
+            common_term = x_i * y_next - x_next * y_i
+            C_x += (x_i + x_next) * common_term
+            C_y += (y_i + y_next) * common_term
+        C_x /= 6 * A
+        C_y /= 6 * A
+        return C_x, C_y
 
     def normalize_points(self):
         min_x = min(x for x, y in self.points)
@@ -145,6 +195,16 @@ class Line(GSRule):
     def get_bbox(self) -> list[tuple[float, float]]:
         return self.bbox_from_points(self.points)
 
+    def get_centroid(self) -> tuple[float, float]:
+        x_coords = [point[0] for point in self.points]
+        y_coords = [point[1] for point in self.points]
+        centroid_x = sum(x_coords) / len(self.points)
+        centroid_y = sum(y_coords) / len(self.points)
+        return centroid_x, centroid_y
+
+    def get_area(self) -> float:
+        return 0
+
     def get_length(self) -> float:
         x1, y1 = self.points[0]
         x2, y2 = self.points[1]
@@ -205,6 +265,9 @@ class Ellipse(GSRule):
 
     def get_area(self) -> float:
         return np.pi * self.major_axis * self.minor_axis
+
+    def get_centroid(self) -> tuple[float, float]:
+        return self.center
 
     def get_point(self, theta=None) -> tuple[float, float]:
         if theta is None:
@@ -316,6 +379,12 @@ class Spiral(GSRule):
             points.append((x, y))
         return self.bbox_from_points(points)
 
+    def get_area(self) -> float:
+        return np.pi * (self.radius(self.max_theta) ** 2)
+
+    def get_centroid(self) -> tuple[float, float]:
+        return self.center
+
     def radius(self, theta: float) -> float:
         epsilon, omega, phi = self.sin_params
         return self.initial_radius + (self.growth_rate + epsilon * np.sin(omega * theta + phi)) * theta
@@ -381,6 +450,12 @@ class Fusiform(GSRule):
         y_min = self.y_symmetric_axis - 0.5 * self.height
         return [(self.x_start, y_max), (self.x_end, y_min)]
 
+    def get_area(self) -> float:
+        raise NotImplementedError()
+
+    def get_centroid(self) -> tuple[float, float]:
+        raise NotImplementedError()
+
     def is_closed(self) -> bool:
         return self.ratio < 1e3
 
@@ -406,135 +481,6 @@ class Fusiform(GSRule):
         point = self.curve_points[start_idx + min_distance_idx]
 
         return tuple(point)
-
-
-# @dataclass
-# class Fusiform(GSRule):
-#     # use symetric parabolas to generate a fusiform
-#     # y = 4*p * (x-x_0)^2 + c
-#     focal_length: float = 0.0  # p
-#     x_offset: float = 0.0  # x_0
-#     y_offset: float = 0.0  # c
-#     y_symmetric_axis: float = 0.0
-
-#     # add sine wave
-#     sin_params: list[float] = field(default_factory=list)
-
-#     # focal_length_2: float = 0.0
-#     # x_offset_2: float = 0.0
-#     # y_offset_2: float = 0.0
-
-#     x_start: float = 0.0
-#     x_end: float = 1.0
-#     center: tuple[float, float] = field(init=False)
-#     ratio: float = field(init=False)
-#     special_info: str = ""
-#     fill_mode: Literal["no", "white", "black"] = "no"
-
-#     def __post_init__(self):
-#         self.precision: float = 1e-2
-#         self.center = (self.x_offset, self.y_symmetric_axis)
-
-#         self.data_points = int(1000 / self.precision)
-#         x = np.linspace(0, 1, self.data_points)
-#         epsilon, omega, phi = self.sin_params
-#         sin_wave = epsilon * np.sin(omega * x + phi)
-#         y1 = 4 * self.focal_length * (x - self.x_offset) ** 2 + self.y_offset + sin_wave
-#         y2 = 2 * self.y_symmetric_axis - y1
-
-#         close_indices = np.where(np.abs(y1 - y2) < self.precision)[0]
-#         if len(close_indices) > 0:
-#             left_intersection = int(close_indices[close_indices < self.data_points // 2][-1])
-#             right_intersection = int(close_indices[close_indices > self.data_points // 2][0])
-
-#             self.x_start = x[left_intersection]
-#             self.x_end = x[right_intersection]
-#             self.width = abs(self.x_end - self.x_start)
-
-#             self.height = 2 * (self.y_symmetric_axis - self.y_offset - sin_wave.min())
-#             self.ratio = self.width / self.height if self.height != 0 else float("inf")
-#         else:
-#             self.ratio = float("inf")
-
-#         """
-#         v0 for two parabolas to generate a fusiform
-#         """
-#         # center_x = 0.5 * (self.x_offset_1 + self.x_offset_2)
-#         # center_y = 0.5 * (self.y_offset_1 + self.y_offset_2)
-#         # self.center = (center_x, center_y)
-
-#         # # Ensure two parabolas have intersections
-#         # assert self.focal_length_1 > 0 and self.focal_length_2 < 0
-#         # assert self.y_offset_1 < self.y_offset_2
-
-#         # # Calculate the intersection points by solving the quadratic equation y1 = y2
-#         # a = self.focal_length_1 - self.focal_length_2
-#         # b = 2 * (self.x_offset_2 * self.focal_length_2 - self.x_offset_1 * self.focal_length_1)
-#         # c = (
-#         #     self.focal_length_1 * self.x_offset_1**2
-#         #     + self.y_offset_1
-#         #     - self.focal_length_2 * self.x_offset_2**2
-#         #     - self.y_offset_2
-#         # )
-
-#         # discriminant = b**2 - 4 * a * c
-#         # x1 = (-b + np.sqrt(discriminant)) / (2 * a)
-#         # x2 = (-b - np.sqrt(discriminant)) / (2 * a)
-#         # width = abs(x2 - x1)
-
-#         # height = abs(self.y_offset_2 - self.y_offset_1)
-#         # self.ratio = width / height if height != 0 else float("inf")
-
-#     def to_dict(self) -> dict[str, Any]:
-#         return {"type": "fusiform_1"} | asdict(self)
-
-#     def get_bbox(self) -> list[tuple[float, float]]:
-#         y_max = self.y_symmetric_axis + 0.5 * self.height
-#         y_min = self.y_symmetric_axis - 0.5 * self.height
-#         return [(self.x_start, y_max), (self.x_end, y_min)]
-
-#     def is_closed(self) -> bool:
-#         return self.ratio < 1e3
-
-#     def get_point(self, theta: float) -> tuple[float, float]:
-#         theta = theta % (2 * np.pi)
-#         x_range = np.linspace(-0.5, 0.5, self.data_points)
-#         epsilon, omega, phi = self.sin_params
-#         sin_wave = epsilon * np.sin(omega * (x_range + self.x_offset) + phi)
-#         y_parabola = 4 * self.focal_length * (x_range**2) + self.y_offset + sin_wave - self.y_symmetric_axis
-
-#         y_max, y_min = max(-y_parabola), min(y_parabola)
-
-#         # Calculate points on the ray(with polar angle = theta)
-#         if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
-#             y_line = None
-#         else:
-#             slope = np.tan(theta)
-#             y_line = slope * x_range
-
-#         # Calculate points on the fusiform(before offset)
-#         if 0 <= theta < np.pi:  # upper parabola
-#             y_fusiform = -y_parabola
-#             vertex_indice = np.where(y_fusiform == y_max)[0]
-#         else:  # lower parabola
-#             y_fusiform = y_parabola
-#             vertex_indice = np.where(y_fusiform == y_min)[0]
-
-#         if y_line is not None:
-#             intersection_indices = np.where(np.abs(y_fusiform - y_line) < self.precision)[0]
-#         else:
-#             intersection_indices = vertex_indice
-
-#         if 0.5 * np.pi <= theta < 1.5 * np.pi:
-#             idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
-#         else:
-#             idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
-#         # idx = int(intersection_indices.mean())
-
-#         x = x_range[idx]
-#         y = y_fusiform[idx]
-
-#         return (x + self.x_offset, y + self.y_symmetric_axis)
 
 
 @dataclass
@@ -601,6 +547,12 @@ class Fusiform_2(GSRule):
         y_min = self.y_offset - 0.5 * self.height
         return [(self.x_start, y_max), (self.x_end, y_min)]
 
+    def get_area(self) -> float:
+        raise NotImplementedError()
+
+    def get_centroid(self) -> tuple[float, float]:
+        raise NotImplementedError()
+
     def is_closed(self) -> bool:
         return self.ratio < 1e3
 
@@ -625,111 +577,6 @@ class Fusiform_2(GSRule):
         point = self.curve_points[start_idx + min_distance_idx]
 
         return tuple(point)
-
-
-# @dataclass
-# class Fusiform_2(GSRule):
-#     # use symetric parabola-like curves to generate a fusiform
-#     # x = 4*p * (y - y_0) ^ m + x_0 => y = ((x-x_0) / 4*p) ** (1/m) + y_0
-#     focal_length: float = 0.0  # p
-#     x_offset: float = 0.0  # x_0
-#     y_offset: float = 0.0  # y_0
-#     power: float = 0.0  # m
-#     x_symmetric_axis: float = 0.0
-
-#     # add sine wave
-#     sin_params: list[float] = field(default_factory=list)
-
-#     x_start: float = 0.0
-#     x_end: float = 1.0
-#     center: tuple[float, float] = field(init=False)
-#     ratio: float = field(init=False)
-#     special_info: str = ""
-#     fill_mode: Literal["no", "white", "black"] = "no"
-
-#     def __post_init__(self):
-#         self.precision: float = 1e-2
-#         self.center = (self.x_symmetric_axis, self.y_offset)
-
-#         self.data_points = int(1000 / self.precision)
-#         x = np.linspace(0, 1, self.data_points)
-#         x_left = x[: int(self.data_points / 2)]
-
-#         left_intersection = np.argmin(np.abs(x - self.x_offset))
-#         self.x_start = x[left_intersection]
-#         self.x_end = 2 * self.x_symmetric_axis - self.x_start
-#         if self.x_start == 0.0 or self.x_end > 1.0:
-#             self.ratio = float("inf")
-#         else:
-#             right_intersection = np.where(np.isclose(x, self.x_end))[0][0]
-#             self.intersections = [left_intersection, right_intersection]
-#             self.width = self.x_end - self.x_start
-#             self.sin_params[1] = self.sin_params[1] / self.width  # omega
-
-#             epsilon, omega, phi = self.sin_params
-#             sin_wave = epsilon * np.sin(omega * (x - self.x_start) + phi)
-#             y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
-#             y_right = np.flip(y_left)
-#             y1 = np.concatenate([y_left, y_right]) + sin_wave
-#             y2 = 2 * self.y_offset - y1
-#             self.height = max(y1[left_intersection:right_intersection]) - min(y2[left_intersection:right_intersection])
-#             self.ratio = self.width / self.height if self.height != 0 else float("inf")
-
-#     def to_dict(self) -> dict[str, Any]:
-#         return {"type": "fusiform_2"} | asdict(self)
-
-#     def get_bbox(self) -> list[tuple[float, float]]:
-#         y_max = self.y_offset + 0.5 * self.height
-#         y_min = self.y_offset - 0.5 * self.height
-#         return [(self.x_start, y_max), (self.x_end, y_min)]
-
-#     def is_closed(self) -> bool:
-#         return self.ratio < 1e3
-
-#     def get_point(self, theta: float) -> tuple[float, float]:
-#         theta = theta % (2 * np.pi)
-#         x_range = np.linspace(self.x_start, self.x_end, self.data_points)
-#         x_left = x_range[: int(self.data_points / 2)]
-
-#         epsilon, omega, phi = self.sin_params
-#         sin_wave = epsilon * np.sin(omega * (x_range - self.x_start) + phi)
-#         y_left = (np.abs(x_left - self.x_offset) / (4 * self.focal_length)) ** (1 / self.power) + self.y_offset
-#         y_right = np.flip(y_left)
-#         y_upper = np.concatenate([y_left, y_right]) + sin_wave
-
-#         y_max, y_min = max(y_upper), min(2 * self.y_offset - y_upper)
-
-#         # Calculate points on the ray(with polar angle = theta)
-#         if np.abs(theta - 0.5 * np.pi) < self.precision or np.abs(theta - 1.5 * np.pi) < self.precision:
-#             y_line = None
-#         else:
-#             slope = np.tan(theta)
-#             y_line = slope * (x_range - self.x_symmetric_axis) + self.y_offset
-#             # y_line = y_line[self.intersections[0] : self.intersections[1]]
-
-#         # Calculate points on the fusiform(after offset)
-#         if 0 <= theta < np.pi:  # upper curve
-#             y_fusiform = y_upper
-#             vertex_indice = np.where(y_fusiform == y_max)[0]
-#         else:  # lower curve
-#             y_fusiform = 2 * self.y_offset - y_upper
-#             vertex_indice = np.where(y_fusiform == y_min)[0]
-
-#         if y_line is not None:
-#             intersection_indices = np.where(np.abs(y_fusiform - y_line) < self.precision)[0]
-#         else:
-#             intersection_indices = vertex_indice
-
-#         if 0.5 * np.pi <= theta < 1.5 * np.pi:
-#             idx = int(intersection_indices[intersection_indices < self.data_points // 1.8][0])
-#         else:
-#             idx = int(intersection_indices[intersection_indices > self.data_points // 2.2][-1])
-#         # idx = int(intersection_indices.mean() + self.intersections[0])
-
-#         x = x_range[idx]
-#         y = y_fusiform[idx]
-
-#         return (x, y)
 
 
 @dataclass
@@ -834,6 +681,12 @@ class CustomedShape(GSRule):
         x_max = self.vertices[0][0]
         y_min = self.vertices[3][1]
         return [(x_min, y_max), (x_max, y_min)]
+
+    def get_area(self) -> float:
+        raise NotImplementedError()
+
+    def get_centroid(self) -> tuple[float, float]:
+        raise NotImplementedError()
 
     def get_point(self, theta: float) -> tuple[float, float]:
         theta = theta % (2 * np.pi)

@@ -13,6 +13,7 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
+    vqa_dir: str = field(default="dataset/vqa")
     stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
     num_fossil_samples: int = field(default=3)
@@ -97,12 +98,20 @@ class DrawArgs:
 @dataclass
 class CaptionArgs:
     caption_batchsize: int = field(default=4)
-    caption_llm: str = field(default="llama3-8")
+    caption_llm: str = field(default="llama31-8")
     numeric_ratio: float = field(default=0)
 
 
-data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]  # type: ignore
+@dataclass
+class VQAArgs:
+    vqa_batchsize: int = field(default=4)
+    vqa_llm: str = field(default="qwen25-7")
+    vqa_prompts_dir: str = field(default="data/vqa/prompts")
+    max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
+
+
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -110,6 +119,7 @@ run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
+vqa_args = cast(VQAArgs, vqa_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
