@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # @Date    : 2024-12-03 11:18:24
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
-"construct VQA questions according to the captions (with numeric values)"
+"construct VQA questions according to the captions and rules"
 
-import glob
 import json
 import os
 import random
 from collections import Counter
 from typing import Any
 
+import numpy as np
 from tqdm import tqdm
 
 from common.args import data_args, logger, vqa_args
@@ -76,20 +76,23 @@ class LLMQAGenerator:
 
 class RuleBasedQAGenerator:
     data: list[dict[str, Any]] = []  # [{shapes: [{type, center, box, area}], relations, counts}]
-    line_map = {"segment": "line", "ray": "line"}
-    relation_map = {"internal tangent": "inscribed", "external tangent": "circumscribed"}
     total_shapes = [
-        "triangle",
-        "rectangle",
-        "square",
+        "line",
+        "ellipse",
+        "circle",
+        "triangle",  # order cannot be changed; this will be indexed
         "quadrilateral",
         "pentagon",
         "hexagon",
-        "circle",
-        "ellipse",
-        "line",
+        "rectangle",
+        "square",
         "spiral",
     ]
+    shape_hierarchy = {
+        "ellipse": ["circle"],
+        "rectangle": ["square"],
+        "quadrilateral": ["rectangle", "square"],
+    }
     total_relations = [
         "tangent",
         "parallel",
@@ -102,7 +105,28 @@ class RuleBasedQAGenerator:
         "major axis",
         "minor axis",
         "diameter",
+        "concentric",
     ]
+
+    @staticmethod
+    def get_relation(relation: str, shape_1: GSRule, shape_2: GSRule) -> str:
+        # TODO: refine relations
+        if relation == "internal tangent":
+            return "inscribed"
+        if relation == "external tangent":
+            return "circumscribed"
+        return relation
+
+    @classmethod
+    def get_type(cls, shape_dict: dict[str, Any]) -> str:
+        special_info = shape_dict.get("special_info", "").strip(" .").split(" ")[-1]
+        if special_info:
+            return special_info
+        if shape_dict["type"] in ["segment", "ray"]:
+            return "line"
+        if shape_dict["type"] == "polygon":
+            return cls.total_shapes[len(shape_dict["points"])]
+        return shape_dict["type"]
 
     def __init__(self, rules: list[dict[str, Any]]):
         if self.data:
@@ -111,10 +135,8 @@ class RuleBasedQAGenerator:
             info: dict[str, Any] = {"shapes": []}
             for shape_dict in figure["shapes"]:
                 shape = GSRule.from_dict(shape_dict)
-                category = self.line_map.get(shape_dict["type"], shape_dict["type"])
-                type = shape_dict.get("special_info", category).strip(" .").split()[-1]
                 shape_info = {
-                    "type": type,
+                    "type": self.get_type(shape_dict),
                     "center": shape.get_centroid(),
                     "box": shape.get_bbox(),
                     "area": shape.get_area(),
@@ -126,41 +148,47 @@ class RuleBasedQAGenerator:
             self.data.append(info)
 
     def __call__(self, perspective: str) -> list[dict[str, Any]]:
+        logger.info(f"Generating {perspective} questions")
         qa_pairs: list[dict[str, Any]] = []
-        for i, figure in enumerate(self.data):
+        for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
             for j, qa in enumerate(getattr(self, perspective)(figure)):
                 qa_pairs.append({"image_id": i, "question_id": j} | qa)
         return qa_pairs
 
-    @staticmethod
-    def counting(figure: dict[str, Any]) -> list[dict[str, Any]]:
+    @classmethod
+    def counting(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         qa_pairs: list[dict[str, Any]] = []
         counts: dict[str, int] = figure["counts"]
 
         # Step 1: Generate probability distribution based on counts
         total_count = sum(counts.values())
-        prob_dist = {shape: count / total_count for shape, count in counts.items()}
+        prob_dist = {type: count / total_count for type, count in counts.items()}
 
-        # Step 2: Generate questions based on observed shapes
-        shapes = list(counts.keys())
-        probs = [prob_dist[shape] for shape in shapes]
-        selected_shapes = random.choices(shapes, weights=probs, k=2)
+        # Step 2: Generate questions based on observed shapes (without duplicates but weighted)
+        types = list(counts.keys())
+        probs = [prob_dist[type] for type in types]
+        num_questions = min(len(types), vqa_args.max_q_ip - 1)
+        selected_types = list(np.random.choice(types, size=num_questions, p=probs, replace=False))
 
         # Step 3: Add question for unobserved shape (count = 0)
-        unobserved_shapes = [s for s in RuleBasedQAGenerator.total_shapes if s not in counts]
-        zero_shape = random.choice(unobserved_shapes) if unobserved_shapes else random.choice(shapes)
+        unobserved_types = [t for t in cls.total_shapes if t not in counts]
+        zero_type = random.choice(unobserved_types) if unobserved_types else random.choice(types)
 
         # Step 4: Generate questions with choices
-        for shape in selected_shapes + [zero_shape]:
-            correct_answer = counts.get(shape, 0)
+        for type in selected_types + [zero_type]:
+            correct_answer = counts.get(type, 0)
             if correct_answer <= 3:
                 choices = [0, 1, 2, 3]
             else:
                 choices = [correct_answer - 3, correct_answer - 2, correct_answer - 1, correct_answer]
 
-            qa_pairs.append(
-                {"question": f"How many {shape}s are there in the image?", "choices": choices, "answer": correct_answer}
-            )
+            if type in cls.shape_hierarchy:
+                additional_desc = f", with {', '.join(cls.shape_hierarchy[type])} excluded"
+            else:
+                additional_desc = ""
+            question = f"How many {type}(s) are there in the image{additional_desc}?"
+
+            qa_pairs.append({"question": question, "choices": choices, "answer": correct_answer})
         return qa_pairs
 
 
@@ -169,16 +197,22 @@ def main():
 
     with open(data_args.caption_path) as f:
         captions = [json.loads(line)["output"] for line in f]
+    with open(data_args.rules_path) as f:
+        rules = json.load(f)
 
-    prompt_files = glob.glob(os.path.join(vqa_args.vqa_prompts_dir, "*.txt"))
+    # perspectives = ["existence", "counting", "size", "location", "type", "relation"]
+    perspectives = ["counting"]
 
-    for prompt_file in prompt_files:
-        with open(prompt_file, "r") as f:
-            prompt = f.read()
-        perspective = os.path.basename(prompt_file).split(".")[0]
-
-        qa_generator = LLMQAGenerator(prompt)
-        qa_pairs = qa_generator(captions)
+    for perspective in perspectives:
+        prompt_file = os.path.join(vqa_args.vqa_prompts_dir, f"{perspective}.txt")
+        if os.path.exists(prompt_file):
+            with open(prompt_file, "r") as f:
+                prompt = f.read()
+            qa_generator = LLMQAGenerator(prompt)
+            qa_pairs = qa_generator(captions)
+        else:
+            qa_generator = RuleBasedQAGenerator(rules)
+            qa_pairs = qa_generator(perspective)
 
         with open(os.path.join(data_args.vqa_dir, f"{perspective}.jsonl"), "w") as f:
             f.write("\n".join([json.dumps(qa) for qa in qa_pairs]))

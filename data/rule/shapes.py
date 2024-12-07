@@ -44,8 +44,8 @@ class GSRule(ABC):
             return Polygon(
                 points=data["points"], special_info=data.get("special_info", ""), fill_mode=data.get("fill_mode", "no")
             )
-        elif shape_type == "line":
-            return Line(type=data["type"], points=data["points"])
+        elif shape_type in ["line", "segment", "ray"]:
+            return Line(type=shape_type, points=data["points"])
         elif shape_type == "ellipse":
             return Ellipse(
                 center=data["center"],
