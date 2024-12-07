@@ -64,7 +64,7 @@ class PolygonRelationGenerator:
         opt_relation_level = self.relation_level[: len(opt_rel)]
         relation_prob = [x / sum(opt_relation_level) for x in opt_relation_level]
         relation_type = np.random.choice(opt_rel, p=relation_prob)
-        if relation_type == "tangent line":
+        if "tangent line" in relation_type:
             new_shape = self.get_tangent_line()
 
         elif "symmetric" in relation_type:
@@ -274,7 +274,7 @@ class LineRelationGenerator:
             major_axis = self.line.get_length()
             minor_axis = major_axis
             rotation = 0
-            special_info = "circle. "
+            special_info = "circle"
         else:
             raise ValueError("invalid special axis type")
 
@@ -454,14 +454,12 @@ class EllipseRelationGenerator:
         minor_axis = initial_chamber.minor_axis * normal(1.5, 0.1)
         major_axis = minor_axis * normal(2.0, 0.3)
         rotation = normal(0, 0.02)
-        volution_0 = Ellipse(center, major_axis, minor_axis, rotation, special_info="volution 0. ")
+        volution_0 = Ellipse(center, major_axis, minor_axis, rotation, special_info="volution 0")
 
         if "concentric" in volution_type:
             volutions = [volution_0]
         elif "swing" in volution_type:
-            volution_0_swing = Ellipse(
-                center, major_axis * 1.1, minor_axis * 1.1, rotation, special_info="volution 0. "
-            )
+            volution_0_swing = Ellipse(center, major_axis * 1.1, minor_axis * 1.1, rotation, special_info="volution 0")
             volutions = [volution_0, volution_0_swing]
 
         scale_factor = uniform(1.2, 1.5)
@@ -477,7 +475,7 @@ class EllipseRelationGenerator:
 
             for new_volution in new_volutions:
                 # new_volution.major_axis *= normal(1, 0.02)
-                new_volution.special_info = f"volution {i+1}. "
+                new_volution.special_info = f"volution {i+1}"
                 if new_volution.major_axis < 1:
                     volutions.append(new_volution)
 
@@ -594,7 +592,7 @@ class FusiformRelationGenerator:
 
             for new_volution in new_volutions:
                 if new_volution.is_closed():
-                    new_volution.special_info = f"volution {i+1}. "
+                    new_volution.special_info = f"volution {i+1}"
                     volutions.append(new_volution)
 
         if "swing" in volution_type:
@@ -640,7 +638,7 @@ class FusiformRelationGenerator:
 
             for new_volution in new_volutions:
                 if new_volution.is_closed():
-                    new_volution.special_info = f"volution {i+1}. "
+                    new_volution.special_info = f"volution {i+1}"
                     volutions.append(new_volution)
 
         if "swing" in volution_type:
@@ -671,7 +669,7 @@ class FusiformRelationGenerator:
                 # phi = normal(0, 0.01)
                 sin_params = [epsilon, omega, phi]
                 volution_0 = Fusiform(
-                    focal_length, x_offset, y_offset, y_symmetric_axis, sin_params, special_info="volution 0. "
+                    focal_length, x_offset, y_offset, y_symmetric_axis, sin_params, special_info="volution 0"
                 )
             elif fusiform_type == 2:
                 focal_length = normal(1200, 100)
@@ -685,7 +683,7 @@ class FusiformRelationGenerator:
                 phi = np.pi
                 sin_params = [epsilon, omega, phi]
                 volution_0 = Fusiform_2(
-                    focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0. "
+                    focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0"
                 )
 
         return volution_0
@@ -713,7 +711,7 @@ class FusiformRelationGenerator:
     #             major_axis = uniform(0.5 * interval, 0.9 * interval)
     #             minor_axis = uniform(0.6 * major_axis, major_axis)
     #             rotation = normal(theta, 0.2 * theta)
-    #             septa = Ellipse(center, major_axis, minor_axis, rotation, special_info=f"septa of volution {i+1}. ")
+    #             septa = Ellipse(center, major_axis, minor_axis, rotation, special_info=f"septa of volution {i+1}")
     #             septa_list.append(septa)
 
     #     return septa_list, num_septa[: len(volutions) - 1]
@@ -792,7 +790,7 @@ class CustomedShapeGenerator:
                 new_volutions = self.get_concentric_customed_shape(np.sqrt(scale_factor), 2)
 
             for new_volution in new_volutions:
-                new_volution.special_info = f"volution {i+1}. "
+                new_volution.special_info = f"volution {i+1}"
                 if new_volution.width < 1 and new_volution.height < 1:
                     volutions.append(new_volution)
                 else:
@@ -868,7 +866,7 @@ class CustomedShapeGenerator:
             control_points_list.append(control_points)
 
         curves = [Curve(control_points) for control_points in control_points_list]
-        return CustomedShape(curves, special_info="volution 0. ")
+        return CustomedShape(curves, special_info="volution 0")
 
 
 class SeptaGenerator:
@@ -928,7 +926,7 @@ class SeptaGenerator:
                     chomata = self.one_polygon_septa(
                         interval, center, theta, volution, next_volution, size=size, fill_mode="black"
                     )
-                chomata.special_info = f"chomata of volution {i//step}. "
+                chomata.special_info = f"chomata of volution {i//step}"
                 chomata_list.append(chomata)
 
         return chomata_list
@@ -1014,7 +1012,7 @@ class SeptaGenerator:
                         septa = self.one_polygon_septa(
                             interval, center, theta, volution, next_volution, fill_mode="white"
                         )
-                septa.special_info = f"septa of volution {i//step}. "
+                septa.special_info = f"septa of volution {i//step}"
                 septa_list.append(septa)
                 num_septa[i // step] += 1
 
@@ -1124,7 +1122,7 @@ class SeptaGenerator:
                         septa = self.one_polygon_septa(
                             interval, center, theta, volution, next_volution, size=size, fill_mode="no"
                         )
-                    septa.special_info = f"septa of volution {i//step}. "
+                    septa.special_info = f"septa of volution {i//step}"
                     septa_list.append(septa)
                     num_septa[i // step] += 1
 
@@ -1148,7 +1146,7 @@ class SeptaGenerator:
         #             outer_septa = self.one_ellipse_septa(
         #                 interval, center, fossil_center, theta + normal(0, 0.1), mode="outer", size="small"
         #             )
-        #             outer_septa.special_info = f"septa of volution {i+1}. "
+        #             outer_septa.special_info = f"septa of volution {i+1}"
         #             septa_list.append(outer_septa)
         #             num_septa[i] += 1
         #         # inner horizontal septa
@@ -1156,7 +1154,7 @@ class SeptaGenerator:
         #             inner_septa = self.one_ellipse_septa(
         #                 interval, center, fossil_center, theta + normal(0, 0.1), mode="inner", size="small"
         #             )
-        #             inner_septa.special_info = f"septa of volution {i+1}. "
+        #             inner_septa.special_info = f"septa of volution {i+1}"
         #             septa_list.append(inner_septa)
         #             num_septa[i] += 1
 

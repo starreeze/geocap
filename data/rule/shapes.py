@@ -156,7 +156,7 @@ class Polygon(GSRule):
         self.points.sort(key=lambda p: (polar_angle(center, p), -distance_2points(center, p)))
 
     def to_equilateral_triangle(self, side_len: float, rotation: float):
-        self.special_info = "equilateral triangle. "
+        self.special_info = "equilateral triangle"
         self.side_len = side_len
 
         x0, y0 = self.points[0]
@@ -168,7 +168,7 @@ class Polygon(GSRule):
         self.points = [(x0, y0), (x1, y1), (x2, y2)]
 
     def to_rectangle(self, width: float, height: float, rotation: float):
-        self.special_info += "rectangle. "
+        self.special_info += "rectangle"
         self.width = width
         self.height = height
 
@@ -347,7 +347,7 @@ class Ellipse(GSRule):
         return (slope, intercept)
 
     def to_circle(self, radius: float):
-        self.special_info = "circle. "
+        self.special_info = "circle"
         self.radius = radius
         self.major_axis = self.radius * 2
         self.minor_axis = self.radius * 2
@@ -759,7 +759,7 @@ class ShapeGenerator:
             rotation = uniform(0, 2 * np.pi)
             polygon.to_equilateral_triangle(side_len, rotation)
         elif len(points) == 3:
-            polygon.special_info += "triangle. "
+            polygon.special_info += "triangle"
 
         polygon.normalize_points()
         return polygon
@@ -834,7 +834,7 @@ class ShapeGenerator:
         major_axis = max(0.02, normal(0.02, 6e-3))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
-        special_info = "initial chamber. "
+        special_info = "initial chamber"
         return Ellipse(center, major_axis, minor_axis, rotation, special_info)
 
     def generate_axial_filling(self, num_volutions: int, rule_args) -> list[dict]:
