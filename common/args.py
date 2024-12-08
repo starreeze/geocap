@@ -108,6 +108,12 @@ class VQAArgs:
     vqa_llm: str = field(default="qwen25-7")
     vqa_prompts_dir: str = field(default="data/vqa/prompts")
     max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
+    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
+    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
+    size_diff: float = field(
+        default=0.1,
+        metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
+    )
 
 
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
