@@ -20,7 +20,7 @@ def main():
         rules = json.load(f)
 
     # perspectives = ["existence", "counting", "size", "location", "type", "relation"]
-    perspectives = ["counting", "size", "relation"]
+    perspectives = ["counting", "size", "location", "relation"]
 
     for perspective in perspectives:
         prompt_file = os.path.join(vqa_args.vqa_prompts_dir, f"{perspective}.txt")

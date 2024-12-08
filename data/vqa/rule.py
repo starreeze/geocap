@@ -73,7 +73,8 @@ class RuleBasedQAGenerator:
     def __init__(self, rules: list[dict[str, Any]]):
         if self.data:
             return
-        for figure in rules:
+        logger.info("Loading VQA data from rules")
+        for figure in tqdm(rules):
             info: dict[str, Any] = {"shapes": []}
             for shape_dict in figure["shapes"]:
                 shape = GSRule.from_dict(shape_dict)
@@ -99,6 +100,7 @@ class RuleBasedQAGenerator:
 
     @classmethod
     def counting(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
+        "how many [type] are there?"
         # Step 1: Generate probability distribution based on counts
         counts: dict[str, int] = figure["counts"]
         total_count = sum(counts.values())
@@ -135,6 +137,7 @@ class RuleBasedQAGenerator:
 
     @classmethod
     def relation(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
+        "what's the relation of A to B?"
         # ask relations only on shapes with counting = 1 to avoid ambiguity
         types = [k for k, v in figure["counts"].items() if v == 1]
 
@@ -183,11 +186,9 @@ class RuleBasedQAGenerator:
 
     @staticmethod
     def size(figure: dict[str, Any]) -> list[dict[str, Any]]:
-        "ask questions on width, height, area"
+        "what's the width, height, area of [shape]?"
         # exclude line as it has no area
         types = [k for k, v in figure["counts"].items() if v == 1 and k != "line"]
-        if not types:
-            return []
 
         qa_pairs: list[dict[str, Any]] = []
         dimensions = ["horizontal span", "vertical span", "area"]
@@ -229,4 +230,48 @@ class RuleBasedQAGenerator:
                 choices = [str(round(v, vqa_args.vqa_digits)) for v in valid_choices]
                 answer = choices[position]
                 qa_pairs.append({"question": question, "choices": choices, "answer": answer})
+        return qa_pairs
+
+    @staticmethod
+    def location(figure: dict[str, Any]) -> list[dict[str, Any]]:
+        "where is A located (relative to B)?"
+        types = [k for k, v in figure["counts"].items() if v == 1]
+        qa_pairs: list[dict[str, Any]] = []
+
+        rel_questions = vqa_args.max_q_ip // 2
+        abs_questions = vqa_args.max_q_ip - rel_questions
+
+        def get_position(x: float, y: float, ref_x: float = 0.5, ref_y: float = 0.5) -> str:
+            return ("upper " if y < ref_y else "lower ") + ("left" if x < ref_x else "right")
+
+        def generate_choices(correct_pos: str) -> list[str]:
+            positions = ["upper left", "upper right", "lower left", "lower right"]
+            positions.remove(correct_pos)
+            choices = [correct_pos] + random.sample(positions, 3)
+            random.shuffle(choices)
+            return choices
+
+        # Generate absolute position questions
+        sampled_types = random.sample(types, min(len(types), abs_questions))
+        for type in sampled_types:
+            shape = next(s for s in figure["shapes"] if s["type"] == type)
+            x, y = shape["center"]
+            correct_pos = get_position(x, y)
+            question = f"Where is the {type} located in the image?"
+            choices = generate_choices(correct_pos)
+            qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
+
+        # Generate relative position questions
+        type_pairs = list(product(types, repeat=2))
+        type_pairs = [p for p in type_pairs if p[0] != p[1]]
+        sampled_pairs = random.sample(type_pairs, min(len(type_pairs), rel_questions))
+        for type_a, type_b in sampled_pairs:
+            shape_a = next(s for s in figure["shapes"] if s["type"] == type_a)
+            shape_b = next(s for s in figure["shapes"] if s["type"] == type_b)
+            x_a, y_a = shape_a["center"]
+            x_b, y_b = shape_b["center"]
+            correct_pos = get_position(x_a, y_a, x_b, y_b)
+            question = f"Where is the {type_a} located relative to the {type_b}?"
+            choices = generate_choices(correct_pos)
+            qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
         return qa_pairs
