@@ -111,7 +111,7 @@ class VQAArgs:
     vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
     nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     size_diff: float = field(
-        default=0.1,
+        default=0.15,
         metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
 
