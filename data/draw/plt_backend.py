@@ -104,9 +104,8 @@ class Figure:
 
     def __get_perlin_mask(self) -> np.ndarray:
         mask = np.zeros(self.shape, dtype=np.uint8)
-        for rule in self.rules:
+        for ind, rule in enumerate(self.rules):
             if rule["type"] == "ellipse":
-
                 a = rule["major_axis"] / 2
                 b = rule["minor_axis"] / 2
                 c = np.sqrt(a**2 - b**2)
@@ -114,7 +113,6 @@ class Figure:
                 offset_x = rule["center"][0] * self.shape[0] - np.cos(rule["rotation"]) * c * self.shape[0]
                 offset_y = rule["center"][1] * self.shape[1] - np.sin(rule["rotation"]) * c * self.shape[1]
                 angle_range = np.linspace(0, 2 * 3.1416, 2880)
-
                 for angle in angle_range:
                     radius_range = np.linspace(
                         0,
@@ -416,15 +414,15 @@ class Figure:
                     x[i : i + 2],
                     y[i : i + 2],
                     linewidth=ln_wths[i] * (self.shape[0] / 640),
-                    color=(c + i for c in color),
+                    color=(max(c + i * 0.01, 1) for c in color),
                 )
 
     def __handle_ellipse(
         self,
         ellipse_x: float,
         ellipse_y: float,
-        major: int,
-        minor: int,
+        major: float,
+        minor: float,
         alpha: float,
         line_width: int,
         color: Any,
@@ -433,6 +431,26 @@ class Figure:
         color = (random.random(), random.random(), random.random()) if color == None else color
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
+
+        """
+        major = major / 2
+        minor = minor / 2
+
+        theta = np.linspace(0, np.pi * 2, 720)
+        radius = np.sqrt(
+            1
+            / (
+                ((np.cos(theta + alpha / 360 * 2 * np.pi)) ** 2) / major**2
+                + ((np.sin(theta + alpha / 360 * 2 * np.pi)) ** 2) / minor**2
+            )
+        )
+        x = radius * np.cos(theta) + ellipse_x
+        y = radius * np.sin(theta) + ellipse_y
+        self.ax.plot(x, y, color=color)
+
+        major *= 2
+        minor *= 2
+        """
         self.ax.add_patch(
             pch.Ellipse(
                 (ellipse_x, ellipse_y),
@@ -575,9 +593,13 @@ class Figure:
         x = np.linspace(x_start, x_end, 1000)
         y1 = f(x)
         y2 = 2 * y_sim - y1
+        """
         for index in range(len(x)):
-            self.ax.plot((x[index], x[index]), (y1[index], y2[index]), linewidth=1, color=trans)
-        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
+            self.ax.plot(
+                (x[index], x[index]), (y1[index], y2[index]), linewidth=1, color=trans
+            )
+        """
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
     def __handle_fusiform_2(
         self,
@@ -611,9 +633,20 @@ class Figure:
         y_right = np.flip(y_left)  # 得到开口向左的上半部分
         y1 = np.concatenate([y_left, y_right]) + sin_wave
         y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
+        # """
+        if self.xkcd:
+            plt.xkcd()
         for index in range(len(x)):
-            self.ax.plot((x[index], x[index]), (y1[index], y2[index]), linewidth=5, color=trans)
-        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640))
+            self.ax.plot(
+                (x[index], x[index]),
+                (y1[index], y2[index]),
+                linewidth=line_width * (self.shape[0] / 640),
+                color=trans,
+            )
+        if self.xkcd:
+            plt.xkcd()
+        # """
+        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
     def __handle_curve(self, control_points, width: int = 5):
         curve_points = []

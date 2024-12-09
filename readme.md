@@ -97,7 +97,7 @@ To use `plt_backend.py`, the following arguments are expected:
 To simply generate a picture with default settings, use the following command:
 
 ```shell
-python run.py --module data.draw --backend plt
+python run.py --module data.draw.draw --backend plt
 ```
 
 ### Running caption
@@ -134,9 +134,22 @@ write how you generate rules here...
 
 ### Draw
 
-draw shapes according to the rule.
+Draw shapes according to the rule.
 
-write how you implement, e.g., adding noise...
+In the default backend (which means `plt_backend.py`), the python script will receive the `rules.json` in path `dataset/rules.json` and handle each rule by turn. After handling all the rules, a basic image will be generated. Then, the script will add noise to the image and generate a final image. The noise here contains Gaussian noise and Perlin noise.
+
+To run the script, use the following command:
+```shell
+python run.py --module data.draw.draw --backend plt --stage 1
+```
+
+More arguments are provided in `DrawArgs` in `common/args.py`. And you may also read readme file in the root directory for more details.
+
+Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
+
+```
+Warning: With noise enabled, the script will encounter performance issues if there are too many ellipses standing by for drawing. Please consider reducing the number of ellipses in the rule / wait patiently :).
+```
 
 ### Caption
 
