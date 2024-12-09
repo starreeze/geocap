@@ -527,7 +527,8 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
             data_args.figure_dir,
             f"{idx_sample[0]:08d}.jpg",
         ),
-        ref_path=data_args.reference_dir,
+        # ref_path=data_args.reference_dir,
+        ref_path="some_directory, why so serious?",
         num_refs=10,  # some number
     )
 
