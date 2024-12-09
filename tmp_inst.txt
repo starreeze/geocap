@@ -1,0 +1,5 @@
+the method `clarify_hierarchical_choices` fix the ambiguity in choices. However, the questions also contain types, and it needs to be considered in generation time instead of post processing to ensure a smooth expression. Please implement the similar procedure for questions in each method if necessary.
+
+You made a meaningful attempt, but there are some issues.
+1. expression: ([...] excluded) is not a good choice because it is only suitable for counting, and you should tailor it to each question.
+2. only add clarification when necessary, i.e., when the child types appear in the image.

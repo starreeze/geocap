@@ -114,6 +114,12 @@ class VQAArgs:
         default=0.15,
         metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
+    area_type_t: float = field(
+        default=0.05, metadata={"help": "tolerate threshold for area difference to be considered"}
+    )
+    location_type_t: float = field(
+        default=0.1, metadata={"help": "tolerate threshold for location difference to be considered"}
+    )
 
 
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(

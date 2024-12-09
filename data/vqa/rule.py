@@ -85,16 +85,48 @@ class RuleBasedQAGenerator:
                     "area": shape.get_area(),
                 }
                 info["shapes"].append(shape_info)
-                # TODO: merge relations
             info["relations"] = figure["relations"]
             info["counts"] = dict(Counter(shape["type"] for shape in info["shapes"]))
             self.data.append(info)
+
+    @classmethod
+    def clarify_hierarchical_choices(cls, qa: dict[str, Any]):
+        "Post-process choices to clarify hierarchical types when parent and child types appear together."
+        # however, for existence, we need to handle in the question generation
+        if "choices" not in qa or not isinstance(qa["choices"][0], str):
+            return
+        choices: list[str] = qa["choices"]
+        for parent, children in cls.shape_hierarchy.items():
+            try:
+                parent_idx = choices.index(parent)
+            except ValueError:
+                continue
+            # Check if any child type exists in choices
+            overlapping_children = [c for c in children if c in choices]
+            if not overlapping_children:
+                continue
+            # Add clarification to parent
+            choices[parent_idx] = f"{parent} ({', '.join(overlapping_children)} excluded)"
+            # Update answer if needed
+            if qa["answer"] == parent:
+                qa["answer"] = choices[parent_idx]
+
+    @classmethod
+    def clarity_hierarchical_text(cls, type: str, image_types: list[str], perspective: str = "counting") -> str:
+        if type not in cls.shape_hierarchy:
+            return type
+        overlapping_children = [c for c in cls.shape_hierarchy[type] if c in image_types]
+        if not overlapping_children:
+            return type
+        child_desc = ", ".join(overlapping_children)
+        return f"{type} ({'excluding' if perspective == 'counting' else 'not'} {child_desc})"
 
     def __call__(self, perspective: str) -> list[dict[str, Any]]:
         logger.info(f"Generating {perspective} questions")
         qa_pairs: list[dict[str, Any]] = []
         for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
             for j, qa in enumerate(getattr(self, perspective)(figure)):
+                self.clarify_hierarchical_choices(qa)
                 qa_pairs.append({"image_id": i, "question_id": j} | qa)
         return qa_pairs
 
@@ -125,12 +157,8 @@ class RuleBasedQAGenerator:
             choices = [max(0, correct_answer + i - position) for i in range(4)]
             if len(set(choices)) < 4:  # Handle cases where some choices are 0
                 choices = list(range(4))
-
-            if type in cls.shape_hierarchy:
-                additional_desc = f", with {', '.join(cls.shape_hierarchy[type])} excluded"
-            else:
-                additional_desc = ""
-            question = f"How many {type}(s) are there in the image{additional_desc}?"
+            clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "counting")
+            question = f"How many {clarified_type}(s) are there in the image?"
 
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_answer})
         return qa_pairs
@@ -171,7 +199,9 @@ class RuleBasedQAGenerator:
         # generate questions
         qa_pairs: list[dict[str, Any]] = []
         for pair, relation in sampled_pairs.items():
-            question = f"What is the relationship of the {pair[0]} to the {pair[1]} in the image?"
+            type1 = cls.clarity_hierarchical_text(pair[0], list(figure["counts"].keys()), "relation")
+            type2 = cls.clarity_hierarchical_text(pair[1], list(figure["counts"].keys()), "relation")
+            question = f"What is the relationship of the {type1} to the {type2} in the image?"
             if pair in relation_pairs:
                 compliment = [r for r in cls.total_relations if r != relation]
                 choices = [relation] + random.sample(compliment, 2)
@@ -184,8 +214,8 @@ class RuleBasedQAGenerator:
             qa_pairs.append({"question": question, "choices": choices, "answer": answer})
         return qa_pairs
 
-    @staticmethod
-    def size(figure: dict[str, Any]) -> list[dict[str, Any]]:
+    @classmethod
+    def size(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "what's the width, height, area of [shape]?"
         # exclude line as it has no area
         types = [k for k, v in figure["counts"].items() if v == 1 and k != "line"]
@@ -201,13 +231,14 @@ class RuleBasedQAGenerator:
             sampled_types = random.sample(types, min(len(types), num_questions))
 
             for type in sampled_types:
+                clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "size")
                 shape = next(s for s in figure["shapes"] if s["type"] == type)
                 if dim == "area":
                     correct_value = shape["area"]
-                    question = f"which of the following is closest to the area of the {type}?"
+                    question = f"which of the following is closest to the area of the {clarified_type}?"
                 else:
                     correct_value = abs(shape["box"][1][i] - shape["box"][0][i])
-                    question = f"which of the following is closest to the {dim} of the {type}?"
+                    question = f"which of the following is closest to the {dim} of the {clarified_type}?"
                 question = "Suppose that the width and height of the image is 1, " + question
 
                 factor = vqa_args.size_diff
@@ -222,7 +253,7 @@ class RuleBasedQAGenerator:
                 # If no valid position found, adjust factor to fit range
                 if valid_choices is None:
                     factor = min(correct_value / 2, (1 - correct_value) / 2)
-                    logger.warning(f"Adjusting factor to {factor} to fit range for {dim} of {type}")
+                    logger.warning(f"Adjusting factor to {factor} to fit range for {dim} of {clarified_type}")
                     logger.info(f"In image: {figure}")
                     position = random.randint(0, 3)
                     valid_choices = [correct_value + factor * (i - position) for i in range(4)]
@@ -232,8 +263,8 @@ class RuleBasedQAGenerator:
                 qa_pairs.append({"question": question, "choices": choices, "answer": answer})
         return qa_pairs
 
-    @staticmethod
-    def location(figure: dict[str, Any]) -> list[dict[str, Any]]:
+    @classmethod
+    def location(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "where is A located (relative to B)?"
         types = [k for k, v in figure["counts"].items() if v == 1]
         qa_pairs: list[dict[str, Any]] = []
@@ -254,10 +285,11 @@ class RuleBasedQAGenerator:
         # Generate absolute position questions
         sampled_types = random.sample(types, min(len(types), abs_questions))
         for type in sampled_types:
+            clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "location")
             shape = next(s for s in figure["shapes"] if s["type"] == type)
             x, y = shape["center"]
             correct_pos = get_position(x, y)
-            question = f"Where is the {type} located in the image?"
+            question = f"Where is the {clarified_type} located in the image?"
             choices = generate_choices(correct_pos)
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
 
@@ -266,12 +298,120 @@ class RuleBasedQAGenerator:
         type_pairs = [p for p in type_pairs if p[0] != p[1]]
         sampled_pairs = random.sample(type_pairs, min(len(type_pairs), rel_questions))
         for type_a, type_b in sampled_pairs:
+            type_a_clear = cls.clarity_hierarchical_text(type_a, list(figure["counts"].keys()), "location")
+            type_b_clear = cls.clarity_hierarchical_text(type_b, list(figure["counts"].keys()), "location")
             shape_a = next(s for s in figure["shapes"] if s["type"] == type_a)
             shape_b = next(s for s in figure["shapes"] if s["type"] == type_b)
             x_a, y_a = shape_a["center"]
             x_b, y_b = shape_b["center"]
             correct_pos = get_position(x_a, y_a, x_b, y_b)
-            question = f"Where is the {type_a} located relative to the {type_b}?"
+            question = f"Where is the {type_a_clear} located relative to the {type_b_clear}?"
             choices = generate_choices(correct_pos)
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
+        return qa_pairs
+
+    @classmethod
+    def type(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
+        "what's the type of [attribute] shape?"
+        qa_pairs: list[dict[str, Any]] = []
+        shapes = figure["shapes"]
+        counts = figure["counts"]
+
+        # Size-based questions (largest/smallest area)
+        attr = random.choice(["largest", "smallest"])
+        sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
+        max_area = sorted_shapes[0]["area"]
+        all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
+        correct_type = sorted_shapes[0]["type"]
+        question = f"Which of the following has the {attr} area in the image?"
+        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+
+        # Location-based questions
+        loc_attrs = {
+            "leftmost": lambda s: s["center"][0],
+            "rightmost": lambda s: -s["center"][0],
+            "uppermost": lambda s: s["center"][1],
+            "lowermost": lambda s: -s["center"][1],
+        }
+        attr, key_func = random.choice(list(loc_attrs.items()))
+        sorted_shapes = sorted(shapes, key=key_func)
+        extreme_val = key_func(sorted_shapes[0])
+        all_correct_types = {
+            s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
+        }
+        correct_type = sorted_shapes[0]["type"]
+        question = f"Which of the following has the {attr} centroid in the image?"
+        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+
+        # Frequency-based questions
+        attr = random.choice(["most", "least"])
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
+        max_count = sorted_types[0][1]
+        all_correct_types = {t for t, c in counts.items() if c == max_count}
+        correct_type = sorted_types[0][0]
+        question = f"What type of shape appears {attr} frequently in the image?"
+        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+
+        # Generate choices prioritizing types in the image and ensuring no other correct answers are included
+        for qa in qa_pairs:
+            image_types = [t for t in counts.keys() if t not in qa["exclude_types"]]
+            remaining_types = [t for t in cls.total_shapes if t not in counts]
+            wrong_choices = (image_types[:3] + random.sample(remaining_types, max(0, 3 - len(image_types))))[:3]
+            choices = [qa["answer"]] + wrong_choices
+            random.shuffle(choices)
+            qa["choices"] = choices
+            del qa["exclude_types"]
+
+        return qa_pairs
+
+    @classmethod
+    def existence(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
+        "is there a [shape] in the image?"
+        qa_pairs: list[dict[str, Any]] = []
+        counts = figure["counts"]
+
+        # 1. Ask about a shape that exists
+        present_type = random.choice(list(counts.keys()))
+        clarified_type = cls.clarity_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
+        qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "yes"}
+        qa_pairs.append(qa)
+
+        # 2. Ask about a shape that doesn't exist
+        absent_types = [t for t in cls.total_shapes if t not in counts]
+        if absent_types:
+            absent_type = random.choice(absent_types)
+            clarified_type = cls.clarity_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
+            qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "no"}
+            qa_pairs.append(qa)
+
+        # 3. Multiple choice question about present or absent shape
+        can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
+        can_ask_present = len(counts) >= 1 and len(absent_types) >= 3  # Need 1 present + 3 absent
+        if can_ask_absent or can_ask_present:
+            if can_ask_absent and can_ask_present:
+                ask_absent = random.random() < 0.5
+            else:
+                ask_absent = can_ask_absent
+            if ask_absent:
+                present_types = random.sample(list(counts.keys()), 3)
+                absent_type = random.choice(absent_types)
+                choices = present_types + [absent_type]
+                random.shuffle(choices)
+                qa = {
+                    "question": "Which of the following is absent in the image?",
+                    "choices": choices,
+                    "answer": absent_type,
+                }
+            else:
+                present_type = random.choice(list(counts.keys()))
+                absent_choices = random.sample(absent_types, 3)
+                choices = [present_type] + absent_choices
+                random.shuffle(choices)
+                qa = {
+                    "question": "Which of the following is present in the image?",
+                    "choices": choices,
+                    "answer": present_type,
+                }
+            qa_pairs.append(qa)
+
         return qa_pairs
