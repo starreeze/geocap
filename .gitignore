@@ -1,5 +1,6 @@
 dataset
 */__pycache__/*
+*/*/__pycache__/*
 *.bak
 .vscode
 common/iterwrap.ckpt

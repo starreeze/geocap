@@ -104,9 +104,8 @@ class Figure:
 
     def __get_perlin_mask(self) -> np.ndarray:
         mask = np.zeros(self.shape, dtype=np.uint8)
-        for rule in self.rules:
+        for ind, rule in enumerate(self.rules):
             if rule["type"] == "ellipse":
-
                 a = rule["major_axis"] / 2
                 b = rule["minor_axis"] / 2
                 c = np.sqrt(a**2 - b**2)
@@ -114,7 +113,6 @@ class Figure:
                 offset_x = rule["center"][0] * self.shape[0] - np.cos(rule["rotation"]) * c * self.shape[0]
                 offset_y = rule["center"][1] * self.shape[1] - np.sin(rule["rotation"]) * c * self.shape[1]
                 angle_range = np.linspace(0, 2 * 3.1416, 2880)
-
                 for angle in angle_range:
                     radius_range = np.linspace(
                         0,
