@@ -311,7 +311,7 @@ class RuleBasedQAGenerator:
         return qa_pairs
 
     @classmethod
-    def type(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
+    def reference(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "what's the type of [attribute] shape?"
         qa_pairs: list[dict[str, Any]] = []
         shapes = figure["shapes"]

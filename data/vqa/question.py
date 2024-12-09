@@ -19,7 +19,7 @@ def main():
     with open(data_args.rules_path) as f:
         rules = json.load(f)
 
-    perspectives = ["existence", "counting", "size", "location", "type", "relation"]
+    perspectives = ["existence", "counting", "size", "location", "reference", "relation"]
 
     for perspective in perspectives:
         prompt_file = os.path.join(vqa_args.vqa_prompts_dir, f"{perspective}.txt")
