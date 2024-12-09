@@ -13,7 +13,8 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
-    vqa_dir: str = field(default="dataset/vqa")
+    vqa_question_dir: str = field(default="dataset/vqa")
+    vqa_output_dir: str = field(default="results")
     stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
     num_fossil_samples: int = field(default=3)
@@ -104,9 +105,14 @@ class CaptionArgs:
 
 @dataclass
 class VQAArgs:
+    perspectives: list[str] = field(
+        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
+    )
+    # llm generator
     vqa_batchsize: int = field(default=4)
     vqa_llm: str = field(default="qwen25-7")
     vqa_prompts_dir: str = field(default="data/vqa/prompts")
+    # rule generator
     max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
     vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
     nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
@@ -120,6 +126,13 @@ class VQAArgs:
     location_type_t: float = field(
         default=0.1, metadata={"help": "tolerate threshold for location difference to be considered"}
     )
+    # evaluation
+    eval_model: str = field(
+        default="llava_7b",
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}_{model_size}"},
+    )
+    eval_batchsize: int = field(default=4)
+    eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
 
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(

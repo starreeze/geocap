@@ -12,16 +12,14 @@ from data.vqa.rule import RuleBasedQAGenerator
 
 
 def main():
-    os.makedirs(data_args.vqa_dir, exist_ok=True)
+    os.makedirs(data_args.vqa_question_dir, exist_ok=True)
 
     with open(data_args.caption_path) as f:
         captions = [json.loads(line)["output"] for line in f]
     with open(data_args.rules_path) as f:
         rules = json.load(f)
 
-    perspectives = ["existence", "counting", "size", "location", "reference", "relation"]
-
-    for perspective in perspectives:
+    for perspective in vqa_args.perspectives:
         prompt_file = os.path.join(vqa_args.vqa_prompts_dir, f"{perspective}.txt")
         if os.path.exists(prompt_file):
             with open(prompt_file, "r") as f:
@@ -32,7 +30,7 @@ def main():
             qa_generator = RuleBasedQAGenerator(rules)
             qa_pairs = qa_generator(perspective)
 
-        with open(os.path.join(data_args.vqa_dir, f"{perspective}.jsonl"), "w") as f:
+        with open(os.path.join(data_args.vqa_question_dir, f"{perspective}.jsonl"), "w") as f:
             f.write("\n".join([json.dumps(qa) for qa in qa_pairs]))
 
 

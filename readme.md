@@ -103,10 +103,26 @@ python run.py --module data.draw --backend plt
 ### Running caption
 
 ```shell
-python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
+python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
 ```
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
+
+### Generating VQA questions
+
+```shell
+python run.py --module data.vqa.question --numeric_ratio 1
+```
+
+The questions will be generated (by default) in `data/vqa`.
+
+### Evaluating VQA questions
+
+```shell
+python run.py --module eval.evaluate --eval_model {model_name}_{model_size} --eval_batchsize {batchsize}
+```
+
+The evaluation results will be saved in `eval/results/{model_name}_{model_size}`.
 
 ## Implementation detail
 
