@@ -8,6 +8,8 @@
 import os
 from typing import Any
 
+from common.args import vqa_args
+from eval.base import GenerateModelBase
 
 # You'd better use transformers to load the model
 # however, if you cannot use transformers, you can put the model's codebase in our repo and load it manually
@@ -27,33 +29,38 @@ from llava.mm_utils import (
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 
-# load the model
-# incomplete: please refer to the codebase of llava to load the model
-disable_torch_init()
-model = load_pretrained_model("llava-v1.5-7b", None, "name", device="cuda")
 
+class GenerateModel(GenerateModelBase):
+    def __init__(self):
+        disable_torch_init()
+        # you can read the model name and size from the args
+        model_name, model_size = vqa_args.eval_model.split("_")
+        self.model = load_pretrained_model(f"llava-1.5-{model_size}", None, "name", device="cuda")
 
-# expose `generate` function
-def generate(image_paths: list[str], prompts: list[str]) -> list[str]:
-    """
-    generate the responses of the model on the given image paths and prompts
-    Args:
-        image_paths: list[str], the paths of the input images in a batch
-        prompts: list[str], the user prompts for the model in a batch
-    Returns:
-        list[str]: the raw responses of the model
-        (no need to do post-processing, but prompts should not be included)
-    """
-    # TODO: implement this
-    # You must use batched generation; this will greatly improve the performance, especially for large models
-    # Instead of writing `for` loop, try using the batched version of the model's generation function
-    # set temperature to 0 and disable top-k sampling, and control the length of the output
-    ...
+    # implement `generate` function
+    def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
+        """
+        generate the responses of the model on the given image paths and prompts
+        Args:
+            image_paths: list[str], the paths of the input images in a batch
+            prompts: list[str], the user prompts for the model in a batch
+        Returns:
+            list[str]: the raw responses of the model
+            (no need to do post-processing, but prompts should not be included)
+        """
+        # TODO: implement this
+        # You must use batched generation; this will greatly improve the performance, especially for large models
+        # Instead of writing `for` loop, try using the batched version of the model's generation function
+        # set temperature to 0 and disable top-k sampling, and control the length of the output
+        assert len(image_paths) == len(prompts)
+        return ["A"] * len(image_paths)
 
 
 # After finishing the implementation, you can first test our implementation using test data
+# Use python -m eval.{file_name} to run this file
 if __name__ == "__main__":
-    res = generate(
+    model = GenerateModel()
+    res = model.generate(
         ["dataset/geo-shapes/plt_00000000.jpg"],
         [
             "What is the number of triangles in the image?\nA. 0\nB. 1\nC. 2\nD. 3\n"

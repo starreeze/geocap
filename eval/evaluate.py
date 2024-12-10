@@ -10,11 +10,12 @@ from typing import Any, Callable
 from tqdm import tqdm
 
 from common.args import data_args, logger, vqa_args
+from eval.base import GenerateModelBase
 
-generate: Callable[[list[str], list[str]], str] = importlib.import_module(f"eval.{vqa_args.eval_model}").generate
+Model = importlib.import_module(f"eval.{vqa_args.eval_model}").GenerateModel
 
 
-def batched_evaluate(data: list[dict[str, Any]]) -> list[str]:
+def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:
     batched_data = [data[i : i + vqa_args.vqa_batchsize] for i in range(0, len(data), vqa_args.vqa_batchsize)]
     answers = []
     for batch in tqdm(batched_data):
@@ -31,7 +32,7 @@ def batched_evaluate(data: list[dict[str, Any]]) -> list[str]:
             for item in batch
         ]
 
-        responses = generate(image_paths, questions)
+        responses = model.generate(image_paths, questions)
 
         for resp in responses:
             found_answers = [letter for letter in "ABCD" if letter in resp.strip()]
@@ -43,13 +44,15 @@ def batched_evaluate(data: list[dict[str, Any]]) -> list[str]:
 
 
 def main():
+    model: GenerateModelBase = Model()
+
     for perspective in vqa_args.perspectives:
         logger.info(f"Evaluating {perspective} on model {vqa_args.eval_model}...")
         with open(os.path.join(data_args.vqa_question_dir, f"{perspective}.jsonl"), "r") as f:
             data = [json.loads(line) for line in f]
         truths = [item["choices"].index(item["answer"]) for item in data]
 
-        answers = batched_evaluate(data)
+        answers = batched_evaluate(model, data)
 
         output_dir = os.path.join(data_args.vqa_output_dir, vqa_args.eval_model)
         os.makedirs(output_dir, exist_ok=True)
