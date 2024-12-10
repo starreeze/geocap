@@ -47,12 +47,20 @@ def main():
         logger.info(f"Evaluating {perspective} on model {vqa_args.eval_model}...")
         with open(os.path.join(data_args.vqa_question_dir, f"{perspective}.jsonl"), "r") as f:
             data = [json.loads(line) for line in f]
+        truths = [item["choices"].index(item["answer"]) for item in data]
+
         answers = batched_evaluate(data)
+
         output_dir = os.path.join(data_args.vqa_output_dir, vqa_args.eval_model)
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, f"{perspective}.txt"), "w") as f:
             f.write("\n".join(answers))
         logger.info(f"Evaluation results saved in {output_dir}/{perspective}.txt")
+
+        # calculate the accuracy
+        correct = sum(1 for pred, item in zip(answers, truths) if pred == item)
+        accuracy = correct / len(data) * 100
+        logger.info(f"{perspective} - Acc: {accuracy:.2f}, Correct: {correct}, Total: {len(data)}")
 
 
 if __name__ == "__main__":

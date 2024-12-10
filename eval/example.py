@@ -3,12 +3,11 @@
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 "an example of evaluating llava (not complete)"
 # Copy this file to {model_name}_{model_size}.py and implement the `generate` function
+# please also modify the file header and copyright information
 
-import json
 import os
 from typing import Any
 
-from common.args import vqa_args
 
 # You'd better use transformers to load the model
 # however, if you cannot use transformers, you can put the model's codebase in our repo and load it manually
@@ -48,8 +47,21 @@ def generate(image_paths: list[str], prompts: list[str]) -> list[str]:
     # TODO: implement this
     # You must use batched generation; this will greatly improve the performance, especially for large models
     # Instead of writing `for` loop, try using the batched version of the model's generation function
+    # set temperature to 0 and disable top-k sampling, and control the length of the output
     ...
 
 
-# After finishing the implementation, you can run the following command to evaluate the model
+# After finishing the implementation, you can first test our implementation using test data
+if __name__ == "__main__":
+    res = generate(
+        ["dataset/geo-shapes/plt_00000000.jpg"],
+        [
+            "What is the number of triangles in the image?\nA. 0\nB. 1\nC. 2\nD. 3\n"
+            "Please directly answer A, B, C or D and nothing else."
+        ],
+    )
+    print(res)
+
+# Then run the following command to evaluate the model
 # python run.py --module eval.evaluate --eval_model {model_name}_{model_size} --eval_batchsize 4
+# and record the results in the table
