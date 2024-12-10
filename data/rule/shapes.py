@@ -388,7 +388,7 @@ class Spiral(GSRule):
         theta_start = max(0, self.max_theta - 2 * np.pi)
         theta_end = self.max_theta
         area, _ = quad(integrand, theta_start, theta_end)
-        
+
         return area
 
     def get_centroid(self) -> tuple[float, float]:
