@@ -14,7 +14,7 @@ from data.rule.relations import (
     FusiformRelationGenerator,
     CustomedShapeGenerator,
 )
-from data.shapes import ShapeGenerator
+from data.rule.shapes import ShapeGenerator
 from data.rule.utils import overlap_area
 
 
@@ -156,7 +156,11 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
             else:  # tail_shape is a GSRule instance
                 if no_overlap(shapes, tail_shape, exclude_shape=[head_shape]):
                     tail_idx = len(shapes)
-                    relations.append((head_idx, tail_idx, relation_type))
+                    # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
+                    if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
+                        relations.append((tail_idx, head_idx, relation_type))
+                    else:
+                        relations.append((head_idx, tail_idx, relation_type))
                     shapes.append(tail_shape)
 
         total_shapes += len(shapes)

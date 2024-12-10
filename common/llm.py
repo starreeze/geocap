@@ -19,7 +19,7 @@ class LLMGenerator:
         )
         self.generator.tokenizer.padding_side = "left"  # type: ignore
 
-    def __call__(self, input_texts, batch_size=1, output_path: str | None = None):
+    def __call__(self, input_texts: list[list[dict[str, str]]], batch_size=1, output_path: str | None = None):
         out_file = open(output_path, "w") if output_path else None
         target_range = range((len(input_texts) + batch_size - 1) // batch_size)
         if output_path:
@@ -29,7 +29,7 @@ class LLMGenerator:
             batch = input_texts[i * batch_size : (i + 1) * batch_size]
             outputs = self.generator(batch, batch_size=batch_size)
             for input_text, output in zip(batch, outputs):  # type: ignore
-                generated_text = output[0]["generated_text"][len(input_text) :][0]["content"].strip()
+                generated_text = output[0]["generated_text"][len(input_text)]["content"].strip()
                 results.append(generated_text)
                 if out_file:
                     out_file.write(generated_text + "\n")
@@ -44,15 +44,15 @@ class Llama3Generator(LLMGenerator):
         self.generator.tokenizer.pad_token_id = self.generator.model.config.eos_token_id[0]  # type: ignore
 
 
-generator_mapping: dict[str, type[LLMGenerator]] = {"llama3": Llama3Generator, "qwen2": LLMGenerator}
+generator_mapping: dict[str, type[LLMGenerator]] = {"llama31": Llama3Generator, "qwen25": LLMGenerator}
 model_path_mapping = {
-    "llama3": "/home/nfs02/model/llama-3.1-{size}b-instruct",
-    "qwen2": "/home/nfs02/model/Qwen/Qwen2-{size}B-Instruct",
+    "llama31": "/home/nfs02/model/llama-3.1-{size}b-instruct",
+    "qwen25": "/home/nfs02/model/Qwen_Qwen2.5-{size}B-Instruct",
 }
 
 
 def main():
-    print(LLMGenerator("meta/llama3-8b-chat")(["Once upon a time, "]))
+    print(LLMGenerator("meta/llama3-8b-chat")([[{"role": "user", "content": "Once upon a time, "}]]))
 
 
 if __name__ == "__main__":

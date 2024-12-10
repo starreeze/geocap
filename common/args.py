@@ -13,6 +13,8 @@ class DataArgs:
     figure_dir: str = field(default="dataset/geo-shapes")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
+    vqa_question_dir: str = field(default="dataset/vqa")
+    vqa_output_dir: str = field(default="results")
     stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
     num_fossil_samples: int = field(default=3)
@@ -97,12 +99,52 @@ class DrawArgs:
 @dataclass
 class CaptionArgs:
     caption_batchsize: int = field(default=4)
-    caption_llm: str = field(default="llama3-8")
+    caption_llm: str = field(default="llama31-8")
     numeric_ratio: float = field(default=0)
 
 
-data_args, run_args, rule_args, draw_args, caption_args = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs]  # type: ignore
+@dataclass
+class VQAArgs:
+    perspectives: list[str] = field(
+        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
+    )
+    # llm generator
+    vqa_batchsize: int = field(default=4)
+    vqa_llm: str = field(default="qwen25-7")
+    vqa_prompts_dir: str = field(default="data/vqa/prompts")
+    # rule generator
+    max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
+    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
+    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
+    gt_choice_w: list[float] = field(
+        default_factory=lambda: [0.1, 0.2, 0.3, 0.4],
+        metadata={
+            "help": "weight of the correct answer in the 4 choices; "
+            "we need this to balance the answer distribution "
+            "since smaller values are naturally more likely to be correct"
+        },
+    )
+    size_diff: float = field(
+        default=0.15,
+        metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
+    )
+    area_type_t: float = field(
+        default=0.05, metadata={"help": "tolerate threshold for area difference to be considered"}
+    )
+    location_type_t: float = field(
+        default=0.1, metadata={"help": "tolerate threshold for location difference to be considered"}
+    )
+    # evaluation
+    eval_model: str = field(
+        default="llava_7b",
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}_{model_size}"},
+    )
+    eval_batchsize: int = field(default=4)
+    eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
+
+
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -110,6 +152,7 @@ run_args = cast(RunArgs, run_args)
 rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
+vqa_args = cast(VQAArgs, vqa_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")

@@ -20,13 +20,13 @@ python run.py --module data.format --action to_llava  # you can also specify the
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 
 ```shell
-python run.py --module data.rule.generate --num_basic_geo_samples 10
+python run.py --module data.rule.generate --stage 1 --num_basic_geo_samples 10
 ```
 
 or generate rules for synthetic fossil samples:
 
 ```shell
-python run.py --module data.rule.generate --mode fossil --num_fossil_samples 10
+python run.py --module data.rule.generate --stage 2 --num_fossil_samples 10
 ```
 
 Each data sample contains two parts:
@@ -97,16 +97,32 @@ To use `plt_backend.py`, the following arguments are expected:
 To simply generate a picture with default settings, use the following command:
 
 ```shell
-python run.py --module data.draw --backend plt
+python run.py --module data.draw.draw --backend plt
 ```
 
 ### Running caption
 
 ```shell
-python run.py --module data.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
+python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
 ```
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
+
+### Generating VQA questions
+
+```shell
+python run.py --module data.vqa.question --numeric_ratio 1
+```
+
+The questions will be generated (by default) in `data/vqa`.
+
+### Evaluating VQA questions
+
+```shell
+python run.py --module eval.evaluate --eval_model {model_name}_{model_size} --eval_batchsize {batchsize}
+```
+
+The evaluation results will be saved in `eval/results/{model_name}_{model_size}`.
 
 ## Implementation detail
 
@@ -118,9 +134,22 @@ write how you generate rules here...
 
 ### Draw
 
-draw shapes according to the rule.
+Draw shapes according to the rule.
 
-write how you implement, e.g., adding noise...
+In the default backend (which means `plt_backend.py`), the python script will receive the `rules.json` in path `dataset/rules.json` and handle each rule by turn. After handling all the rules, a basic image will be generated. Then, the script will add noise to the image and generate a final image. The noise here contains Gaussian noise and Perlin noise.
+
+To run the script, use the following command:
+```shell
+python run.py --module data.draw.draw --backend plt --stage 1
+```
+
+More arguments are provided in `DrawArgs` in `common/args.py`. And you may also read readme file in the root directory for more details.
+
+Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
+
+```
+Warning: With noise enabled, the script will encounter performance issues if there are too many ellipses standing by for drawing. Please consider reducing the number of ellipses in the rule / wait patiently :).
+```
 
 ### Caption
 
