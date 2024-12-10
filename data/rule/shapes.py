@@ -5,6 +5,7 @@ from typing import Any, Literal, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import normal, randint, uniform
+from scipy.integrate import quad
 
 from data.rule.utils import distance_2points, distance_point_to_line, polar_angle
 
@@ -357,8 +358,8 @@ class Ellipse(GSRule):
 
 @dataclass
 class Spiral(GSRule):
-    # Archimedean spiral  r = a + b(θ)*θ
-    # b(\theta) = b + ε sin(ωθ+φ)
+    # Archimedean spiral  r = a + b(\theta) * \theta
+    # b(\theta) = b + \epsilon sin(\omega \theta + \phi)
     center: tuple[float, float]
     initial_radius: float  # a
     growth_rate: float  # b
@@ -379,7 +380,16 @@ class Spiral(GSRule):
         return self.bbox_from_points(points)
 
     def get_area(self) -> float:
-        return np.pi * (self.radius(self.max_theta) ** 2)
+        def integrand(theta):
+            r = self.radius(theta)
+            return 0.5 * r**2
+
+        # Only integrate over the last complete 2 * \pi
+        theta_start = max(0, self.max_theta - 2 * np.pi)
+        theta_end = self.max_theta
+        area, _ = quad(integrand, theta_start, theta_end)
+        
+        return area
 
     def get_centroid(self) -> tuple[float, float]:
         return self.center
