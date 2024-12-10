@@ -2,7 +2,7 @@
 # @Date    : 2024-12-09 11:15:38
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 "an example of evaluating llava (not complete)"
-# Copy this file to {model_name}_{model_size}.py and implement the `generate` function
+# Copy this file to {model_name}_{model_size}.py and implement the GenerateModel class
 # please also modify the file header and copyright information
 
 import os
@@ -14,30 +14,32 @@ from eval.base import GenerateModelBase
 # You'd better use transformers to load the model
 # however, if you cannot use transformers, you can put the model's codebase in our repo and load it manually
 # Refer to the `contributing` section in the readme.md for how to bypass the linter for external codebase
-from llava.constants import (
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_TOKEN,
-    IMAGE_TOKEN_INDEX,
-)
-from llava.conversation import SeparatorStyle, conv_templates
-from llava.mm_utils import (
-    get_model_name_from_path,
-    process_images,
-    tokenizer_image_token,
-)
-from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
+
+# from llava.constants import (
+#     DEFAULT_IM_END_TOKEN,
+#     DEFAULT_IM_START_TOKEN,
+#     DEFAULT_IMAGE_TOKEN,
+#     IMAGE_TOKEN_INDEX,
+# )
+# from llava.conversation import SeparatorStyle, conv_templates
+# from llava.mm_utils import (
+#     get_model_name_from_path,
+#     process_images,
+#     tokenizer_image_token,
+# )
+# from llava.model.builder import load_pretrained_model
+# from llava.utils import disable_torch_init
 
 
 class GenerateModel(GenerateModelBase):
     def __init__(self):
-        disable_torch_init()
         # you can read the model name and size from the args
-        model_name, model_size = vqa_args.eval_model.split("_")
-        self.model = load_pretrained_model(f"llava-1.5-{model_size}", None, "name", device="cuda")
+        # model_name, model_size = vqa_args.eval_model.split("_")
 
-    # implement `generate` function
+        # disable_torch_init()
+        # self.model = load_pretrained_model(f"llava-1.5-{model_size}", None, "name", device="cuda")
+        pass
+
     def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
         """
         generate the responses of the model on the given image paths and prompts

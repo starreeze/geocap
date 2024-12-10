@@ -153,7 +153,7 @@ class RuleBasedQAGenerator:
         for type in selected_types + [zero_type]:
             correct_answer = counts.get(type, 0)
             # Generate choices with uniform spacing around the correct answer
-            position = random.randint(0, 3)
+            position = random.choices(range(4), weights=vqa_args.gt_choice_w)[0]
             choices = [max(0, correct_answer + i - position) for i in range(4)]
             if len(set(choices)) < 4:  # Handle cases where some choices are 0
                 choices = list(range(4))
@@ -242,9 +242,15 @@ class RuleBasedQAGenerator:
                 question = "Suppose that the width and height of the image is 1, " + question
 
                 factor = vqa_args.size_diff
-                # Try different positions until all choices are in range
+                # Try different positions according to gt_choice_w until all choices are in range
                 valid_choices = None
-                for pos in random.sample(range(4), 4):
+                candidates = list(range(4))
+                weights = vqa_args.gt_choice_w
+                while candidates:
+                    pos = random.choices(candidates, weights=weights)[0]
+                    idx = candidates.index(pos)
+                    candidates.pop(idx)
+                    weights.pop(idx)
                     test_choices = [correct_value + factor * (i - pos) for i in range(4)]
                     if all(0 <= v <= 1 for v in test_choices):
                         position = pos

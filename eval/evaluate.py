@@ -61,7 +61,7 @@ def main():
         logger.info(f"Evaluation results saved in {output_dir}/{perspective}.txt")
 
         # calculate the accuracy
-        correct = sum(1 for pred, item in zip(answers, truths) if pred == item)
+        correct = sum(1 for pred, item in zip(answers, truths) if ord(pred) - ord("A") == item)
         accuracy = correct / len(data) * 100
         logger.info(f"{perspective} - Acc: {accuracy:.2f}, Correct: {correct}, Total: {len(data)}")
 
