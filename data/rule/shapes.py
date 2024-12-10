@@ -264,7 +264,7 @@ class Ellipse(GSRule):
         return self.bbox_from_points(transformed_points)
 
     def get_area(self) -> float:
-        return np.pi * self.major_axis * self.minor_axis
+        return np.pi * self.major_axis * self.minor_axis / 4
 
     def get_centroid(self) -> tuple[float, float]:
         return self.center
@@ -355,7 +355,6 @@ class Ellipse(GSRule):
         self.adjust_curve_points()
 
 
-# TODO: add more types
 @dataclass
 class Spiral(GSRule):
     # Archimedean spiral  r = a + b(θ)*θ

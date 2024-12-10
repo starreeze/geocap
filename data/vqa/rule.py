@@ -245,7 +245,7 @@ class RuleBasedQAGenerator:
                 # Try different positions according to gt_choice_w until all choices are in range
                 valid_choices = None
                 candidates = list(range(4))
-                weights = vqa_args.gt_choice_w
+                weights = vqa_args.gt_choice_w.copy()
                 while candidates:
                     pos = random.choices(candidates, weights=weights)[0]
                     idx = candidates.index(pos)
@@ -278,8 +278,11 @@ class RuleBasedQAGenerator:
         rel_questions = vqa_args.max_q_ip // 2
         abs_questions = vqa_args.max_q_ip - rel_questions
 
-        def get_position(x: float, y: float, ref_x: float = 0.5, ref_y: float = 0.5) -> str:
-            return ("upper " if y < ref_y else "lower ") + ("left" if x < ref_x else "right")
+        def get_position(x: float, y: float, ref_x: float = 0.5, ref_y: float = 0.5) -> str | None:
+            "if the shapes are very close to each other, return None"
+            if abs(x - ref_x) < vqa_args.location_type_t and abs(y - ref_y) < vqa_args.location_type_t:
+                return None
+            return ("upper " if y > ref_y else "lower ") + ("left" if x < ref_x else "right")
 
         def generate_choices(correct_pos: str) -> list[str]:
             positions = ["upper left", "upper right", "lower left", "lower right"]
@@ -289,20 +292,24 @@ class RuleBasedQAGenerator:
             return choices
 
         # Generate absolute position questions
-        sampled_types = random.sample(types, min(len(types), abs_questions))
+        sampled_types = random.sample(types, len(types))
         for type in sampled_types:
             clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "location")
             shape = next(s for s in figure["shapes"] if s["type"] == type)
             x, y = shape["center"]
             correct_pos = get_position(x, y)
+            if correct_pos is None:
+                continue
             question = f"Where is the {clarified_type} located in the image?"
             choices = generate_choices(correct_pos)
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
+            if len(qa_pairs) >= abs_questions:
+                break
 
         # Generate relative position questions
-        type_pairs = list(product(types, repeat=2))
-        type_pairs = [p for p in type_pairs if p[0] != p[1]]
-        sampled_pairs = random.sample(type_pairs, min(len(type_pairs), rel_questions))
+        type_pairs = [p for p in product(types, repeat=2) if p[0] != p[1]]
+        sampled_pairs = random.sample(type_pairs, len(type_pairs))
+        relative_qa_pairs: list[dict[str, Any]] = []
         for type_a, type_b in sampled_pairs:
             type_a_clear = cls.clarity_hierarchical_text(type_a, list(figure["counts"].keys()), "location")
             type_b_clear = cls.clarity_hierarchical_text(type_b, list(figure["counts"].keys()), "location")
@@ -311,10 +318,14 @@ class RuleBasedQAGenerator:
             x_a, y_a = shape_a["center"]
             x_b, y_b = shape_b["center"]
             correct_pos = get_position(x_a, y_a, x_b, y_b)
+            if correct_pos is None:
+                continue
             question = f"Where is the {type_a_clear} located relative to the {type_b_clear}?"
             choices = generate_choices(correct_pos)
-            qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
-        return qa_pairs
+            relative_qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
+            if len(relative_qa_pairs) >= rel_questions:
+                break
+        return qa_pairs + relative_qa_pairs
 
     @classmethod
     def reference(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
@@ -329,7 +340,7 @@ class RuleBasedQAGenerator:
         max_area = sorted_shapes[0]["area"]
         all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
         correct_type = sorted_shapes[0]["type"]
-        question = f"Which of the following has the {attr} area in the image?"
+        question = f"What type of shape presented in the image has the {attr} area?"
         qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
 
         # Location-based questions
@@ -346,7 +357,7 @@ class RuleBasedQAGenerator:
             s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
         }
         correct_type = sorted_shapes[0]["type"]
-        question = f"Which of the following has the {attr} centroid in the image?"
+        question = f"What type of shape presented in the image has the {attr} centroid?"
         qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
 
         # Frequency-based questions
@@ -355,7 +366,7 @@ class RuleBasedQAGenerator:
         max_count = sorted_types[0][1]
         all_correct_types = {t for t, c in counts.items() if c == max_count}
         correct_type = sorted_types[0][0]
-        question = f"What type of shape appears {attr} frequently in the image?"
+        question = f"What type of shape presented in the image appears {attr} frequently?"
         qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
 
         # Generate choices prioritizing types in the image and ensuring no other correct answers are included
