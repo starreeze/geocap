@@ -11,13 +11,13 @@ from scipy import special
 from tqdm import tqdm
 
 from common.args import caption_args, data_args, run_args
-from common.llm import LLMGenerator, generator_mapping, model_path_mapping
+from common.llm import LocalGenerator, generator_mapping, model_path_mapping
 from data.caption.prompt import *
 
 center_size_ratio = 1 / 3
 
 
-def caption(rules: list[dict[str, Any]], generator: LLMGenerator, output_path: str):
+def caption(rules: list[dict[str, Any]], generator: LocalGenerator, output_path: str):
     # TODO generate captions. Use whatever technique you like, e.g., demonstrations, cot, ...
     # TODO also consider how to handle distance:
     #      It should be mentioned in input prompt. Try scaling to produce different distances.
@@ -685,8 +685,8 @@ def gen_data_input(skeleton):
 
 def main():
     if data_args.stage == 1:
-        model_name, model_size = caption_args.caption_llm.split("-")
-        generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
+        model_name, model_id = caption_args.caption_llm.split("-", 1)
+        generator = generator_mapping[model_name](model_path_mapping[model_name].format(model_id))
         with open(data_args.rules_path, "r") as f:
             samples = json.load(f)[run_args.start_pos : run_args.end_pos]
         os.makedirs(data_args.caption_dir, exist_ok=True)

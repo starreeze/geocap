@@ -7,12 +7,22 @@ from itertools import product
 from typing import Any, cast
 
 import numpy as np
+from tqdm import tqdm
 
 from common.args import logger, vqa_args
 from data.vqa.base import GeneratorBase
 
 
 class RuleBasedQAGenerator(GeneratorBase):
+    def __call__(self, perspective: str) -> list[dict[str, Any]]:
+        logger.info(f"Generating {perspective} questions")
+        qa_pairs: list[dict[str, Any]] = []
+        for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
+            for j, qa in enumerate(getattr(self, perspective)(figure)):
+                self.clarify_hierarchical_choices(qa)
+                qa_pairs.append({"image_id": i, "question_id": j} | qa)
+        return qa_pairs
+
     @classmethod
     def counting(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "how many [type] are there?"

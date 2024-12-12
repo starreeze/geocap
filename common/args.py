@@ -35,6 +35,7 @@ class RunArgs:
     progress_bar: bool = field(default=True)
     start_pos: int = field(default=0)
     end_pos: int = field(default=100000)
+    api_key_file: str = field(default="api_key.yaml")
 
 
 @dataclass

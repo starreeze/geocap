@@ -25,8 +25,8 @@ class LLMQAGenerator(GeneratorBase):
         super().__init__(rules)
         self.captions = captions
         if self.llm_generator is None:
-            model_name, model_size = vqa_args.vqa_llm.split("-")
-            model_path = model_path_mapping[model_name].format(size=model_size)
+            model_name, model_id = vqa_args.vqa_llm.split("-", 1)
+            model_path = model_path_mapping[model_name].format(model_id)
             self.__class__.llm_generator = generator_mapping[model_name](model_path)
         self.sys_prompt = sys_prompt
 

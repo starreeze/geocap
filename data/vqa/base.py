@@ -120,12 +120,3 @@ class GeneratorBase:
             return type
         child_desc = ", ".join(overlapping_children)
         return f"{type} ({'excluding' if perspective == 'counting' else 'not'} {child_desc})"
-
-    def __call__(self, perspective: str) -> list[dict[str, Any]]:
-        logger.info(f"Generating {perspective} questions")
-        qa_pairs: list[dict[str, Any]] = []
-        for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
-            for j, qa in enumerate(getattr(self, perspective)(figure)):
-                self.clarify_hierarchical_choices(qa)
-                qa_pairs.append({"image_id": i, "question_id": j} | qa)
-        return qa_pairs
