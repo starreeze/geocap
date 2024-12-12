@@ -11,13 +11,13 @@ from scipy import special
 from tqdm import tqdm
 
 from common.args import caption_args, data_args, run_args
-from common.llm import LocalGenerator, generator_mapping, model_path_mapping
+from common.llm import LLMGenerator, generator_mapping, model_path_mapping
 from data.caption.prompt import *
 
 center_size_ratio = 1 / 3
 
 
-def caption(rules: list[dict[str, Any]], generator: LocalGenerator, output_path: str):
+def caption(rules: list[dict[str, Any]], generator: LLMGenerator, output_path: str):
     # TODO generate captions. Use whatever technique you like, e.g., demonstrations, cot, ...
     # TODO also consider how to handle distance:
     #      It should be mentioned in input prompt. Try scaling to produce different distances.
