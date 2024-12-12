@@ -9,10 +9,10 @@ from typing import Any, cast
 import numpy as np
 
 from common.args import logger, vqa_args
-from data.vqa.base import RuleGeneratorBase
+from data.vqa.base import GeneratorBase
 
 
-class RuleBasedQAGenerator(RuleGeneratorBase):
+class RuleBasedQAGenerator(GeneratorBase):
     @classmethod
     def counting(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "how many [type] are there?"

@@ -12,7 +12,7 @@ from data.rule.shapes import GSRule
 from data.rule.utils import round_floats
 
 
-class RuleGeneratorBase:
+class GeneratorBase:
     data: list[dict[str, Any]] = []  # [{shapes: [{type, center, box, area}], relations, counts}]
     total_shapes = [
         "line",
