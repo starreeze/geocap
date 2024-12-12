@@ -2,7 +2,7 @@
 # @Date    : 2024-12-09 11:15:38
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 "an example of evaluating llava (not complete)"
-# Copy this file to {model_name}_{model_size}.py and implement the GenerateModel class
+# Copy this file to {model_name}.py (e.g., llava.py) and implement the GenerateModel class
 # please also modify the file header and copyright information
 
 import os
@@ -33,8 +33,8 @@ from eval.base import GenerateModelBase
 
 class GenerateModel(GenerateModelBase):
     def __init__(self):
-        # you can read the model name and size from the args
-        # model_name, model_size = vqa_args.eval_model.split("_")
+        # you can read the model name and size from the args, then determine which model to load
+        # model_name, model_size = vqa_args.eval_model.split("-")
 
         # disable_torch_init()
         # self.model = load_pretrained_model(f"llava-1.5-{model_size}", None, "name", device="cuda")
@@ -72,5 +72,5 @@ if __name__ == "__main__":
     print(res)
 
 # Then run the following command to evaluate the model
-# python run.py --module eval.evaluate --eval_model {model_name}_{model_size} --eval_batchsize 4
+# python run.py --module eval.evaluate --eval_model {model_name}-{model_size} --eval_batchsize 4
 # and record the results in the table

@@ -136,8 +136,8 @@ class VQAArgs:
     )
     # evaluation
     eval_model: str = field(
-        default="llava_7b",
-        metadata={"help": "model name for evaluation. Naming convention: {model_name}_{model_size}"},
+        default="llava-7b",
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}-{model_size}"},
     )
     eval_batchsize: int = field(default=4)
     eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")

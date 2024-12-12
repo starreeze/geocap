@@ -8,14 +8,14 @@ from tqdm import trange
 
 from common.args import data_args, rule_args
 from data.rule.relations import (
-    RelationGenerator,
-    SeptaGenerator,
+    CustomedShapeGenerator,
     EllipseRelationGenerator,
     FusiformRelationGenerator,
-    CustomedShapeGenerator,
+    RelationGenerator,
+    SeptaGenerator,
 )
 from data.rule.shapes import ShapeGenerator
-from data.rule.utils import overlap_area
+from data.rule.utils import overlap_area, round_floats
 
 
 def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
@@ -195,16 +195,6 @@ def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.2) -> bool:
     if iou_sum > thres:
         return False
     return True
-
-
-def round_floats(obj, precision=2):
-    if isinstance(obj, float):
-        return round(obj, precision)
-    if isinstance(obj, dict):
-        return {k: round_floats(v, precision) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [round_floats(x, precision) for x in obj]
-    return obj
 
 
 def save_rules(rules: list[dict[str, list]], output_file: str):

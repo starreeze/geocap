@@ -12,7 +12,7 @@ from tqdm import tqdm
 from common.args import data_args, logger, vqa_args
 from eval.base import GenerateModelBase
 
-Model = importlib.import_module(f"eval.{vqa_args.eval_model}").GenerateModel
+Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").GenerateModel
 
 
 def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:

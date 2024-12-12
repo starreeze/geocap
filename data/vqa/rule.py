@@ -3,133 +3,16 @@
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 
 import random
-from collections import Counter
 from itertools import product
 from typing import Any, cast
 
 import numpy as np
-from tqdm import tqdm
 
 from common.args import logger, vqa_args
-from data.rule.shapes import GSRule
+from data.vqa.base import RuleGeneratorBase
 
 
-class RuleBasedQAGenerator:
-    data: list[dict[str, Any]] = []  # [{shapes: [{type, center, box, area}], relations, counts}]
-    total_shapes = [
-        "line",
-        "ellipse",
-        "circle",
-        "triangle",  # order cannot be changed; this will be indexed
-        "quadrilateral",
-        "pentagon",
-        "hexagon",
-        "rectangle",
-        "square",
-        "spiral",
-    ]
-    shape_hierarchy = {
-        "ellipse": ["circle"],
-        "rectangle": ["square"],
-        "quadrilateral": ["rectangle", "square"],
-    }
-    relation_reverse = {
-        "tangent": "tangent",
-        "parallel": "parallel",
-        "circumscribed": "inscribed",
-        "inscribed": "circumscribed",
-        "shared edge": "shared edge",
-        "diagonal": None,
-        "major axis": None,
-        "minor axis": None,
-        "diameter": None,
-    }
-    total_relations = list(relation_reverse.keys())
-
-    @staticmethod
-    def get_relation(relation: str) -> str:
-        if "tangent" in relation:
-            return "tangent"
-        if "circumscribed" in relation:
-            return "circumscribed"
-        if "inscribed" in relation:
-            return "inscribed"
-        # these will not appear as they require multiple shapes, causing ambiguity
-        if relation in ["concentric", "similar", "symmetric"]:
-            raise NotImplementedError(f"Relation {relation} not implemented")
-        return relation
-
-    @classmethod
-    def get_type(cls, shape_dict: dict[str, Any]) -> str:
-        special_info = shape_dict.get("special_info", "").strip(" .").split(" ")[-1]
-        if special_info:
-            return special_info
-        if shape_dict["type"] in ["segment", "ray"]:
-            return "line"
-        if shape_dict["type"] == "polygon":
-            return cls.total_shapes[len(shape_dict["points"])]
-        return shape_dict["type"]
-
-    def __init__(self, rules: list[dict[str, Any]]):
-        if self.data:
-            return
-        logger.info("Loading VQA data from rules")
-        for figure in tqdm(rules):
-            info: dict[str, Any] = {"shapes": []}
-            for shape_dict in figure["shapes"]:
-                shape = GSRule.from_dict(shape_dict)
-                shape_info = {
-                    "type": self.get_type(shape_dict),
-                    "center": shape.get_centroid(),
-                    "box": shape.get_bbox(),
-                    "area": shape.get_area(),
-                }
-                info["shapes"].append(shape_info)
-            info["relations"] = figure["relations"]
-            info["counts"] = dict(Counter(shape["type"] for shape in info["shapes"]))
-            self.data.append(info)
-
-    @classmethod
-    def clarify_hierarchical_choices(cls, qa: dict[str, Any]):
-        "Post-process choices to clarify hierarchical types when parent and child types appear together."
-        # however, for existence, we need to handle in the question generation
-        if "choices" not in qa or not isinstance(qa["choices"][0], str):
-            return
-        choices: list[str] = qa["choices"]
-        for parent, children in cls.shape_hierarchy.items():
-            try:
-                parent_idx = choices.index(parent)
-            except ValueError:
-                continue
-            # Check if any child type exists in choices
-            overlapping_children = [c for c in children if c in choices]
-            if not overlapping_children:
-                continue
-            # Add clarification to parent
-            choices[parent_idx] = f"{parent} ({', '.join(overlapping_children)} excluded)"
-            # Update answer if needed
-            if qa["answer"] == parent:
-                qa["answer"] = choices[parent_idx]
-
-    @classmethod
-    def clarity_hierarchical_text(cls, type: str, image_types: list[str], perspective: str = "counting") -> str:
-        if type not in cls.shape_hierarchy:
-            return type
-        overlapping_children = [c for c in cls.shape_hierarchy[type] if c in image_types]
-        if not overlapping_children:
-            return type
-        child_desc = ", ".join(overlapping_children)
-        return f"{type} ({'excluding' if perspective == 'counting' else 'not'} {child_desc})"
-
-    def __call__(self, perspective: str) -> list[dict[str, Any]]:
-        logger.info(f"Generating {perspective} questions")
-        qa_pairs: list[dict[str, Any]] = []
-        for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
-            for j, qa in enumerate(getattr(self, perspective)(figure)):
-                self.clarify_hierarchical_choices(qa)
-                qa_pairs.append({"image_id": i, "question_id": j} | qa)
-        return qa_pairs
-
+class RuleBasedQAGenerator(RuleGeneratorBase):
     @classmethod
     def counting(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "how many [type] are there?"
@@ -157,7 +40,7 @@ class RuleBasedQAGenerator:
             choices = [max(0, correct_answer + i - position) for i in range(4)]
             if len(set(choices)) < 4:  # Handle cases where some choices are 0
                 choices = list(range(4))
-            clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "counting")
+            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "counting")
             question = f"How many {clarified_type}(s) are there in the image?"
 
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_answer})
@@ -199,8 +82,8 @@ class RuleBasedQAGenerator:
         # generate questions
         qa_pairs: list[dict[str, Any]] = []
         for pair, relation in sampled_pairs.items():
-            type1 = cls.clarity_hierarchical_text(pair[0], list(figure["counts"].keys()), "relation")
-            type2 = cls.clarity_hierarchical_text(pair[1], list(figure["counts"].keys()), "relation")
+            type1 = cls.clarify_hierarchical_text(pair[0], list(figure["counts"].keys()), "relation")
+            type2 = cls.clarify_hierarchical_text(pair[1], list(figure["counts"].keys()), "relation")
             question = f"What is the relationship of the {type1} to the {type2} in the image?"
             if pair in relation_pairs:
                 compliment = [r for r in cls.total_relations if r != relation]
@@ -231,7 +114,7 @@ class RuleBasedQAGenerator:
             sampled_types = random.sample(types, min(len(types), num_questions))
 
             for type in sampled_types:
-                clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "size")
+                clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "size")
                 shape = next(s for s in figure["shapes"] if s["type"] == type)
                 if dim == "area":
                     correct_value = shape["area"]
@@ -294,7 +177,7 @@ class RuleBasedQAGenerator:
         # Generate absolute position questions
         sampled_types = random.sample(types, len(types))
         for type in sampled_types:
-            clarified_type = cls.clarity_hierarchical_text(type, list(figure["counts"].keys()), "location")
+            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "location")
             shape = next(s for s in figure["shapes"] if s["type"] == type)
             x, y = shape["center"]
             correct_pos = get_position(x, y)
@@ -311,8 +194,8 @@ class RuleBasedQAGenerator:
         sampled_pairs = random.sample(type_pairs, len(type_pairs))
         relative_qa_pairs: list[dict[str, Any]] = []
         for type_a, type_b in sampled_pairs:
-            type_a_clear = cls.clarity_hierarchical_text(type_a, list(figure["counts"].keys()), "location")
-            type_b_clear = cls.clarity_hierarchical_text(type_b, list(figure["counts"].keys()), "location")
+            type_a_clear = cls.clarify_hierarchical_text(type_a, list(figure["counts"].keys()), "location")
+            type_b_clear = cls.clarify_hierarchical_text(type_b, list(figure["counts"].keys()), "location")
             shape_a = next(s for s in figure["shapes"] if s["type"] == type_a)
             shape_b = next(s for s in figure["shapes"] if s["type"] == type_b)
             x_a, y_a = shape_a["center"]
@@ -389,7 +272,7 @@ class RuleBasedQAGenerator:
 
         # 1. Ask about a shape that exists
         present_type = random.choice(list(counts.keys()))
-        clarified_type = cls.clarity_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
+        clarified_type = cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
         qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "yes"}
         qa_pairs.append(qa)
 
@@ -397,7 +280,7 @@ class RuleBasedQAGenerator:
         absent_types = [t for t in cls.total_shapes if t not in counts]
         if absent_types:
             absent_type = random.choice(absent_types)
-            clarified_type = cls.clarity_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
+            clarified_type = cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
             qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "no"}
             qa_pairs.append(qa)
 
@@ -432,3 +315,6 @@ class RuleBasedQAGenerator:
             qa_pairs.append(qa)
 
         return qa_pairs
+
+
+# TODO llm based multihop
