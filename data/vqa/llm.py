@@ -54,7 +54,12 @@ class LLMQAGenerator(GeneratorBase):
                     continue
                 for qa in qas[: vqa_args.max_q_ip]:
                     qa: dict[str, Any] = {"image_id": image_id} | qa
-                    random.shuffle(qa["choices"])
+                    if "none" in qa["choices"][-1]:  # shuffle the first three choices
+                        first_three_choices = qa["choices"][:3]
+                        random.shuffle(first_three_choices)
+                        qa["choices"] = first_three_choices + [qa["choices"][-1]]
+                    else:
+                        random.shuffle(qa["choices"])
                     qa_pairs.append(qa)
         return qa_pairs
 

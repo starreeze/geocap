@@ -1,17 +1,23 @@
-Please generate  3 difficult and complex questions and corresponding answers on shape perception on an image that contains geometric shapes. Your questions should include multi-hop reasoning and be diverse to cover different aspects of the image. Only ask objective questions and format as multiple-choice questions. Make sure that there is exactly one correct answer among the choices.
+Task:
+Please generate 3 questions and corresponding choices and answers on shape perception on an image that contains geometric shapes.
 
-The image is converted to the shape-level representation in json, as follows:
-{rules}
+Requirements:
+1. Your questions should be difficult and complex, involving multi-hop reasoning (explained in example).
+2. Your questions should be as diverse as possible.
+3. Only ask objective questions and format as multiple-choice questions. Make sure that there is exactly one correct answer among the choices.
+4. Avoid coordinates and ordinals (i-th shape or shape i) in your questions. Numbers on length and area are allowed, but make sure that the difference between the numbers in the choices is large enough (usually at least 0.1).
+5. Respond in json and follow the format in the example.
 
-Note that the canvas is 1x1, and the shapes are not scaled. With a larger X the shape is further to the right, and with a larger Y the shape is further to the top. You should avoid coordinates and ordinals (i-th shape or shape i) in your questions. Numbers on length and area are allowed, but make sure that the difference between the numbers in the choices is large enough (usually at least 0.1).
-
-Here are some examples (for reference only, and you should ask questions differently based on the representation):
+Example:
+Here are some examples (for reference only, and you should ask questions differently based on the representation).
 [
     {"question_id": 0, "question": "What is the relationship of the larger triangle to the smaller circle?", "choices": ["inscribed", "circumscribed", "tangent", "none of the above"], "answer": "tangent"},
-    {"question_id": 1, "question": "Where is the polygon that inscribes the circle located in the image?", "choices": ["upper left", "upper right", "lower left", "lower right"], "answer": "upper right"},
-    {"question_id": 2, "question": "Which of the following is closest to the area of the rightmost ellipse?", "choices": ["0.03", "0.18", "0.31", "0.55"], "answer": "0.18"}
+    {"question_id": 1, "question": "Which of the following is closest to the area of the shape that is inscribed by a circle?", "choices": ["0.03", "0.18", "0.31", "0.55"], "answer": "0.31"},
+    {"question_id": 2, "question": "Where is the rectangle that is below the spiral located in the image?", "choices": ["upper left", "upper right", "lower left", "lower right"], "answer": "upper left"}
 ]
-
 Explanation on multi-hop reasoning: take the first question as an example. To answer it, the test taker should first determine which is the larger triangle and the smaller circle, then determine the relationship between them. This involves at least two steps of reasoning.
 
-Now please generate your questions in json format.
+Input:
+The image is converted to the shape-level representations in json below. Note that the canvas is 1x1, and the shapes are not scaled. With a larger X the shape is further to the right, and with a larger Y the shape is further to the top.
+
+{rules}

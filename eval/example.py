@@ -34,7 +34,7 @@ from eval.base import GenerateModelBase
 class GenerateModel(GenerateModelBase):
     def __init__(self):
         # you can read the model name and size from the args, then determine which model to load
-        # model_name, model_size = vqa_args.eval_model.split("-")
+        # model_name, model_size = vqa_args.eval_model.split("-", 1)
 
         # disable_torch_init()
         # self.model = load_pretrained_model(f"llava-1.5-{model_size}", None, "name", device="cuda")
