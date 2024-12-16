@@ -876,7 +876,7 @@ class ShapeGenerator:
                 "start_angle": start_angle_main - max_extend_angle1 * normal(0.6, 0.1),
                 "end_angle": start_angle_main,
                 "start_volution": 0,
-                "end_volution": randint(end_volution, num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
             }
             max_extend_angle2 = ((0.5 - i) * np.pi - end_angle_main) % (2 * np.pi)
             axial_filling_extend2 = {
@@ -884,7 +884,7 @@ class ShapeGenerator:
                 "start_angle": end_angle_main,
                 "end_angle": end_angle_main + max_extend_angle2 * normal(0.6, 0.1),
                 "start_volution": 0,
-                "end_volution": randint(end_volution, num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
             }
             axial_filling.append(axial_filling_extend1)
             axial_filling.append(axial_filling_extend2)
