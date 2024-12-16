@@ -164,13 +164,15 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                     shapes.append(tail_shape)
 
         total_shapes += len(shapes)
-        shapes_dict = [shape.to_dict() for shape in shapes]
-        sample = {"shapes": shapes_dict, "relations": relations}
-        results.append(sample)
 
-    print(f"number of initial shapes = {num_init_shapes}")
-    print(f"total shapes = {total_shapes}")
-    assert len(results) == data_args.num_basic_geo_samples
+        if len(shapes) >= rule_args.min_num_shapes:
+            shapes_dict = [shape.to_dict() for shape in shapes]
+            sample = {"shapes": shapes_dict, "relations": relations}
+            results.append(sample)
+
+    # print(f"number of initial shapes = {num_init_shapes}")
+    # print(f"total shapes = {total_shapes}")
+    # assert len(results) == data_args.num_basic_geo_samples
     return results
 
 

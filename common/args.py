@@ -44,6 +44,7 @@ class RuleArgs:
 
     """args for stage 1"""
     max_num_shapes: int = field(default=10)
+    min_num_shapes: int = field(default=2)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
