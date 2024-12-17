@@ -50,6 +50,11 @@ def caption(rules: list[dict[str, Any]], generator: LLMGenerator, output_path: s
                 f.write(json.dumps({"input": input, "output": output}) + "\n")
                 f.flush()
 
+    # with open(output_path, "w") as f:
+    #     for input in rule_strs:
+    #         f.write(json.dumps({"input": input}) + "\n")
+    #         f.flush()
+
 
 def euc_dist(p1, p2):
     return math.sqrt(abs((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2))
@@ -356,7 +361,7 @@ def sort_shapes_by_weight(shapes):
     return sorted(shapes, key=lambda x: x["weight"])
 
 
-def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase):
+def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase, depth):
     # 处理同心组
     concentric_groups_raw = {}
     for shape in canvas_part:
@@ -436,7 +441,7 @@ def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase):
             sub_part[pos].append(shape_remain)
         for k in sub_part.keys():
             new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(k, x1, x2, y1, y2, xbase, ybase)
-            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase)
+            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1)
         return sub_part
     elif len(same_shape_groups) > 0:  # 有同名形状
         center_positions, weights, grid_posz = gen_grid(canvas_part, x1, x2, y1, y2)
@@ -451,7 +456,19 @@ def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase):
             sub_part[pos].append(canvas_part[j])
         for k in sub_part.keys():
             new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(k, x1, x2, y1, y2, xbase, ybase)
-            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase)
+            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1)
+        return sub_part
+    elif depth == 0:
+        center_positions, weights, grid_posz = gen_grid(canvas_part, x1, x2, y1, y2)
+        grid_pos = {}
+        for i in range(len(canvas_part)):
+            grid_pos[canvas_part[i]["id"]] = grid_posz[i]
+        sub_part = {}
+        for j in range(len(canvas_part)):
+            pos = grid_posz[j]
+            if pos not in sub_part:
+                sub_part[pos] = []
+            sub_part[pos].append(canvas_part[j])
         return sub_part
     else:
         return canvas_part
@@ -482,7 +499,7 @@ def gen_user_input_skeleton(rules, numeric_ratio):
         if "special_info" in rules["shapes"][i]:
             if rules["shapes"][i]["special_info"] != "":
                 rules["shapes"][i]["name"] = refine_special_info(rules["shapes"][i]["special_info"])
-    skeleton["canvas"] = disambiguation(rules["shapes"], x1, x2, y1, y2, 0, 0)
+    skeleton["canvas"] = disambiguation(rules["shapes"], x1, x2, y1, y2, 0, 0, 0)
     patch_relations(rules, skeleton)
     simplify_skeleton(rules, skeleton, numeric_ratio)
     data_input_str = gen_data_input(skeleton)
@@ -687,10 +704,11 @@ def main():
     if data_args.stage == 1:
         model_name, model_id = caption_args.caption_llm.split("-", 1)
         generator = generator_mapping[model_name](model_path_mapping[model_name].format(model_id))
+        # generator=None
         with open(data_args.rules_path, "r") as f:
             samples = json.load(f)[run_args.start_pos : run_args.end_pos]
         os.makedirs(data_args.caption_dir, exist_ok=True)
-        caption(samples, generator, data_args.caption_path)
+        caption(samples, generator, data_args.caption_path)  # type: ignore
     elif data_args.stage == 2:
         import data.caption.caption2
 
