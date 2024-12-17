@@ -13,6 +13,7 @@ from functools import wraps
 from glob import glob
 from itertools import product
 from multiprocessing import Lock, Process, synchronize
+from time import sleep
 from typing import (
     IO,
     Any,
@@ -126,7 +127,7 @@ class IterateWrapper(Generic[DataType]):
         return self.data[self.index]
 
 
-def retry_dec(retry=5, on_error: Literal["raise", "continue"] = "raise"):
+def retry_dec(retry=5, wait=1, on_error: Literal["raise", "continue"] = "raise"):
     "decorator for retrying a function on exception; on_error could be raise or continue"
 
     def decorator(func):
@@ -151,6 +152,7 @@ def retry_dec(retry=5, on_error: Literal["raise", "continue"] = "raise"):
                             )
                             return
                     _logger.warning(f"{type(e).__name__}: {e}, retrying [{j + 1}]...")
+                    sleep(wait)
 
         return wrapper
 

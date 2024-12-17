@@ -35,6 +35,7 @@ class RunArgs:
     progress_bar: bool = field(default=True)
     start_pos: int = field(default=0)
     end_pos: int = field(default=100000)
+    api_key_file: str = field(default="api_key.yaml")
 
 
 @dataclass
@@ -43,6 +44,7 @@ class RuleArgs:
 
     """args for stage 1"""
     max_num_shapes: int = field(default=10)
+    min_num_shapes: int = field(default=2)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
@@ -136,8 +138,8 @@ class VQAArgs:
     )
     # evaluation
     eval_model: str = field(
-        default="llava_7b",
-        metadata={"help": "model name for evaluation. Naming convention: {model_name}_{model_size}"},
+        default="llava-7b",
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}-{model_size}"},
     )
     eval_batchsize: int = field(default=4)
     eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")

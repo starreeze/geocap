@@ -173,3 +173,13 @@ def find_perpendicular_line(line: tuple[float, float], point: tuple[float, float
         perpendicular_intercept = x
 
     return perpendicular_slope, perpendicular_intercept
+
+
+def round_floats(obj, precision=2):
+    if isinstance(obj, float):
+        return round(obj, precision)
+    if isinstance(obj, dict):
+        return {k: round_floats(v, precision) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [round_floats(x, precision) for x in obj]
+    return obj

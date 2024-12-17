@@ -10,32 +10,38 @@ from tqdm import tqdm
 
 from common.args import logger, vqa_args
 from common.llm import LLMGenerator, generator_mapping, model_path_mapping
+from data.vqa.base import GeneratorBase
 
 
-class LLMQAGenerator:
+class LLMQAGenerator(GeneratorBase):
     llm_generator: LLMGenerator | None = None
 
     def __init__(
         self,
-        task_prompt: str,
+        rules: list[dict[str, Any]],
+        captions: list[str],
         sys_prompt="You are a helpful assistant that always responds in json.",
     ):
+        super().__init__(rules)
+        self.captions = captions
         if self.llm_generator is None:
-            model_name, model_size = vqa_args.vqa_llm.split("-")
-            model_path = model_path_mapping[model_name].format(size=model_size)
+            model_name, model_id = vqa_args.vqa_llm.split("-", 1)
+            model_path = model_path_mapping[model_name].format(model_id)
             self.__class__.llm_generator = generator_mapping[model_name](model_path)
-        self.task_prompt = task_prompt
         self.sys_prompt = sys_prompt
 
-    def __call__(self, captions: list[str]) -> list[dict[str, Any]]:
+    def __call__(self, task_prompt: str) -> list[dict[str, Any]]:
         assert self.llm_generator is not None
         qa_pairs: list[dict[str, Any]] = []
         inputs = [
             [
                 {"role": "system", "content": self.sys_prompt},
-                {"role": "user", "content": self.task_prompt.replace("{caption}", caption)},
+                {
+                    "role": "user",
+                    "content": task_prompt.replace("{caption}", caption).replace("{rules}", json.dumps(rules)),
+                },
             ]
-            for caption in captions
+            for caption, rules in zip(self.captions, self.data)
         ]
         num_batches = (len(inputs) + vqa_args.vqa_batchsize - 1) // vqa_args.vqa_batchsize
         responses = self.llm_generator(inputs, vqa_args.vqa_batchsize)
@@ -48,7 +54,12 @@ class LLMQAGenerator:
                     continue
                 for qa in qas[: vqa_args.max_q_ip]:
                     qa: dict[str, Any] = {"image_id": image_id} | qa
-                    random.shuffle(qa["choices"])
+                    if "none" in qa["choices"][-1]:  # shuffle the first three choices
+                        first_three_choices = qa["choices"][:3]
+                        random.shuffle(first_three_choices)
+                        qa["choices"] = first_three_choices + [qa["choices"][-1]]
+                    else:
+                        random.shuffle(qa["choices"])
                     qa_pairs.append(qa)
         return qa_pairs
 
