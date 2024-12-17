@@ -685,8 +685,8 @@ def gen_data_input(skeleton):
 
 def main():
     if data_args.stage == 1:
-        model_name, model_size = caption_args.caption_llm.split("-")
-        generator = generator_mapping[model_name](model_path_mapping[model_name].format(size=model_size))
+        model_name, model_id = caption_args.caption_llm.split("-", 1)
+        generator = generator_mapping[model_name](model_path_mapping[model_name].format(model_id))
         with open(data_args.rules_path, "r") as f:
             samples = json.load(f)[run_args.start_pos : run_args.end_pos]
         os.makedirs(data_args.caption_dir, exist_ok=True)
