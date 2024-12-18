@@ -33,6 +33,8 @@ class Figure:
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
         self.shape = (int(size[0] * dpi), int(size[1] * dpi))
+        self.size = size
+        self.dpi = dpi
         self.ax = self.image.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
         self.ax.set_xlim(0, 1)
@@ -63,7 +65,11 @@ class Figure:
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
 
-        self.unprocessed_image = self.__fig2img()
+        self.unprocessed_image = self.__fig2img(self.image)
+        self.height, self.width = (
+            self.unprocessed_image.height,
+            self.unprocessed_image.width,
+        )
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
         # print("Monochromizing the image...")
@@ -81,16 +87,14 @@ class Figure:
         self.unprocessed_image.close()
         plt.close(self.image)
 
-    def __fig2img(self):
+    def __fig2img(self, fig):
         from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-        canvas = FigureCanvasAgg(self.image)
+        canvas = FigureCanvasAgg(fig)
         canvas.draw()
 
         img_arr = np.array(canvas.renderer.buffer_rgba())
         image = Image.fromarray(img_arr)
-
-        self.width, self.height = image.width, image.height
 
         return image
 
@@ -103,52 +107,50 @@ class Figure:
         self.unprocessed_image = Image.fromarray(processed_img)
 
     def __get_perlin_mask(self) -> np.ndarray:
-        mask = np.zeros(self.shape, dtype=np.uint8)
-        for ind, rule in enumerate(self.rules):
+        mask = plt.figure(figsize=self.size, dpi=self.dpi)
+        ax = mask.add_subplot()
+        plt.subplots_adjust(0, 0, 1, 1)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        for idx, rule in enumerate(self.rules):
             if rule["type"] == "ellipse":
-                a = rule["major_axis"] / 2
-                b = rule["minor_axis"] / 2
-                c = np.sqrt(a**2 - b**2)
-                e = c / a
-                offset_x = rule["center"][0] * self.shape[0] - np.cos(rule["rotation"]) * c * self.shape[0]
-                offset_y = rule["center"][1] * self.shape[1] - np.sin(rule["rotation"]) * c * self.shape[1]
-                angle_range = np.linspace(0, 2 * 3.1416, 2880)
-                for angle in angle_range:
-                    radius_range = np.linspace(
-                        0,
-                        (a * (1 - e**2) / (1 - e * np.cos(angle))) * self.shape[0],
-                        self.shape[0] * 2,
+                ellipse_x, ellipse_y = rule["center"]
+                major = rule["major_axis"]
+                minor = rule["minor_axis"]
+                alpha = rule["rotation"] * 180 / np.pi
+                ax.add_patch(
+                    pch.Ellipse(
+                        (ellipse_x, ellipse_y),
+                        major,
+                        minor,
+                        angle=alpha,
+                        edgecolor="black",
+                        facecolor="black",
+                        linewidth=1 * (self.shape[0] / 640),
                     )
-                    x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
-                    y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
-                    for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] >= self.shape[0] or pos[1] < 0 or pos[1] >= self.shape[1]:
-                            continue
-                        mask[int(pos[1])][int(pos[0])] = 1
-            elif rule["type"] == "spiral":
-                if rule["max_theta"] <= 2 * 3.1416:
-                    continue
-                max_radius = rule["initial_radius"] + rule["growth_rate"] * rule["max_theta"]
-                angle_range = np.linspace(
-                    rule["max_theta"] - 2 * 3.1416,
-                    rule["max_theta"],
-                    int(2 * 3.1416 * max_radius * self.shape[0]),
                 )
-                for angle in angle_range:
-                    radius_range = rule["initial_radius"] + rule["growth_rate"] * angle
-                    radius_range = np.linspace(
-                        0,
-                        radius_range * self.shape[0],
-                        int(radius_range * self.shape[0]) * 2,
+            if rule["type"] == "segment":
+                points: list = rule["points"]
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (points[0][1], points[1][1]),
+                    color="black",
+                )
+            if rule["type"] == "polygon":
+                points: list = rule["points"]
+                ax.add_patch(
+                    pch.Polygon(
+                        points,
+                        closed=True,
+                        edgecolor="black",
+                        facecolor="black",
                     )
-                    x = radius_range * np.cos(angle) + rule["center"][0] * self.shape[0]
-                    y = self.shape[1] - (radius_range * np.sin(angle) + rule["center"][1] * self.shape[1])
-                    for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
-                            continue
-                        mask[int(pos[1])][int(pos[0])] = 1
-            else:
-                continue
+                )
+
+        mask = self.__fig2img(mask)
+        mask = mask.convert("L")
+        mask = np.array(mask)
+        mask = np.where(mask > 128, 0, 1)
         return mask
 
     def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
@@ -184,13 +186,16 @@ class Figure:
         processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __add_white_line(self, n_line: int):
+    def __add_white_line(self, n_line: int, max_radius: float = 0.25):
         with plt.xkcd():
             for _ in range(n_line):
                 x1 = random.random()
                 y1 = random.random()
-                x2 = random.random()
-                y2 = random.random()
+                angle = random.random() * 2 * np.pi
+                x2, y2 = (
+                    x1 + max_radius * np.cos(angle),
+                    y1 + max_radius * np.sin(angle),
+                )
                 self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=3)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
@@ -288,6 +293,7 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
+                sin_params = rule["sin_params"]
                 try:
                     line_width = rule["width"]
                 except:
