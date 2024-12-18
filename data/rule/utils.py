@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, cast
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -177,14 +177,14 @@ def find_perpendicular_line(line: tuple[float, float], point: tuple[float, float
     return perpendicular_slope, perpendicular_intercept
 
 
-T = TypeVar("T", float, dict, list, tuple, np.ndarray)
+T = TypeVar("T")
 
 
 def round_floats(obj: T, precision=2) -> T:
     if isinstance(obj, float):
-        return round(obj, precision)
+        return cast(T, round(obj, precision))
     if isinstance(obj, dict):
-        return {k: round_floats(v, precision) for k, v in obj.items()}
+        return cast(T, {k: round_floats(v, precision) for k, v in obj.items()})
     if isinstance(obj, (list, tuple, np.ndarray)):
-        return type(obj)([round_floats(x, precision) for x in obj])
+        return cast(T, type(obj)([round_floats(x, precision) for x in obj]))
     return obj
