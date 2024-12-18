@@ -186,5 +186,5 @@ def round_floats(obj: T, precision=2) -> T:
     if isinstance(obj, dict):
         return cast(T, {k: round_floats(v, precision) for k, v in obj.items()})
     if isinstance(obj, (list, tuple, np.ndarray)):
-        return cast(T, type(obj)([round_floats(x, precision) for x in obj]))
+        return cast(T, type(obj)([round_floats(x, precision) for x in obj]))  # type: ignore
     return obj
