@@ -90,6 +90,7 @@ class DrawArgs:
     xkcd: bool = field(default=True)
     color: None | tuple = field(default=None)
     n_white_line: None | int = field(default=None)
+    white_line_range: float = field(default=0.25)
     Gaussian_mean: int = field(default=0)
     Gaussian_var: float = field(default=10)
     Perlin_lattice: int = field(default=20)

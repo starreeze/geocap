@@ -39,7 +39,7 @@ class Figure:
         plt.subplots_adjust(0, 0, 1, 1)
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
-        self.xkcd = xkcd
+        self.xkcd = xkcd if randomize else False
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
@@ -49,6 +49,7 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
+        white_line_radius: float = 0.25,
         Gaussian_mean: float = 25,
         Gaussian_var: float = 100,
         Perlin_lattice: int = 0,
@@ -60,8 +61,9 @@ class Figure:
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             self.__handle(rule, randomize=self.randomize, color=color)
         # print("All rules adapted.")
-        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
-        self.__add_white_line(n_white_line)
+        if self.randomize:
+            n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            self.__add_white_line(n_white_line, white_line_radius)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
 
@@ -79,7 +81,6 @@ class Figure:
             self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
             # print("Adding Perlin Noise...")
             mask = self.__get_perlin_mask()
-            # ↑Currently Buggy?
             self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save_release(self, path: str):
@@ -420,7 +421,7 @@ class Figure:
                     x[i : i + 2],
                     y[i : i + 2],
                     linewidth=ln_wths[i] * (self.shape[0] / 640),
-                    color=(max(c + i * 0.01, 1) for c in color),
+                    color=np.clip(color + np.array((0.005, 0.005, 0.005)) * i, 0, 1),
                 )
 
     def __handle_ellipse(

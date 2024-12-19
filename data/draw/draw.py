@@ -34,6 +34,7 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
     figure.draw(
         color=draw_args.color,
         n_white_line=draw_args.n_white_line,
+        white_line_radius=draw_args.white_line_range,
         Gaussian_mean=draw_args.Gaussian_mean,
         Gaussian_var=draw_args.Gaussian_var,
         Perlin_lattice=draw_args.Perlin_lattice,

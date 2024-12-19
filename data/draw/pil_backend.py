@@ -37,6 +37,7 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
+        white_line_radius: float = 0.25,
         Gaussian_mean: float = 25,
         Gaussian_var: float = 100,
         Perlin_lattice: int = 0,
