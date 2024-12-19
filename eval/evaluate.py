@@ -6,7 +6,7 @@ import importlib
 import json
 import os
 import re
-from typing import Any, Callable
+from typing import Any
 
 from tqdm import tqdm
 
@@ -18,7 +18,7 @@ Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").Gen
 
 
 def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:
-    batched_data = [data[i : i + vqa_args.vqa_batchsize] for i in range(0, len(data), vqa_args.vqa_batchsize)]
+    batched_data = [data[i : i + vqa_args.eval_batchsize] for i in range(0, len(data), vqa_args.eval_batchsize)]
     answers = []
     for batch in tqdm(batched_data):
         image_paths = [
