@@ -5,6 +5,7 @@ from typing import Any, Literal, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import normal, randint, uniform
+from scipy.integrate import quad
 
 from data.rule.utils import distance_2points, distance_point_to_line, polar_angle
 
@@ -264,7 +265,7 @@ class Ellipse(GSRule):
         return self.bbox_from_points(transformed_points)
 
     def get_area(self) -> float:
-        return np.pi * self.major_axis * self.minor_axis
+        return np.pi * self.major_axis * self.minor_axis / 4
 
     def get_centroid(self) -> tuple[float, float]:
         return self.center
@@ -355,11 +356,10 @@ class Ellipse(GSRule):
         self.adjust_curve_points()
 
 
-# TODO: add more types
 @dataclass
 class Spiral(GSRule):
-    # Archimedean spiral  r = a + b(θ)*θ
-    # b(\theta) = b + ε sin(ωθ+φ)
+    # Archimedean spiral  r = a + b(\theta) * \theta
+    # b(\theta) = b + \epsilon sin(\omega \theta + \phi)
     center: tuple[float, float]
     initial_radius: float  # a
     growth_rate: float  # b
@@ -380,7 +380,16 @@ class Spiral(GSRule):
         return self.bbox_from_points(points)
 
     def get_area(self) -> float:
-        return np.pi * (self.radius(self.max_theta) ** 2)
+        def integrand(theta):
+            r = self.radius(theta)
+            return 0.5 * r**2
+
+        # Only integrate over the last complete 2 * \pi
+        theta_start = max(0, self.max_theta - 2 * np.pi)
+        theta_end = self.max_theta
+        area, _ = quad(integrand, theta_start, theta_end)
+
+        return area
 
     def get_centroid(self) -> tuple[float, float]:
         return self.center
@@ -867,7 +876,7 @@ class ShapeGenerator:
                 "start_angle": start_angle_main - max_extend_angle1 * normal(0.6, 0.1),
                 "end_angle": start_angle_main,
                 "start_volution": 0,
-                "end_volution": randint(end_volution, num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
             }
             max_extend_angle2 = ((0.5 - i) * np.pi - end_angle_main) % (2 * np.pi)
             axial_filling_extend2 = {
@@ -875,7 +884,7 @@ class ShapeGenerator:
                 "start_angle": end_angle_main,
                 "end_angle": end_angle_main + max_extend_angle2 * normal(0.6, 0.1),
                 "start_volution": 0,
-                "end_volution": randint(end_volution, num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
             }
             axial_filling.append(axial_filling_extend1)
             axial_filling.append(axial_filling_extend2)
