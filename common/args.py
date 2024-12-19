@@ -115,17 +115,11 @@ class VQAArgs:
         default=3,
         metadata={"help": "maximum number of questions per image per perspective"},
     )
-    vqa_digits: int = field(
-        default=2, metadata={"help": "number of digits for the answer"}
-    )
-    nrel_q_prob: float = field(
-        default=0.3, metadata={"help": "probability of no-relation questions"}
-    )
+    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
+    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     size_diff: float = field(
         default=0.15,
-        metadata={
-            "help": "ratio of the difference of the correct answer and the other choices for size questions"
-        },
+        metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
     area_type_t: float = field(
         default=0.05,
@@ -133,9 +127,7 @@ class VQAArgs:
     )
     location_type_t: float = field(
         default=0.1,
-        metadata={
-            "help": "tolerate threshold for location difference to be considered"
-        },
+        metadata={"help": "tolerate threshold for location difference to be considered"},
     )
 
 
@@ -151,9 +143,7 @@ caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
 
 data_args.figure_prefix = (
-    data_args.figure_prefix
-    if data_args.figure_prefix
-    else (draw_args.backend if draw_args.randomize else "pure")
+    data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
 data_args.caption_path = (
     data_args.caption_path
