@@ -72,6 +72,7 @@ class Polygon(GSRule):
     points: list[tuple[float, float]]
     special_info: str = ""
     fill_mode: Literal["no", "white", "black"] = "no"
+
     def __post_init__(self):
         assert all(isinstance(point, tuple) for point in self.points), "Points must be tuples"
 
@@ -295,7 +296,7 @@ class Ellipse(GSRule):
             distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
             min_distance_idx = np.argmin(distances)
             point = self.curve_points[start_idx + min_distance_idx]
-        
+
         return tuple(point)
 
     def get_point_stage1(self, theta=None) -> tuple[float, float]:
