@@ -72,6 +72,8 @@ class Polygon(GSRule):
     points: list[tuple[float, float]]
     special_info: str = ""
     fill_mode: Literal["no", "white", "black"] = "no"
+    def __post_init__(self):
+        assert all(isinstance(point, tuple) for point in self.points), "Points must be tuples"
 
     def to_dict(self) -> dict[str, Any]:
         return {"type": "polygon"} | asdict(self)
@@ -277,23 +279,23 @@ class Ellipse(GSRule):
 
         n = len(self.curve_points)
         if np.isclose(theta, 0.5 * np.pi):
-            return self.curve_points[n // 4]
+            point = self.curve_points[n // 4]
         elif np.isclose(theta, 1.5 * np.pi):
-            return self.curve_points[int(3 * n // 4)]
+            point = self.curve_points[int(3 * n // 4)]
         else:
             slope = np.tan(theta + self.rotation)
             intercept = self.center[1] - slope * self.center[0]
             line = (slope, intercept)
 
-        quarter_size = len(self.curve_points) // 4
-        quarter_idx = theta // (0.5 * np.pi)  # i_th curve
-        start_idx = int(quarter_size * quarter_idx * 0.8)
-        end_idx = int(quarter_size * (quarter_idx + 1) * 1.2)
+            quarter_size = len(self.curve_points) // 4
+            quarter_idx = theta // (0.5 * np.pi)  # i_th curve
+            start_idx = int(quarter_size * quarter_idx * 0.8)
+            end_idx = int(quarter_size * (quarter_idx + 1) * 1.2)
 
-        distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
-        min_distance_idx = np.argmin(distances)
-        point = self.curve_points[start_idx + min_distance_idx]
-
+            distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
+            min_distance_idx = np.argmin(distances)
+            point = self.curve_points[start_idx + min_distance_idx]
+        
         return tuple(point)
 
     def get_point_stage1(self, theta=None) -> tuple[float, float]:
