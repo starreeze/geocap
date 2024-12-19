@@ -1,3 +1,5 @@
+from typing import TypeVar, cast
+
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.misc import derivative
@@ -49,14 +51,15 @@ def another_2points_on_line(line: tuple[float, float], point: tuple[float, float
     """
     x, y = point
     slope, intercept = line
-    assert np.isclose(slope * x + intercept, y), "The point is not on the line."
 
     if slope != float("inf"):
+        assert np.isclose(slope * x + intercept, y), "The point is not on the line."
         x1 = x + np.random.uniform(0.05, 0.2)
         y1 = slope * x1 + intercept
         x2 = x - np.random.uniform(0.05, 0.2)
         y2 = slope * x2 + intercept
     else:
+        assert x == intercept, "The point is not on the line."
         x1 = x
         x2 = x
         y1 = y + np.random.uniform(0, 0.5)
@@ -175,11 +178,16 @@ def find_perpendicular_line(line: tuple[float, float], point: tuple[float, float
     return perpendicular_slope, perpendicular_intercept
 
 
-def round_floats(obj, precision=2):
+T = TypeVar("T")
+
+
+def round_floats(obj: T, precision=2) -> T:
     if isinstance(obj, float):
-        return round(obj, precision)
+        return cast(T, round(obj, precision))
     if isinstance(obj, dict):
-        return {k: round_floats(v, precision) for k, v in obj.items()}
+        return cast(T, {k: round_floats(v, precision) for k, v in obj.items()})
+    if isinstance(obj, np.ndarray):
+        return cast(T, np.round(obj, precision))
     if isinstance(obj, (list, tuple)):
-        return [round_floats(x, precision) for x in obj]
+        return cast(T, type(obj)([round_floats(x, precision) for x in obj]))  # type: ignore
     return obj

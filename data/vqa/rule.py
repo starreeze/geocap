@@ -228,6 +228,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         counts = figure["counts"]
 
         # Size-based questions (largest/smallest area)
+        # TODO: compare instead of extreme
         attr = random.choice(["largest", "smallest"])
         sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
         max_area = sorted_shapes[0]["area"]
