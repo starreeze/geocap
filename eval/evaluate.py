@@ -5,11 +5,13 @@
 import importlib
 import json
 import os
+import re
 from typing import Any, Callable
 
 from tqdm import tqdm
 
 from common.args import data_args, logger, vqa_args
+from data.rule.utils import round_floats
 from eval.base import GenerateModelBase
 
 Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").GenerateModel
@@ -35,16 +37,19 @@ def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> li
         responses = model.generate(image_paths, questions)
 
         for resp in responses:
-            found_answers = [letter for letter in "ABCD" if letter in resp.strip()]
-            if len(found_answers) == 1:
-                answers.append(found_answers[0])
-            else:
-                answers.append("-")
+            words = re.findall(r"\b\w+\b", resp)  # Match full word A/B/C/D with word boundaries
+            answer = "-"
+            for letter in "ABCD":
+                if letter in words[::-1]:
+                    answer = letter
+                    break  # always find the last one
+            answers.append(answer)
     return answers
 
 
 def main():
     model: GenerateModelBase = Model()
+    scores: list[float] = []
 
     for perspective in vqa_args.perspectives:
         logger.info(f"Evaluating {perspective} on model {vqa_args.eval_model}...")
@@ -58,12 +63,18 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, f"{perspective}.txt"), "w") as f:
             f.write("\n".join(answers))
-        logger.info(f"Evaluation results saved in {output_dir}/{perspective}.txt")
+        logger.info(f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.txt")
 
         # calculate the accuracy
         correct = sum(1 for pred, item in zip(answers, truths) if ord(pred) - ord("A") == item)
         accuracy = correct / len(data) * 100
+        scores.append(accuracy)
         logger.info(f"{perspective} - Acc: {accuracy:.2f}, Correct: {correct}, Total: {len(data)}")
+
+    with open(os.path.join(output_dir, f"scores.csv"), "w") as f:
+        f.write(",".join(vqa_args.perspectives) + "\n")
+        f.write(",".join(map(str, round_floats(scores, precision=1))) + "\n")
+    logger.info(f"Evaluation results on model {vqa_args.eval_model} saved in {output_dir}/scores.csv")
 
 
 if __name__ == "__main__":
