@@ -8,9 +8,7 @@ from common.iterwrap import iterate_wrapper
 from typing import cast
 
 
-def draw_figure(
-    rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True
-):
+def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
     # Color-Safe Check
     if draw_args.color == []:
         color = None
@@ -77,9 +75,7 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
         idx_sample[1],
         os.path.join(
             data_args.figure_dir,
-            data_args.figure_name.format(
-                prefix=data_args.figure_prefix, id=idx_sample[0]
-            ),
+            data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx_sample[0]),
         ),
         draw_args.backend,
         draw_args.random_seed,
@@ -100,9 +96,7 @@ def main():
                 sample,
                 os.path.join(
                     data_args.figure_dir,
-                    data_args.figure_name.format(
-                        prefix=data_args.figure_prefix, id=idx
-                    ),
+                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,
