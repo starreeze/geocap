@@ -26,6 +26,7 @@ class Figure:
         dpi: int = 100,
         line_weight: int = 4,
         xkcd: bool = False,
+        gradient: bool = False,
     ) -> None:
         self.rules: list = rules["shapes"]
         self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
@@ -40,6 +41,8 @@ class Figure:
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
         self.xkcd = xkcd if randomize else False
+        self.gradient = gradient
+
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
@@ -201,8 +204,8 @@ class Figure:
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
-            isinstance(color, tuple) and len(color) == 3
-        ), "Argument 'color' should be None or a 3-dimension tuple."
+            isinstance(color, list) and len(color) == 3
+        ), f"Argument 'color' should be None or a 3-dimension tuple instead of {color}"
         line_width = (
             self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
@@ -412,7 +415,7 @@ class Figure:
                 linewidth=line_width * (self.shape[0] / 640),
                 color=color,
             )
-        else:
+        elif self.gradient:
             ln_wths = np.linspace(line_width / 2, line_width + line_width / 2, 50)
             x = np.linspace(points[0][0], points[1][0], 50)
             y = np.linspace(points[0][1], points[1][1], 50)
@@ -423,6 +426,13 @@ class Figure:
                     linewidth=ln_wths[i] * (self.shape[0] / 640),
                     color=np.clip(color + np.array((0.005, 0.005, 0.005)) * i, 0, 1),
                 )
+        else:
+            self.ax.plot(
+                (points[0][0], points[1][0]),
+                (points[0][1], points[1][1]),
+                linewidth=line_width * (self.shape[0] / 640),
+                color=color,
+            )
 
     def __handle_ellipse(
         self,

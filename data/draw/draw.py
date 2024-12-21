@@ -5,16 +5,39 @@ import data.draw.pil_backend as pld
 import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
 from common.iterwrap import iterate_wrapper
+from typing import cast
 
 
 def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
+    # Color-Safe Check
+    if draw_args.color == []:
+        color = None
+    else:
+        assert len(draw_args.color) == 3
+        color = draw_args.color
+
+    assert len(draw_args.size) == 2
+
+    if draw_args.line_style == "none":
+        xkcd = False
+        gradient = False
+    elif draw_args.line_style == "gradient":
+        xkcd = False
+        gradient = True
+    elif draw_args.line_style == "xkcd":
+        xkcd = True
+        gradient = False
+    else:
+        raise ValueError("Invalid line style, not any of ['none', 'gradient', 'xkcd']")
+
     if backend == "plt":
         figure = ptd.Figure(
             rules,
             random_seed,
             randomize,
-            xkcd=draw_args.xkcd,
-            size=draw_args.size,
+            xkcd=xkcd,
+            gradient=gradient,
+            size=cast(tuple[float, float], tuple(draw_args.size)),
             dpi=draw_args.dpi,
             line_weight=draw_args.line_weight,
         )
@@ -31,8 +54,10 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
         )
     else:
         raise ValueError(f"{backend} is not a valid backend.")
+    if not randomize and color is None:
+        color = [0, 0, 0]
     figure.draw(
-        color=draw_args.color,
+        color=color,
         n_white_line=draw_args.n_white_line,
         white_line_radius=draw_args.white_line_range,
         Gaussian_mean=draw_args.Gaussian_mean,
@@ -64,6 +89,7 @@ def main():
         assert isinstance(samples, list)
     serial_version = draw_args.serial_version
     os.makedirs(data_args.figure_dir, exist_ok=True)
+
     if serial_version:
         for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
