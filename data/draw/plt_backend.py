@@ -26,9 +26,12 @@ class Figure:
         dpi: int = 100,
         line_weight: int = 4,
         xkcd: bool = False,
+        gradient: bool = False,
     ) -> None:
         self.rules: list = rules["shapes"]
-        self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
+        self.random_seed = (
+            random_seed if random_seed != None else random.randint(0, 2000000)
+        )
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
@@ -40,6 +43,7 @@ class Figure:
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
         self.xkcd = xkcd if randomize else False
+        self.gradient = gradient
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
@@ -62,7 +66,9 @@ class Figure:
             self.__handle(rule, randomize=self.randomize, color=color)
         # print("All rules adapted.")
         if self.randomize:
-            n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            n_white_line = (
+                int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            )
             self.__add_white_line(n_white_line, white_line_radius)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
@@ -154,14 +160,21 @@ class Figure:
         mask = np.where(mask > 128, 0, 1)
         return mask
 
-    def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
+    def __add_PerlinNoise(
+        self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0
+    ):
         def generate_perlin_noise_2d(shape, res):
             def f(t):
                 return 6 * t**5 - 15 * t**4 + 10 * t**3
 
             delta = (res[0] / shape[0], res[1] / shape[1])
             d = (shape[0] // res[0], shape[1] // res[1])
-            grid = np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(1, 2, 0) % 1
+            grid = (
+                np.mgrid[0 : res[0] : delta[0], 0 : res[1] : delta[1]].transpose(
+                    1, 2, 0
+                )
+                % 1
+            )
             # Gradients
             angles = 2 * np.pi * np.random.rand(res[0] + 1, res[1] + 1)
             gradients = np.dstack((np.cos(angles), np.sin(angles)))
@@ -181,7 +194,9 @@ class Figure:
             return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
 
         img_array = np.array(self.unprocessed_image, dtype=float)
-        noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        noise = (
+            generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
+        )
         end_array = img_array + mask * noise
 
         processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
@@ -201,10 +216,11 @@ class Figure:
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
-            isinstance(color, tuple) and len(color) == 3
-        ), "Argument 'color' should be None or a 3-dimension tuple."
+            isinstance(color, list) and len(color) == 3
+        ), f"Argument 'color' should be None or a 3-dimension tuple instead of {color}"
         line_width = (
-            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
+            self.line_weight
+            + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
             else self.line_weight
         )
@@ -215,7 +231,9 @@ class Figure:
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
-                assert len(points) >= 3, "There should be more than 3 points within a polygon."
+                assert (
+                    len(points) >= 3
+                ), "There should be more than 3 points within a polygon."
                 if rule["fill_mode"] == "no":
                     trans = (0, 0, 0, 0)
                 elif rule["fill_mode"] == "white":
@@ -248,7 +266,11 @@ class Figure:
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+                farwise = (
+                    leftwise_endpoint
+                    if points[0][0] > points[1][0]
+                    else rightwise_endpoint
+                )
                 try:
                     line_width = rule["width"]
                 except:
@@ -282,7 +304,9 @@ class Figure:
                     line_width = rule["width"]
                 except:
                     pass
-                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans)
+                self.__handle_ellipse(
+                    ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans
+                )
 
             case "spiral":
                 # r = a + b\theta
@@ -299,7 +323,9 @@ class Figure:
                     line_width = rule["width"]
                 except:
                     pass
-                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
+                self.__handle_spiral(
+                    spiral_x, spiral_y, a, b, max_theta, line_width, color
+                )
 
             case "spindle":
                 center_x, center_y = rule["center"]
@@ -309,7 +335,9 @@ class Figure:
                     line_width = rule["width"]
                 except:
                     pass
-                self.__handle_spindle(center_x, center_y, major, minor, line_width, color)
+                self.__handle_spindle(
+                    center_x, center_y, major, minor, line_width, color
+                )
 
             case "fusiform_1":
                 x_offset = rule["x_offset"]
@@ -412,7 +440,7 @@ class Figure:
                 linewidth=line_width * (self.shape[0] / 640),
                 color=color,
             )
-        else:
+        elif self.gradient:
             ln_wths = np.linspace(line_width / 2, line_width + line_width / 2, 50)
             x = np.linspace(points[0][0], points[1][0], 50)
             y = np.linspace(points[0][1], points[1][1], 50)
@@ -423,6 +451,13 @@ class Figure:
                     linewidth=ln_wths[i] * (self.shape[0] / 640),
                     color=np.clip(color + np.array((0.005, 0.005, 0.005)) * i, 0, 1),
                 )
+        else:
+            self.ax.plot(
+                (points[0][0], points[1][0]),
+                (points[0][1], points[1][1]),
+                linewidth=line_width * (self.shape[0] / 640),
+                color=color,
+            )
 
     def __handle_ellipse(
         self,
@@ -435,9 +470,15 @@ class Figure:
         color: Any,
         transparency: tuple = (0, 0, 0, 0),
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (
+            (random.random(), random.random(), random.random())
+            if color == None
+            else color
+        )
         if major < minor:
-            raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
+            raise ValueError(
+                "The major axis is smaller than the minor axis, which is incorrect."
+            )
 
         """
         major = major / 2
@@ -470,7 +511,9 @@ class Figure:
             )
         )
 
-    def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
+    def __handle_polygon(
+        self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)
+    ):
         color = (
             (
                 random.random(),
@@ -595,7 +638,11 @@ class Figure:
         )
 
         def f(x):
-            return 4 * focal_length * (x - x_offset) ** 2 + y_offset + eps * np.sin(omega * x + phi)
+            return (
+                4 * focal_length * (x - x_offset) ** 2
+                + y_offset
+                + eps * np.sin(omega * x + phi)
+            )
 
         x = np.linspace(x_start, x_end, 1000)
         y1 = f(x)
@@ -606,7 +653,9 @@ class Figure:
                 (x[index], x[index]), (y1[index], y2[index]), linewidth=1, color=trans
             )
         """
-        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
+        self.ax.plot(
+            x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color
+        )
 
     def __handle_fusiform_2(
         self,
@@ -636,7 +685,9 @@ class Figure:
         x = np.linspace(x_start, x_end, 1000)
         x_left = x[:500]
         sin_wave = eps * np.sin(omega * (x - x_start) + phi)
-        y_left = (np.abs(x_left - x_offset) / (4 * focal_length)) ** (1 / power) + y_offset
+        y_left = (np.abs(x_left - x_offset) / (4 * focal_length)) ** (
+            1 / power
+        ) + y_offset
         y_right = np.flip(y_left)  # 得到开口向左的上半部分
         y1 = np.concatenate([y_left, y_right]) + sin_wave
         y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
@@ -653,7 +704,9 @@ class Figure:
         if self.xkcd:
             plt.xkcd()
         # """
-        self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
+        self.ax.plot(
+            x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color
+        )
 
     def __handle_curve(self, control_points, width: int = 5):
         curve_points = []
@@ -743,7 +796,9 @@ def draw_figure(rules: "dict", path: str):
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
-    draw_figure(idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"))
+    draw_figure(
+        idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg")
+    )
 
 
 def main():

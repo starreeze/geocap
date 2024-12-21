@@ -84,7 +84,7 @@ To use `plt_backend.py`, the following arguments are expected:
 - size: "tuple[float, float]". The deault value is (6.4, 6.4).
 - dpi: int. The default value is 100. dpi \* size = resolution.
 - line_weight: int. The default value is 4. Control the line weight. If `randomize` is enabled, the line weight will be randomly chosen in a certain range near the value.
-- xkcd: bool. The default value is False. Enable the hand-drawing line style.
+- line_style: str. The default value is "none". Control the line style, which can be "none", "xkcd", or "gradient". "None" will make line a normal line; "xkcd" will make line a hand-drawn line; "gradient" will make line a gradient line. Notice that `line_style` could be overridden by `randomize == False` if `line_style == "xkcd"`. In this case, the line style will be set to "none". Also note that `line_style == "xkcd"` will affect all shapes whilst `"gradient"` will affect only straight lines.
 - color:None|tuple[int,int,int]. The default value is None. If a color in RGB form is provided, that rule will be drawn in the given color. The the value is None, that rule will be drawn in random colors.
 - n_white_line:None|int. The default value is None. If an integer is given, the white lines will be drawn in that certain amount. Otherwise, the value is randomly chosen.
 - white_line_range:float. The default value is 0.25. Indicate the maximum length of a white line.
@@ -147,10 +147,6 @@ python run.py --module data.draw.draw --backend plt --stage 1
 More arguments are provided in `DrawArgs` in `common/args.py`. And you may also read readme file in the root directory for more details.
 
 Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
-
-```
-Warning: With noise enabled, the script will encounter performance issues if there are too many ellipses standing by for drawing. Please consider reducing the number of ellipses in the rule / wait patiently :).
-```
 
 ### Caption
 

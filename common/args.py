@@ -84,11 +84,11 @@ class DrawArgs:
     backend: "str" = field(default="plt")
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
-    size: "tuple[float, float]" = field(default=(6.4, 6.4))
+    size: "list[float]" = field(default_factory=lambda: [6.4, 6.4])
     dpi: int = field(default=100)
     line_weight: int = field(default=4)
-    xkcd: bool = field(default=True)
-    color: None | tuple = field(default=None)
+    line_style: str = field(default="none")
+    color: list[float] = field(default_factory=lambda: [])
     n_white_line: None | int = field(default=None)
     white_line_range: float = field(default=0.25)
     Gaussian_mean: int = field(default=0)
@@ -127,8 +127,12 @@ class VQAArgs:
         default=3,
         metadata={"help": "maximum number of questions per image per perspective"},
     )
-    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
-    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
+    vqa_digits: int = field(
+        default=2, metadata={"help": "number of digits for the answer"}
+    )
+    nrel_q_prob: float = field(
+        default=0.3, metadata={"help": "probability of no-relation questions"}
+    )
     gt_choice_w: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4],
         metadata={
@@ -139,7 +143,9 @@ class VQAArgs:
     )
     size_diff: float = field(
         default=0.15,
-        metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
+        metadata={
+            "help": "ratio of the difference of the correct answer and the other choices for size questions"
+        },
     )
     area_type_t: float = field(
         default=0.05,
@@ -147,15 +153,21 @@ class VQAArgs:
     )
     location_type_t: float = field(
         default=0.1,
-        metadata={"help": "tolerate threshold for location difference to be considered"},
+        metadata={
+            "help": "tolerate threshold for location difference to be considered"
+        },
     )
     # evaluation
     eval_model: str = field(
         default="llava-7b",
-        metadata={"help": "model name for evaluation. Naming convention: {model_name}-{model_size}"},
+        metadata={
+            "help": "model name for evaluation. Naming convention: {model_name}-{model_size}"
+        },
     )
     eval_batchsize: int = field(default=4)
-    eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
+    eval_inst: str = field(
+        default="Please directly answer A, B, C or D and nothing else."
+    )
 
 
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
@@ -170,7 +182,9 @@ caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
 
 data_args.figure_prefix = (
-    data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
+    data_args.figure_prefix
+    if data_args.figure_prefix
+    else (draw_args.backend if draw_args.randomize else "pure")
 )
 data_args.caption_path = (
     data_args.caption_path

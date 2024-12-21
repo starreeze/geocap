@@ -33,10 +33,6 @@ More arguments are provided in `DrawArgs` in `common/args.py`. And you may also 
 
 Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
 
-```
-Warning: With noise enabled, the script will encounter performance issues if there are too many ellipses standing by for drawing. Please consider reducing the number of ellipses in the rule / wait patiently :).
-```
-
 ## caption
 
 generate image captions according to the rule.
