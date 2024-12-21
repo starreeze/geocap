@@ -42,6 +42,7 @@ class Figure:
         self.ax.set_ylim(0, 1)
         self.xkcd = xkcd if randomize else False
         self.gradient = gradient
+
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
