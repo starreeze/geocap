@@ -133,6 +133,16 @@ class VQAArgs:
     nrel_q_prob: float = field(
         default=0.3, metadata={"help": "probability of no-relation questions"}
     )
+    max_q_ip: int = field(
+        default=3,
+        metadata={"help": "maximum number of questions per image per perspective"},
+    )
+    vqa_digits: int = field(
+        default=2, metadata={"help": "number of digits for the answer"}
+    )
+    nrel_q_prob: float = field(
+        default=0.3, metadata={"help": "probability of no-relation questions"}
+    )
     gt_choice_w: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4],
         metadata={
