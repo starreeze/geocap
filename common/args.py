@@ -51,6 +51,8 @@ class RuleArgs:
     ellipse_shape_level: int = field(default=4)
     spiral_shape_level: int = field(default=3)
 
+    polygon_points_min_distance: float = field(default=0.01)
+
     # levels of polygon relation
     polygon_tangent_line_level: int = field(default=1)
     polygon_symmetric_level: int = field(default=1)

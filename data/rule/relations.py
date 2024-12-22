@@ -232,6 +232,9 @@ class LineRelationGenerator:
         k, _ = line_given2points(self.line.points)
 
         p = (uniform(0, 1), uniform(0, 1))
+        while distance_point_to_line(point=p, line=(k, 0)) < 0.1:
+            p = (uniform(0, 1), uniform(0, 1))
+
         b = p[1] - k * p[0]
 
         points = another_2points_on_line(line=(k, b), point=p)

@@ -128,10 +128,9 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
     total_shapes = 0
     for _ in trange(data_args.num_basic_geo_samples):
         shapes = []
-        num_shapes = randint(1, rule_args.max_num_shapes // 2)  # leave space for special relations
+        num_shapes = randint(1, rule_args.max_num_shapes // 2 + 1)  # leave space for special relations
         for _ in range(num_shapes):
             new_shape = shape_generator()
-            # shapes.append(new_shape)
             if no_overlap(shapes, new_shape):
                 shapes.append(new_shape)
 
