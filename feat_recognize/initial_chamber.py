@@ -51,7 +51,7 @@ def detect_initial_chamber(
         assert isinstance(sub_img, np.ndarray) and isinstance(sub_img_pos, tuple)
         if sub_img.ndim == 3:
             sub_img = cv2.cvtColor(sub_img, cv2.COLOR_BGR2GRAY)
-        assert sub_img.ndim == 2, "grayscale img required."
+        assert sub_img.ndim == 2, "grayscale img required." # type: ignore
 
         img_to_detect = sub_img
         x_start, y_start = sub_img_pos
