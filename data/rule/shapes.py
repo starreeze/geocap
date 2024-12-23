@@ -790,14 +790,14 @@ class ShapeGenerator:
         polygon.normalize_points()
         return polygon
 
-    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2) -> Line:
+    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.5) -> Line:
         if points is None:
             point1 = (uniform(0, 1), uniform(0, 1))
             point2 = (uniform(0, 1), uniform(0, 1))
 
         line_type = np.random.choice(["line", "segment", "ray"])
         line = Line(type=line_type, points=[point1, point2])
-        while line.get_length() < min_length:
+        while line.get_length() < min_length or line.get_length() > max_length:
             point1 = (uniform(0, 1), uniform(0, 1))
             point2 = (uniform(0, 1), uniform(0, 1))
             line = Line(type=line_type, points=[point1, point2])

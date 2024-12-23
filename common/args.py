@@ -45,6 +45,8 @@ class RuleArgs:
     """args for stage 1"""
     max_num_shapes: int = field(default=10)
     min_num_shapes: int = field(default=2)
+
+    in_canvas_area_thres: float = field(default=0.8)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
@@ -52,6 +54,8 @@ class RuleArgs:
     spiral_shape_level: int = field(default=3)
 
     polygon_points_min_distance: float = field(default=0.01)
+    line_min_length: float = field(default=0.2)
+    line_max_length: float = field(default=0.5)
 
     # levels of polygon relation
     polygon_tangent_line_level: int = field(default=1)
