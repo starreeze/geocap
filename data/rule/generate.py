@@ -143,24 +143,30 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                 continue
 
             tail_shape, relation_type = relation_generator(head_shape)
+            assert isinstance(tail_shape, list) and isinstance(relation_type, str)
 
-            if isinstance(tail_shape, list):
-                exclude_shape = [head_shape]
-                for t_shape in tail_shape:
-                    if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
-                        tail_idx = len(shapes)
-                        relations.append((head_idx, tail_idx, relation_type))
-                        shapes.append(t_shape)
-                        exclude_shape.append(t_shape)
-            else:  # tail_shape is a GSRule instance
-                if no_overlap(shapes, tail_shape, exclude_shape=[head_shape]):
+            exclude_shape = [head_shape]
+            for t_shape in tail_shape:
+                if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
+                    # Check if each tail_shape is in the canvas
+                    area_in_canvas = overlap_area(t_shape.get_bbox(), [[0, 1], [1, 0]])
+                    tail_bbox = t_shape.get_bbox()
+                    area_tail_bbox = (tail_bbox[1][0] - tail_bbox[0][0]) * (tail_bbox[0][1] - tail_bbox[1][1])
+                    if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
+                        continue
+
+                    # Add each tail_shape to shapes
                     tail_idx = len(shapes)
                     # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
                     if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
-                    shapes.append(tail_shape)
+                    
+                    shapes.append(t_shape)
+                    exclude_shape.append(t_shape)
+                    if len(shapes) >= rule_args.max_num_shapes:
+                        break  
 
         total_shapes += len(shapes)
 
