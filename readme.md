@@ -55,7 +55,13 @@ Each data sample contains two parts:
 You can control the generation process with the following arguments:
 
 - max_num_shapes: the maximum number of shapes in each sample. Default is 10
-  and there are arguments for controling the proportion of different shapes and relations, for example:
+- min_num_shapes: the minimum number of shapes in each sample. Default is 2
+
+there are some arguments for controling the numerical characteristics of geometric shapes:
+- in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8
+- line_min/max_length: control the min/max length of line(segment). Default is 0.2/0.5
+
+and there are arguments for controling the proportion of different shapes and relations, for example:
 - polygon_shape_level: the proportion of polygon in all shapes
 - line_shape_level: the proportion of line in all shapes
 - ...

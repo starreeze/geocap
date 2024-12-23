@@ -36,6 +36,9 @@ class RelationGenerator:
         generator = self.type2generator[shape_type]
         new_shape, relation_type = generator.generate_relation(shape)
 
+        if not isinstance(new_shape, list):
+            new_shape = [new_shape]
+
         return new_shape, relation_type
 
 
@@ -111,7 +114,7 @@ class PolygonRelationGenerator:
         return new_polygon
 
     def get_similar_polygon(self) -> Polygon:
-        scale_factor = uniform(0.5, 1.0)
+        scale_factor = uniform(0.5, 0.8)
         scaled_points = [(x * scale_factor, y * scale_factor) for (x, y) in self.polygon.points]
 
         x_noise, y_noise = uniform(-0.3, 0.3), uniform(-0.3, 0.3)
@@ -229,25 +232,32 @@ class LineRelationGenerator:
         return new_shape, relation_type
 
     def get_parallel_line(self) -> Line:
-        k, _ = line_given2points(self.line.points)
+        k, b1 = line_given2points(self.line.points)
 
         p = (uniform(0, 1), uniform(0, 1))
-        b = p[1] - k * p[0]
+        distance = distance_point_to_line(point=p, line=(k, b1))
+        while distance < 0.1 or distance > 0.4:
+            p = (uniform(0, 1), uniform(0, 1))
+            distance = distance_point_to_line(point=p, line=(k, b1))
 
-        points = another_2points_on_line(line=(k, b), point=p)
+        b2 = p[1] - k * p[0]
+
+        points = another_2points_on_line(line=(k, b2), point=p)
         line = Line(type=self.line.type, points=points)
         return line
 
     def get_tangent_circle(self) -> Ellipse:
         points = self.line.points
+        k, b = line_given2points(points)
         mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
-        center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
 
-        k, b = line_given2points(self.line.points)
+        center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
         distance = distance_point_to_line(point=center, line=(k, b))
-        while distance > 0.3:
-            center = (uniform(0, 1), uniform(0, 1))
+        distance_endpoints = [distance_2points(center, point) for point in points]
+        while (not 0.01 < distance < 0.3) or distance > min(distance_endpoints):
+            center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
             distance = distance_point_to_line(point=center, line=(k, b))
+            distance_endpoints = [distance_2points(center, point) for point in points]
 
         circle = Ellipse(center=center, rotation=0)
         circle.to_circle(radius=distance)

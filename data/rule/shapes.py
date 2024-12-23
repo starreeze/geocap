@@ -137,7 +137,7 @@ class Polygon(GSRule):
                     return False
         return True
 
-    def check_angle(self, thres=0.15 * np.pi) -> bool:
+    def check_angle(self, thres_low=0.15 * np.pi, thres_high=0.85 * np.pi) -> bool:
         # Check if each angle is greater than thres
         def angle_between(v1, v2):
             return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
@@ -149,7 +149,8 @@ class Polygon(GSRule):
             angles.append(angle_between(v1, v2))
 
         min_angle = min(angles)
-        return min_angle > thres
+        max_angle = max(angles)
+        return min_angle > thres_low and max_angle < thres_high
 
     def to_simple_polygon(self):
         n = len(self.points)
@@ -158,6 +159,14 @@ class Polygon(GSRule):
             sum([p[1] for p in self.points]) / n,
         )
         self.points.sort(key=lambda p: (polar_angle(center, p), -distance_2points(center, p)))
+
+    def check_points_distance(self, distance_thres=0.05) -> bool:
+        n = len(self.points)
+        pass_check = True
+        for i in range(n - 1):
+            if distance_2points(self.points[i], self.points[i + 1]) < distance_thres:
+                pass_check = False
+        return pass_check
 
     def to_equilateral_triangle(self, side_len: float, rotation: float):
         self.special_info = "equilateral triangle"
@@ -756,7 +765,12 @@ class ShapeGenerator:
 
         polygon = Polygon(points)
         polygon.to_simple_polygon()
-        while not polygon.is_convex() or polygon.get_area() < 0.01 or not polygon.check_angle():
+        while (
+            not polygon.is_convex()
+            or polygon.get_area() < 0.01
+            or not polygon.check_angle()
+            or not polygon.check_points_distance(self.rule_args.polygon_points_min_distance)
+        ):
             points = [(uniform(0.2, 0.8), uniform(0.2, 0.8)) for _ in range(num_points)]
             polygon = Polygon(points)
             polygon.to_simple_polygon()
@@ -776,14 +790,14 @@ class ShapeGenerator:
         polygon.normalize_points()
         return polygon
 
-    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2) -> Line:
+    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.5) -> Line:
         if points is None:
             point1 = (uniform(0, 1), uniform(0, 1))
             point2 = (uniform(0, 1), uniform(0, 1))
 
         line_type = np.random.choice(["line", "segment", "ray"])
         line = Line(type=line_type, points=[point1, point2])
-        while line.get_length() < min_length:
+        while line.get_length() < min_length or line.get_length() > max_length:
             point1 = (uniform(0, 1), uniform(0, 1))
             point2 = (uniform(0, 1), uniform(0, 1))
             line = Line(type=line_type, points=[point1, point2])
