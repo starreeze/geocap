@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 from numpy.random import choice, normal, randint
-from tqdm import trange
+from tqdm import tqdm, trange
 
 from common.args import data_args, rule_args
 from data.rule.relations import (
@@ -126,7 +126,8 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
 
     num_init_shapes = 0
     total_shapes = 0
-    for _ in trange(data_args.num_basic_geo_samples):
+    progress_bar = tqdm(total=data_args.num_basic_geo_samples, desc="Generating rules")
+    while len(results) < data_args.num_basic_geo_samples:
         shapes = []
         num_shapes = randint(1, rule_args.max_num_shapes // 2 + 1)  # leave space for special relations
         for _ in range(num_shapes):
@@ -174,6 +175,7 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
             shapes_dict = [shape.to_dict() for shape in shapes]
             sample = {"shapes": shapes_dict, "relations": relations}
             results.append(sample)
+            progress_bar.update(1)
 
     # print(f"number of initial shapes = {num_init_shapes}")
     # print(f"total shapes = {total_shapes}")
