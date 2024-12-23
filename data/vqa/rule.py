@@ -51,7 +51,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             if len(set(choices)) < 4:  # Handle cases where some choices are 0
                 choices = list(range(4))
             clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "counting")
-            question = f"How many {clarified_type}(s) are there in the image?"
+            question = f"How many {clarified_type} are there in the image?"
 
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_answer})
         return qa_pairs
