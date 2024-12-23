@@ -44,6 +44,7 @@ class Figure:
         Perlin_bias: float = 0,
         Perlin_power: float = 0,
         stylish: bool = False,
+        proba: float = 1,
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")

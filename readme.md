@@ -94,6 +94,7 @@ To use `plt_backend.py`, the following arguments are expected:
 - Perlin_power: float. The default value is 16. Control the power of the Perlin noise, will affect the contrast ratio of the noise and the image.
 - Perlin_bias: float. The default value is -16. Control the bias of the Perlin noise. The lower it is, the brighter the image will be.
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
+- proba: float. The default value is 1. Control the probability of applying the noise.
 
 To simply generate a picture with default settings, use the following command:
 

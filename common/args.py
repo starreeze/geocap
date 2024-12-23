@@ -97,6 +97,7 @@ class DrawArgs:
     Perlin_power: float = field(default=16)
     Perlin_bias: float = field(default=-16)
     stylish: bool = field(default=False)
+    proba: float = field(default=1)
 
 
 @dataclass

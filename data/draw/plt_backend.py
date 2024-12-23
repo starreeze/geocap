@@ -58,6 +58,7 @@ class Figure:
         Perlin_bias: float = 0,
         Perlin_power: float = 0,
         stylish: bool = False,
+        proba: float = 1,
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
@@ -78,7 +79,8 @@ class Figure:
 
         # print("Monochromizing the image...")
         self.__monochromize(stylish)
-        if self.randomize:
+        noise_accepted = random.random() <= proba
+        if self.randomize and noise_accepted:
             # print("Adding Gaussian Noise...")
             self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
             # print("Adding Perlin Noise...")
@@ -178,9 +180,9 @@ class Figure:
             n11 = np.sum(np.dstack((grid[:, :, 0] - 1, grid[:, :, 1] - 1)) * g11, 2)
             # Interpolation
             t = f(grid)
-            n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
-            n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
-            return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
+            n0 = n00 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n10
+            n1 = n01 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n11
+            return np.sqrt(2) * ((1 - np.array(t[:, :, 1])) * n0 + t[:, :, 1] * n1)
 
         img_array = np.array(self.unprocessed_image, dtype=float)
         noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
