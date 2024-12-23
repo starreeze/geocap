@@ -162,11 +162,11 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                         relations.append((tail_idx, head_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
-                    
+
                     shapes.append(t_shape)
                     exclude_shape.append(t_shape)
                     if len(shapes) >= rule_args.max_num_shapes:
-                        break  
+                        break
 
         total_shapes += len(shapes)
 

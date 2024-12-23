@@ -250,8 +250,7 @@ class LineRelationGenerator:
         points = self.line.points
         k, b = line_given2points(points)
         mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
-        
-        
+
         center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
         distance = distance_point_to_line(point=center, line=(k, b))
         distance_endpoints = [distance_2points(center, point) for point in points]
