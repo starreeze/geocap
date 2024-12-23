@@ -37,13 +37,14 @@ def recognize_feature(img_path: str) -> tuple:
         sub_img_pos = (min_x, min_y)
         # Try again with a lower confidence level
         initial_chamber = detect_initial_chamber(
-            img_rgb, sub_img=sub_img, sub_img_pos=sub_img_pos, param2=feat_recog_args.houghcircle_params['param2'] * 0.4
+            img_rgb, sub_img=sub_img, sub_img_pos=sub_img_pos, param2=feat_recog_args.houghcircle_params["param2"] * 0.4
         )
 
     if initial_chamber is None:  # failed
         initial_chamber = [0, 0, 0]
 
     return volutions, thickness_per_vol, initial_chamber
+
 
 def main():
     img_path_root = "D:/Repositories/foscap/common/images"  # path to the images
@@ -66,6 +67,7 @@ def main():
 
         volutions, thickness_per_vol, initial_chamber = recognize_feature(img_path)
         print(initial_chamber)
+
 
 if __name__ == "__main__":
     main()

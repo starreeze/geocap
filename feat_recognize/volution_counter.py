@@ -25,7 +25,7 @@ class VolutionCounter:
         self.width_ratio = width_ratio
         self.adsorption_thres = adsorption_thres
         self.volution_thres = volution_thres
-        if 'volution_threshold' in vis_tool_args:
+        if "volution_threshold" in vis_tool_args:
             self.volution_thres = vis_tool_args.volution_threshold
         self.step = step
         self.num_segments = num_segments
@@ -42,7 +42,7 @@ class VolutionCounter:
         self.img_gray = img_gray
 
         # Detect initial chamber (with a high confidence level)
-        initial_chamber = detect_initial_chamber(self.img_gray, param2=self.vis_tool_args.houghcircle_params['param2'])
+        initial_chamber = detect_initial_chamber(self.img_gray, param2=self.vis_tool_args.houghcircle_params["param2"])
         if self.use_initial_chamber and initial_chamber is not None:
             self.center = initial_chamber[:-1].tolist()
             self.success_initial_chamber = True
@@ -349,10 +349,10 @@ class VolutionCounter:
     def count_volutions(self, img: np.ndarray):
         """
         Detect the volutions and measure the thickness of each volution in the image.
-        
+
         Parameters:
         img (np.ndarray): The input image.
-        
+
         Returns:
         volutions (list): The detected volutions, which is a list of length 2 (upper and lower). Each containes a list of detected volutions.
         thickness_per_vol (list): The thickness of each volution.

@@ -16,7 +16,7 @@ def detect_initial_chamber(
 ):
     """
     Detect the initial chamber in an image using Hough Circle Transform.
-    
+
     Parameters:
     img (np.ndarray): The input image.
     sub_img (Optional[np.ndarray]): A sub-image to detect the chamber in.
@@ -26,7 +26,7 @@ def detect_initial_chamber(
     minDist (float): Minimum distance between the centers of the detected circles.
     param1 (float): First method-specific parameter for HoughCircles.
     param2 (float): Second method-specific parameter for HoughCircles.
-    
+
     Returns:
     initial chamber (list | None): The detected initial chamber coordinates and radius.
     """
