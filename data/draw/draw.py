@@ -66,7 +66,12 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
         Perlin_bias=draw_args.Perlin_bias,
         Perlin_power=draw_args.Perlin_power,
         stylish=draw_args.stylish,
-        proba=draw_args.proba,
+        stylish_alpha=draw_args.stylish_alpha,
+        stylish_depth=draw_args.stylish_depth,
+        stylish_height=draw_args.stylish_height,
+        Gaussian_proba=draw_args.Gaussian_proba,
+        Perlin_proba=draw_args.Perlin_proba,
+        inline_noise=draw_args.inline_noise,
     )
     figure.save_release(path)
 

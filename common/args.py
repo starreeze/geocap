@@ -93,11 +93,16 @@ class DrawArgs:
     white_line_range: float = field(default=0.25)
     Gaussian_mean: int = field(default=0)
     Gaussian_var: float = field(default=10)
+    Gaussian_proba: float = field(default=1)
     Perlin_lattice: int = field(default=20)
     Perlin_power: float = field(default=16)
     Perlin_bias: float = field(default=-16)
+    Perlin_proba: float = field(default=1)
+    inline_noise: bool = field(default=True)
     stylish: bool = field(default=False)
-    proba: float = field(default=1)
+    stylish_alpha: float = field(default=3.1416 / 4)
+    stylish_depth: int = field(default=10)
+    stylish_height: float = field(default=3.1416 / 2.2)
 
 
 @dataclass
@@ -110,14 +115,24 @@ class CaptionArgs:
 @dataclass
 class VQAArgs:
     perspectives: list[str] = field(
-        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
+        default_factory=lambda: [
+            "existence",
+            "counting",
+            "size",
+            "location",
+            "reference",
+            "relation",
+        ]
     )
     # llm generator
     vqa_batchsize: int = field(default=4)
     vqa_llm: str = field(default="qwen25-7")
     vqa_prompts_dir: str = field(default="data/vqa/prompts")
     # rule generator
-    max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
+    max_q_ip: int = field(
+        default=3,
+        metadata={"help": "maximum number of questions per image per perspective"},
+    )
     vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
     nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     gt_choice_w: list[float] = field(
@@ -133,10 +148,12 @@ class VQAArgs:
         metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
     area_type_t: float = field(
-        default=0.05, metadata={"help": "tolerate threshold for area difference to be considered"}
+        default=0.05,
+        metadata={"help": "tolerate threshold for area difference to be considered"},
     )
     location_type_t: float = field(
-        default=0.1, metadata={"help": "tolerate threshold for location difference to be considered"}
+        default=0.1,
+        metadata={"help": "tolerate threshold for location difference to be considered"},
     )
     # evaluation
     eval_model: str = field(
@@ -164,13 +181,24 @@ data_args.figure_prefix = (
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
-    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl")
+    else os.path.join(
+        data_args.caption_dir,
+        f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl",
+    )
 )
 data_args.llava_data_path = (
     data_args.llava_data_path
     if data_args.llava_data_path
-    else os.path.join(data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json")
+    else os.path.join(
+        data_args.llava_data_dir,
+        f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
+    )
 )
 
-logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(
+    level=run_args.log_level,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()],
+)
 logger = logging.getLogger("rich")
