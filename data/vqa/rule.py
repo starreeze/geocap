@@ -376,6 +376,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa_pairs.append(qa)
 
         # 2. Multiple choice question about present or absent shape
+        absent_types = all_absent_types
         can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
         can_ask_present = len(counts) >= 1 and len(absent_types) >= 3  # Need 1 present + 3 absent
         if can_ask_absent or can_ask_present:
