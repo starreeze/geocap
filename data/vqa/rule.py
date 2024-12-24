@@ -284,11 +284,14 @@ class RuleBasedQAGenerator(GeneratorBase):
         all_present_types: list[str] = list(counts.keys())
         all_absent_types: list[str] = [t for t in cls.total_shapes if t not in counts]
 
-        # 1. Ask about two shape that both exist
-        if len(all_present_types) >= 2:
+        # 1. Ask whether two shapes exist. Only preserve 2 questions.
+        question_types = random.sample(('TT', 'TF', 'FT', 'FF'), k=2)
+        # 1-1. Ask about two shape that both exist
+        if 'TT' in question_types and len(all_present_types) >= 2:
             present_types = random.sample(all_present_types, k=2)
             clarified_types = [
-                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence") for present_type in present_types
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence") 
+                for present_type in present_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
@@ -301,11 +304,12 @@ class RuleBasedQAGenerator(GeneratorBase):
             }
             qa_pairs.append(qa)
 
-        # 2. Ask about two shape that neither exists
-        if len(all_absent_types) >= 2:
+        # 1-2. Ask about two shape that neither exists
+        if 'FF' in question_types and len(all_absent_types) >= 2:
             absent_types = random.sample(all_absent_types, k=2,)
             clarified_types = [
-                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence") for absent_type in absent_types
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence") 
+                for absent_type in absent_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
@@ -318,8 +322,9 @@ class RuleBasedQAGenerator(GeneratorBase):
             }
             qa_pairs.append(qa)
 
-        # 3. Ask about two shape that only one exists
-        if len(all_present_types) >= 1 and len(all_absent_types) >=1:
+        # 1-3. Ask about two shape that only one exists
+        if ('TF' in question_types or 'FT' in question_types) and \
+                len(all_present_types) >= 1 and len(all_absent_types) >=1:
             present_type = random.choice(all_present_types)
             absent_type = random.choice(all_absent_types)
             clarified_types = [
@@ -340,7 +345,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             }
             qa_pairs.append(qa)
 
-        # 4. Multiple choice question about present or absent shape
+        # 2. Multiple choice question about present or absent shape
         can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
         can_ask_present = len(counts) >= 1 and len(absent_types) >= 3  # Need 1 present + 3 absent
         if can_ask_absent or can_ask_present:
