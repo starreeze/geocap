@@ -235,7 +235,13 @@ class RuleBasedQAGenerator(GeneratorBase):
         all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
         correct_type = sorted_shapes[0]["type"]
         question = f"What type of shape presented in the image has the {attr} area?"
-        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+        qa_pairs.append(
+            {
+                "question": question,
+                "answer": correct_type,
+                "exclude_types": all_correct_types,
+            }
+        )
 
         # Location-based questions
         loc_attrs = {
@@ -252,7 +258,13 @@ class RuleBasedQAGenerator(GeneratorBase):
         }
         correct_type = sorted_shapes[0]["type"]
         question = f"What type of shape presented in the image has the {attr} centroid?"
-        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+        qa_pairs.append(
+            {
+                "question": question,
+                "answer": correct_type,
+                "exclude_types": all_correct_types,
+            }
+        )
 
         # Frequency-based questions
         attr = random.choice(["most", "least"])
@@ -261,7 +273,13 @@ class RuleBasedQAGenerator(GeneratorBase):
         all_correct_types = {t for t, c in counts.items() if c == max_count}
         correct_type = sorted_types[0][0]
         question = f"What type of shape presented in the image appears {attr} frequently?"
-        qa_pairs.append({"question": question, "answer": correct_type, "exclude_types": all_correct_types})
+        qa_pairs.append(
+            {
+                "question": question,
+                "answer": correct_type,
+                "exclude_types": all_correct_types,
+            }
+        )
 
         # Generate choices prioritizing types in the image and ensuring no other correct answers are included
         for qa in qa_pairs:
@@ -285,46 +303,56 @@ class RuleBasedQAGenerator(GeneratorBase):
         all_absent_types: list[str] = [t for t in cls.total_shapes if t not in counts]
 
         # 1. Ask whether two shapes exist. Only preserve 2 questions.
-        question_types = random.sample(('TT', 'TF', 'FT', 'FF'), k=2)
+        question_types = random.sample(("TT", "TF", "FT", "FF"), k=2)
         # 1-1. Ask about two shape that both exist
-        if 'TT' in question_types and len(all_present_types) >= 2:
+        if "TT" in question_types and len(all_present_types) >= 2:
             present_types = random.sample(all_present_types, k=2)
             clarified_types = [
-                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence") 
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
                 for present_type in present_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
-                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?", 
-                "choices": ["yes, both exist.", 
-                            f"no, only the {clarified_types[_idx]} exists.", 
-                            f"no, only the {clarified_types[1 - _idx]} exists.",
-                            "no, neither exists."], 
-                "answer": "yes, both exist."
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "yes, both exist.",
+                    f"no, only the {clarified_types[_idx]} exists.",
+                    f"no, only the {clarified_types[1 - _idx]} exists.",
+                    "no, neither exists.",
+                ],
+                "answer": "yes, both exist.",
             }
             qa_pairs.append(qa)
 
         # 1-2. Ask about two shape that neither exists
-        if 'FF' in question_types and len(all_absent_types) >= 2:
-            absent_types = random.sample(all_absent_types, k=2,)
+        if "FF" in question_types and len(all_absent_types) >= 2:
+            absent_types = random.sample(
+                all_absent_types,
+                k=2,
+            )
             clarified_types = [
-                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence") 
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
                 for absent_type in absent_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
-                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?", 
-                "choices": ["yes, both exist.", 
-                            f"no, only the {clarified_types[_idx]} exists.", 
-                            f"no, only the {clarified_types[1 - _idx]} exists.",
-                            "no, neither exists."], 
-                "answer": "no, neither exists."
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "yes, both exist.",
+                    f"no, only the {clarified_types[_idx]} exists.",
+                    f"no, only the {clarified_types[1 - _idx]} exists.",
+                    "no, neither exists.",
+                ],
+                "answer": "no, neither exists.",
             }
             qa_pairs.append(qa)
 
         # 1-3. Ask about two shape that only one exists
-        if ('TF' in question_types or 'FT' in question_types) and \
-                len(all_present_types) >= 1 and len(all_absent_types) >=1:
+        if (
+            ("TF" in question_types or "FT" in question_types)
+            and len(all_present_types) >= 1
+            and len(all_absent_types) >= 1
+        ):
             present_type = random.choice(all_present_types)
             absent_type = random.choice(all_absent_types)
             clarified_types = [
@@ -336,12 +364,14 @@ class RuleBasedQAGenerator(GeneratorBase):
                 clarified_types.reverse()
             _idx: int = random.randint(0, 1)
             qa = {
-                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?", 
-                "choices": ["yes, both exist.", 
-                            f"no, only the {clarified_types[_idx]} exists.", 
-                            f"no, only the {clarified_types[1 - _idx]} exists.",
-                            "no, neither exists."], 
-                "answer": f"no, only the {clarified_types[_present_idx]} exists."
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "yes, both exist.",
+                    f"no, only the {clarified_types[_idx]} exists.",
+                    f"no, only the {clarified_types[1 - _idx]} exists.",
+                    "no, neither exists.",
+                ],
+                "answer": f"no, only the {clarified_types[_present_idx]} exists.",
             }
             qa_pairs.append(qa)
 
