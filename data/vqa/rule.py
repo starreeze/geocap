@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Date    : 2024-12-08 10:54:09
-# @Author  : Shangyu.Xing (starreeze@foxmail.com)
-
 import random
 from itertools import product
 from typing import Any, cast
@@ -281,21 +277,81 @@ class RuleBasedQAGenerator(GeneratorBase):
         qa_pairs: list[dict[str, Any]] = []
         counts = figure["counts"]
 
-        # 1. Ask about a shape that exists
-        present_type = random.choice(list(counts.keys()))
-        clarified_type = cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
-        qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "yes"}
-        qa_pairs.append(qa)
+        all_present_types: list[str] = list(counts.keys())
+        all_absent_types: list[str] = [t for t in cls.total_shapes if t not in counts]
 
-        # 2. Ask about a shape that doesn't exist
-        absent_types = [t for t in cls.total_shapes if t not in counts]
-        if absent_types:
-            absent_type = random.choice(absent_types)
-            clarified_type = cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
-            qa = {"question": f"Is there a {clarified_type} in the image?", "choices": ["yes", "no"], "answer": "no"}
+        # 1. Ask whether two shapes exist. Only preserve 2 questions.
+        question_types = random.sample(("TT", "TF", "FT", "FF"), k=2)
+        # 1-1. Ask about two shape that both exist
+        if "TT" in question_types and len(all_present_types) >= 2:
+            present_types = random.sample(all_present_types, k=2)
+            clarified_types = [
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
+                for present_type in present_types
+            ]
+            _idx: int = random.randint(0, 1)
+            qa = {
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
+                ],
+                "answer": "Yes, both exist.",
+            }
             qa_pairs.append(qa)
 
-        # 3. Multiple choice question about present or absent shape
+        # 1-2. Ask about two shape that neither exists
+        if "FF" in question_types and len(all_absent_types) >= 2:
+            absent_types = random.sample(all_absent_types, k=2)
+            clarified_types = [
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
+                for absent_type in absent_types
+            ]
+            _idx: int = random.randint(0, 1)
+            qa = {
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
+                ],
+                "answer": "No, neither exists.",
+            }
+            qa_pairs.append(qa)
+
+        # 1-3. Ask about two shape that only one exists
+        if (
+            ("TF" in question_types or "FT" in question_types)
+            and len(all_present_types) >= 1
+            and len(all_absent_types) >= 1
+        ):
+            present_type = random.choice(all_present_types)
+            absent_type = random.choice(all_absent_types)
+            clarified_types = [
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence"),
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence"),
+            ]
+            _present_idx = random.randint(0, 1)
+            if _present_idx:
+                clarified_types.reverse()
+            _idx: int = random.randint(0, 1)
+            qa = {
+                "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
+                "choices": [
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
+                ],
+                "answer": f"No, only the {clarified_types[_present_idx]} exists.",
+            }
+            qa_pairs.append(qa)
+
+        # 2. Multiple choice question about present or absent shape
+        absent_types = all_absent_types
         can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
         can_ask_present = len(counts) >= 1 and len(absent_types) >= 3  # Need 1 present + 3 absent
         if can_ask_absent or can_ask_present:
