@@ -8,7 +8,7 @@ from typing import Any
 
 from tqdm import tqdm
 
-from common.args import logger, vqa_args
+from common.args import data_args, logger, vqa_args
 from common.llm import LLMGenerator, generator_mapping, model_path_mapping
 from data.vqa.base import GeneratorBase
 
@@ -19,12 +19,12 @@ class LLMQAGenerator(GeneratorBase):
     def __init__(
         self,
         rules: list[dict[str, Any]],
-        captions: list[str],
         sys_prompt="You are a helpful assistant that always responds in json.",
     ):
         super().__init__(rules)
-        self.captions = captions
         if self.llm_generator is None:
+            with open(data_args.caption_path) as f:
+                self.captions = [json.loads(line)["output"] for line in f]
             model_name, model_id = vqa_args.vqa_llm.split("-", 1)
             model_path = model_path_mapping[model_name].format(model_id)
             self.__class__.llm_generator = generator_mapping[model_name](model_path)
