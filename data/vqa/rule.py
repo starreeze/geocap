@@ -374,6 +374,8 @@ class RuleBasedQAGenerator(GeneratorBase):
                 "answer": f"no, only the {clarified_types[_present_idx]} exists.",
             }
             qa_pairs.append(qa)
+            
+        absent_types = all_absent_types
 
         # 2. Multiple choice question about present or absent shape
         can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
