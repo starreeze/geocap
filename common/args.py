@@ -115,24 +115,14 @@ class CaptionArgs:
 @dataclass
 class VQAArgs:
     perspectives: list[str] = field(
-        default_factory=lambda: [
-            "existence",
-            "counting",
-            "size",
-            "location",
-            "reference",
-            "relation",
-        ]
+        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
     )
     # llm generator
     vqa_batchsize: int = field(default=4)
     vqa_llm: str = field(default="qwen25-7")
     vqa_prompts_dir: str = field(default="data/vqa/prompts")
     # rule generator
-    max_q_ip: int = field(
-        default=3,
-        metadata={"help": "maximum number of questions per image per perspective"},
-    )
+    max_q_ip: int = field(default=3, metadata={"help": "maximum number of questions per image per perspective"})
     vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
     nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     gt_choice_w: list[float] = field(
@@ -148,12 +138,10 @@ class VQAArgs:
         metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
     area_type_t: float = field(
-        default=0.05,
-        metadata={"help": "tolerate threshold for area difference to be considered"},
+        default=0.05, metadata={"help": "tolerate threshold for area difference to be considered"}
     )
     location_type_t: float = field(
-        default=0.1,
-        metadata={"help": "tolerate threshold for location difference to be considered"},
+        default=0.1, metadata={"help": "tolerate threshold for location difference to be considered"}
     )
     # evaluation
     eval_model: str = field(
@@ -164,8 +152,17 @@ class VQAArgs:
     eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
 
-data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs]  # type: ignore
+@dataclass
+class FeatureRecognizeArgs:
+    houghcircle_params: dict[str, float] = field(
+        default_factory=lambda: {"dp": 1.5, "minDist": 100, "param1": 150, "param2": 0.5},
+        metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
+    )
+    volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
+
+
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -181,24 +178,13 @@ data_args.figure_prefix = (
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
-    else os.path.join(
-        data_args.caption_dir,
-        f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl",
-    )
+    else os.path.join(data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl")
 )
 data_args.llava_data_path = (
     data_args.llava_data_path
     if data_args.llava_data_path
-    else os.path.join(
-        data_args.llava_data_dir,
-        f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
-    )
+    else os.path.join(data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json")
 )
 
-logging.basicConfig(
-    level=run_args.log_level,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler()],
-)
+logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
