@@ -152,8 +152,17 @@ class VQAArgs:
     eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
 
-data_args, run_args, rule_args, draw_args, caption_args, vqa_args = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs]  # type: ignore
+@dataclass
+class FeatureRecognizeArgs:
+    houghcircle_params: dict[str, float] = field(
+        default_factory=lambda: {"dp": 1.5, "minDist": 100, "param1": 150, "param2": 0.5},
+        metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
+    )
+    volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
+
+
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)

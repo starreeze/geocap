@@ -42,8 +42,9 @@ class GSRule(ABC):
     def from_dict(data: dict[str, Any]) -> "GSRule":
         shape_type = data.get("type", "")
         if shape_type == "polygon":
+            points = [tuple(point) for point in data["points"]]
             return Polygon(
-                points=list(map(tuple, data["points"])), special_info=data.get("special_info", ""), fill_mode=data.get("fill_mode", "no")
+                points=points, special_info=data.get("special_info", ""), fill_mode=data.get("fill_mode", "no")
             )
         elif shape_type in ["line", "segment", "ray"]:
             return Line(type=shape_type, points=data["points"])
