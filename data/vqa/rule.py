@@ -288,7 +288,8 @@ class RuleBasedQAGenerator(GeneratorBase):
         if len(all_present_types) >= 2:
             present_types = random.sample(all_present_types, k=2)
             clarified_types = [
-                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence") for present_type in present_types
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence") 
+                for present_type in present_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
@@ -305,7 +306,8 @@ class RuleBasedQAGenerator(GeneratorBase):
         if len(all_absent_types) >= 2:
             absent_types = random.sample(all_absent_types, k=2,)
             clarified_types = [
-                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence") for absent_type in absent_types
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence") 
+                for absent_type in absent_types
             ]
             _idx: int = random.randint(0, 1)
             qa = {
