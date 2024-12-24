@@ -99,10 +99,16 @@ class DrawArgs:
     white_line_range: float = field(default=0.25)
     Gaussian_mean: int = field(default=0)
     Gaussian_var: float = field(default=10)
+    Gaussian_proba: float = field(default=1)
     Perlin_lattice: int = field(default=20)
     Perlin_power: float = field(default=16)
     Perlin_bias: float = field(default=-16)
+    Perlin_proba: float = field(default=1)
+    inline_noise: bool = field(default=True)
     stylish: bool = field(default=False)
+    stylish_alpha: float = field(default=3.1416 / 4)
+    stylish_depth: int = field(default=10)
+    stylish_height: float = field(default=3.1416 / 2.2)
 
 
 @dataclass
