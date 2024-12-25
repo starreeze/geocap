@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Date    : 2024-12-08 10:54:09
-# @Author  : Shangyu.Xing (starreeze@foxmail.com)
-
 import random
 from itertools import product
 from typing import Any, cast
@@ -547,21 +543,18 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa = {
                 "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
                 "choices": [
-                    "yes, both exist.",
-                    f"no, only the {clarified_types[_idx]} exists.",
-                    f"no, only the {clarified_types[1 - _idx]} exists.",
-                    "no, neither exists.",
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
                 ],
-                "answer": "yes, both exist.",
+                "answer": "Yes, both exist.",
             }
             qa_pairs.append(qa)
 
         # 1-2. Ask about two shape that neither exists
         if "FF" in question_types and len(all_absent_types) >= 2:
-            absent_types = random.sample(
-                all_absent_types,
-                k=2,
-            )
+            absent_types = random.sample(all_absent_types, k=2)
             clarified_types = [
                 cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
                 for absent_type in absent_types
@@ -570,12 +563,12 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa = {
                 "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
                 "choices": [
-                    "yes, both exist.",
-                    f"no, only the {clarified_types[_idx]} exists.",
-                    f"no, only the {clarified_types[1 - _idx]} exists.",
-                    "no, neither exists.",
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
                 ],
-                "answer": "no, neither exists.",
+                "answer": "No, neither exists.",
             }
             qa_pairs.append(qa)
 
@@ -598,12 +591,12 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa = {
                 "question": f"Is there a {clarified_types[0]} and a {clarified_types[1]} in the image?",
                 "choices": [
-                    "yes, both exist.",
-                    f"no, only the {clarified_types[_idx]} exists.",
-                    f"no, only the {clarified_types[1 - _idx]} exists.",
-                    "no, neither exists.",
+                    "Yes, both exist.",
+                    f"No, only the {clarified_types[_idx]} exists.",
+                    f"No, only the {clarified_types[1 - _idx]} exists.",
+                    "No, neither exists.",
                 ],
-                "answer": f"no, only the {clarified_types[_present_idx]} exists.",
+                "answer": f"No, only the {clarified_types[_present_idx]} exists.",
             }
             qa_pairs.append(qa)
 

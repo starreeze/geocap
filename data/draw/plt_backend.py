@@ -55,14 +55,24 @@ class Figure:
         white_line_radius: float = 0.25,
         Gaussian_mean: float = 25,
         Gaussian_var: float = 100,
+        Gaussian_proba: float = 1,
         Perlin_lattice: int = 0,
         Perlin_bias: float = 0,
         Perlin_power: float = 0,
+        Perlin_proba: float = 1,
         stylish: bool = False,
+        stylish_depth: int = 10,
+        stylish_height: float = 3.1416 / 2.2,
+        stylish_alpha: float = 3.1416 / 4,
+        inline_noise: bool = True,
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
-            self.__handle(rule, randomize=self.randomize, color=color)
+            if self.xkcd:
+                with plt.xkcd():
+                    self.__handle(rule, randomize=self.randomize, color=color)
+            else:
+                self.__handle(rule, randomize=self.randomize, color=color)
         # print("All rules adapted.")
         if self.randomize:
             n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
@@ -78,12 +88,13 @@ class Figure:
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
         # print("Monochromizing the image...")
-        self.__monochromize(stylish)
+        self.__monochromize(stylish, stylish_depth, stylish_height, stylish_alpha)
+
         if self.randomize:
             # print("Adding Gaussian Noise...")
-            self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+            self.__add_GaussianNoise(Gaussian_mean, Gaussian_var, Gaussian_proba)
             # print("Adding Perlin Noise...")
-            mask = self.__get_perlin_mask()
+            mask = self.__get_perlin_mask(Perlin_proba, inline_noise)
             self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save_release(self, path: str):
@@ -102,21 +113,24 @@ class Figure:
 
         return image
 
-    def __add_GaussianNoise(self, mean: float = 0, var: float = 25):
-        img_array = np.array(self.unprocessed_image, dtype=float)
+    def __add_GaussianNoise(self, mean: float = 0, var: float = 25, proba: float = 1):
+        if random.random() < proba:
+            img_array = np.array(self.unprocessed_image, dtype=float)
 
-        noise = np.random.normal(mean, var, img_array.shape)
+            noise = np.random.normal(mean, var, img_array.shape)
 
-        processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
-        self.unprocessed_image = Image.fromarray(processed_img)
+            processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
+            self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __get_perlin_mask(self) -> np.ndarray:
+    def __get_perlin_mask(self, Perlin_proba: float = 1, inline_noise: bool = True) -> np.ndarray:
         mask = plt.figure(figsize=self.size, dpi=self.dpi)
         ax = mask.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         for idx, rule in enumerate(self.rules):
+            if not random.random() < Perlin_proba:
+                continue
             if rule["type"] == "ellipse":
                 ellipse_x, ellipse_y = rule["center"]
                 major = rule["major_axis"]
@@ -130,15 +144,37 @@ class Figure:
                         angle=alpha,
                         edgecolor="black",
                         facecolor="black",
-                        linewidth=1 * (self.shape[0] / 640),
+                        linewidth=self.line_weight * (self.shape[0] / 640),
                     )
                 )
-            if rule["type"] == "segment":
+            if rule["type"] == "segment" and inline_noise:
                 points: list = rule["points"]
                 ax.plot(
                     (points[0][0], points[1][0]),
                     (points[0][1], points[1][1]),
                     color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
+                )
+            if rule["type"] == "ray" and inline_noise:
+                points: list = rule["points"]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (farwise[0], farwise[1]),
+                    color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
+                )
+            if rule["type"] == "line" and inline_noise:
+                points: list = rule["points"]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (leftwise_endpoint[0], leftwise_endpoint[1]),
+                    color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
                 )
             if rule["type"] == "polygon":
                 points: list = rule["points"]
@@ -148,6 +184,7 @@ class Figure:
                         closed=True,
                         edgecolor="black",
                         facecolor="black",
+                        linewidth=self.line_weight * (self.shape[0] / 640),
                     )
                 )
 
@@ -179,9 +216,9 @@ class Figure:
             n11 = np.sum(np.dstack((grid[:, :, 0] - 1, grid[:, :, 1] - 1)) * g11, 2)
             # Interpolation
             t = f(grid)
-            n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
-            n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
-            return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
+            n0 = n00 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n10
+            n1 = n01 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n11
+            return np.sqrt(2) * ((1 - np.array(t[:, :, 1])) * n0 + t[:, :, 1] * n1)
 
         img_array = np.array(self.unprocessed_image, dtype=float)
         noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
@@ -213,8 +250,6 @@ class Figure:
         )
         if randomize:
             self.randomized_line_width = line_width
-        if self.xkcd:
-            plt.xkcd()
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
