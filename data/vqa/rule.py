@@ -344,8 +344,8 @@ class RuleBasedQAGenerator(GeneratorBase):
                 )
                 answer_proj_para_length, answer_proj_perp_length, answer_shape = sorted_shapes_data[0]
                 answer_shape_box = answer_shape["box"]
-                answer_shape_box_area = (answer_shape_box[0][0] - answer_shape_box[0][1]) * (
-                    answer_shape_box[0][0] - answer_shape_box[0][1]
+                answer_shape_box_area = (answer_shape_box[1][0] - answer_shape_box[0][0]) * (
+                    answer_shape_box[0][1] - answer_shape_box[1][1]
                 )
                 anchor_shape = None
                 for _j, (proj_para_length, proj_perp_length, shape) in enumerate(sorted_shapes_data):
@@ -380,7 +380,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     if __flag:
                         continue
                     shape_box = shape["box"]
-                    shape_box_area = (shape_box[0][0] - shape_box[0][1]) * (shape_box[0][0] - shape_box[0][1])
+                    shape_box_area = (shape_box[1][0] - shape_box[0][0]) * (shape_box[0][1] - shape_box[1][1])
                     overlap_box_area = overlap_area(answer_shape_box, shape_box)
                     _ratio_1 = overlap_box_area / shape_box_area
                     _ratio_2 = overlap_box_area / answer_shape_box_area
@@ -393,14 +393,18 @@ class RuleBasedQAGenerator(GeneratorBase):
                     continue
                 if anchor_shape is None:
                     continue
-                answer_type = cls.clarify_hierarchical_text(answer_shape["type"], figure["counts"], "location")
-                anchor_type = cls.clarify_hierarchical_text(anchor_shape["type"], figure["counts"], "location")
+                answer_type = cls.clarify_hierarchical_text(
+                    answer_shape["type"], list(figure["counts"].keys()), "location"
+                )
+                anchor_type = cls.clarify_hierarchical_text(
+                    anchor_shape["type"], list(figure["counts"].keys()), "location"
+                )
                 candidate_types_1 = [
-                    cls.clarify_hierarchical_text(shape["type"], figure["counts"], "location")
+                    cls.clarify_hierarchical_text(shape["type"], list(figure["counts"].keys()), "location")
                     for shape in candidate_shapes
                 ]
                 candidate_types_2 = [
-                    cls.clarify_hierarchical_text(t, figure["counts"], "location")
+                    cls.clarify_hierarchical_text(t, list(figure["counts"].keys()), "location")
                     for t in cls.total_shapes
                     if t not in counts
                 ]
@@ -412,14 +416,101 @@ class RuleBasedQAGenerator(GeneratorBase):
                 candidate_types = candidate_types[:3]
                 candidate_types.append(answer_type)
                 random.shuffle(candidate_types)
-
                 direction_qa_pairs.append(
                     {
-                        "question": f"Which of the following shapes is {direction} {anchor_type}",
+                        "question": f"Which of the following shapes is {direction} the {anchor_type}?",
                         "choices": candidate_types,
                         "answer": answer_type,
                     }
                 )
+
+        distinguish_threshold *= 2.5
+        for direction, part_box in [
+            ("in the upper half of the image", ((-1, 2), (2, 0.5 + distinguish_threshold))),
+            ("in the lower half of the image", ((-1, 0.5 - distinguish_threshold), (2, -1))),
+            ("in the left half of the image", ((-1, 2), (0.5 - distinguish_threshold, -1))),
+            ("in the right half of the image", ((0.5 + distinguish_threshold, 2), (2, -1))),
+            (
+                "in the top left quarter of the image",
+                ((-1, 2), (0.5 - distinguish_threshold, 0.5 + distinguish_threshold)),
+            ),
+            (
+                "in the top right quarter of the image",
+                ((0.5 + distinguish_threshold, 2), (2, 0.5 + distinguish_threshold)),
+            ),
+            (
+                "in the bottom left quarter of the image",
+                ((-1, 0.5 - distinguish_threshold), (0.5 - distinguish_threshold, -1)),
+            ),
+            (
+                "in the bottom right quarter of the image",
+                ((0.5 + distinguish_threshold, 0.5 - distinguish_threshold), (2, -1)),
+            ),
+        ]:
+            exclusiv_part_box = (
+                (part_box[0][0] - 2 * distinguish_threshold, part_box[0][1] + 2 * distinguish_threshold),
+                (part_box[1][0] + 2 * distinguish_threshold, part_box[1][1] - 2 * distinguish_threshold),
+            )
+            candidates_types = set()
+            nonchoices_types = set()
+            exclusiv_types = set()
+            for shape in figure["shapes"]:
+                shape_box = (
+                    (shape["box"][0][0] - 0.0001, shape["box"][0][1] + 0.0001),
+                    (shape["box"][1][0] + 0.0001, shape["box"][1][1] - 0.0001),
+                )
+                shape_box_area = abs((shape_box[1][0] - shape_box[0][0]) * (shape_box[0][1] - shape_box[1][1]))
+                inclusiv_ratio = overlap_area(part_box, shape_box) / shape_box_area
+                exclusiv_ratio = overlap_area(exclusiv_part_box, shape_box) / shape_box_area
+                if exclusiv_ratio >= 0.999 and inclusiv_ratio >= 0.8:
+                    candidates_types.add(shape["type"])
+                if exclusiv_ratio >= 0.5:
+                    nonchoices_types.add(shape["type"])
+                else:
+                    exclusiv_types.add(shape["type"])
+            for shape_type in exclusiv_types:
+                if shape_type in candidates_types:
+                    candidates_types.remove(shape_type)
+            if len(candidates_types) == 0:
+                continue
+            candidates_types = list(candidates_types)
+            random.shuffle(candidates_types)
+            answer_type = candidates_types.pop(0)
+            choices_types = (
+                [
+                    shape_type
+                    for shape_type in cls.total_shapes
+                    if shape_type in counts and shape_type not in nonchoices_types
+                ]
+                + [shape_type for shape_type in cls.total_shapes if shape_type not in counts]
+            )[:3]
+            choices_types = [
+                cls.clarify_hierarchical_text(shape_type, list(figure["counts"].keys()), "location")
+                for shape_type in choices_types
+            ]
+            answer_type = cls.clarify_hierarchical_text(answer_type, list(figure["counts"].keys()), "location")
+            choices_types.append(answer_type)
+            random.shuffle(choices_types)
+            direction_qa_pairs.append(
+                {
+                    "question": f"Which of the following shapes is {direction}?",
+                    "choices": choices_types,
+                    "answer": answer_type,
+                }
+            )
+
+        different_answer_qa_pairs = {}
+        for _qa_pair in direction_qa_pairs:
+            if _qa_pair["answer"] not in different_answer_qa_pairs:
+                different_answer_qa_pairs[_qa_pair["answer"]] = []
+            different_answer_qa_pairs[_qa_pair["answer"]].append(_qa_pair)
+        if len(different_answer_qa_pairs) <= 2:
+            direction_qa_pairs = list(different_answer_qa_pairs.values())
+        else:
+            direction_qa_pairs = []
+            for key in random.sample(list(different_answer_qa_pairs.keys()), 2):
+                direction_qa_pairs.append(different_answer_qa_pairs[key])
+        direction_qa_pairs = [random.choice(_qa_pairs) for _qa_pairs in direction_qa_pairs]
 
         # Generate choices prioritizing types in the image and ensuring no other correct answers are included
         for qa in qa_pairs:
