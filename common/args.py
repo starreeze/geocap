@@ -114,7 +114,6 @@ class DrawArgs:
     stylish_height: float = field(default=3.1416 / 2.2)
 
 
-
 @dataclass
 class CaptionArgs:
     caption_batchsize: int = field(default=4)
