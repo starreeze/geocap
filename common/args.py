@@ -165,7 +165,7 @@ class VQAArgs:
     relative_direction_text_and_vector_dict: MappingProxyType[str, tuple[float, float]] = field(default_factory=MappingProxyType)
     distinguish_threshold_of_absolute_direction: float = field(default=0.1)
     absolute_direction_text_and_box_dict: MappingProxyType[str, tuple[tuple[float, float], tuple[float, float]]] = (
-        field(default=MappingProxyType)
+        field(default_factory=MappingProxyType)
     )
     inclusiv_overlapping_threshold_of_absolute_direction: float = field(default=0.8)
 
