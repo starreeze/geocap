@@ -126,9 +126,8 @@ class Figure:
             processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
             self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __get_perlin_mask(
-        self, Perlin_proba: float = 1, inline_noise: bool = True
-    ) -> np.ndarray:
+
+    def __get_perlin_mask(self, Perlin_proba: float = 1, inline_noise: bool = True) -> np.ndarray:
         mask = plt.figure(figsize=self.size, dpi=self.dpi)
         ax = mask.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
@@ -165,11 +164,9 @@ class Figure:
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
-                farwise = (
-                    leftwise_endpoint
-                    if points[0][0] > points[1][0]
-                    else rightwise_endpoint
-                )
+
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+
                 ax.plot(
                     (points[0][0], points[1][0]),
                     (farwise[0], farwise[1]),

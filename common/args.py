@@ -1,10 +1,13 @@
 import logging
 import os
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Literal, cast
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
+
+import math
 
 
 @dataclass
@@ -45,11 +48,17 @@ class RuleArgs:
     """args for stage 1"""
     max_num_shapes: int = field(default=10)
     min_num_shapes: int = field(default=2)
+
+    in_canvas_area_thres: float = field(default=0.8)
     # levels of shape generation
     polygon_shape_level: int = field(default=3)
     line_shape_level: int = field(default=1)
     ellipse_shape_level: int = field(default=4)
     spiral_shape_level: int = field(default=3)
+
+    polygon_points_min_distance: float = field(default=0.01)
+    line_min_length: float = field(default=0.2)
+    line_max_length: float = field(default=0.5)
 
     # levels of polygon relation
     polygon_tangent_line_level: int = field(default=1)
@@ -87,7 +96,7 @@ class DrawArgs:
     size: "list[float]" = field(default_factory=lambda: [6.4, 6.4])
     dpi: int = field(default=100)
     line_weight: int = field(default=4)
-    line_style: str = field(default="none")
+    line_style: Literal["none", "gradient", "xkcd"] = field(default="none")
     color: list[float] = field(default_factory=lambda: [])
     n_white_line: None | int = field(default=None)
     white_line_range: float = field(default=0.25)
@@ -151,6 +160,80 @@ class VQAArgs:
     eval_batchsize: int = field(default=4)
     eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
+    distinguish_threshold_of_relative_direction: float = field(default=0.04)
+    deviation_threshold_of_relative_direction: float = field(default=math.pi / 9)
+    exclusiv_deviation_threshold_of_relative_direction: float = field(default=math.pi / 5)
+    relative_direction_text_and_vector_dict: dict[str, tuple[float, float]] = field(default_factory=dict)
+    distinguish_threshold_of_absolute_direction: float = field(default=0.1)
+    absolute_direction_text_and_box_dict: dict[str, tuple[tuple[float, float], tuple[float, float]]] = field(
+        default_factory=dict
+    )
+    inclusiv_overlapping_threshold_of_absolute_direction: float = field(default=0.8)
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "relative_direction_text_and_vector_dict",
+            MappingProxyType(
+                {
+                    "directly to the top of": (0, 1),
+                    "directly to the bottom of": (0, -1),
+                    "directly to the left of": (-1, 0),
+                    "directly to the right of": (1, 0),
+                    "to the upper left of": (-math.sqrt(2), math.sqrt(2)),
+                    "to the upper right of": (math.sqrt(2), math.sqrt(2)),
+                    "to the lower left of": (-math.sqrt(2), -math.sqrt(2)),
+                    "to the lower right of": (math.sqrt(2), -math.sqrt(2)),
+                }
+            ),
+        )
+        object.__setattr__(
+            self,
+            "absolute_direction_text_and_box_dict",
+            MappingProxyType(
+                {
+                    "in the upper half of the image": (
+                        (-1, 2),
+                        (2, 0.5 + self.distinguish_threshold_of_absolute_direction),
+                    ),
+                    "in the lower half of the image": (
+                        (-1, 0.5 - self.distinguish_threshold_of_absolute_direction),
+                        (2, -1),
+                    ),
+                    "in the left half of the image": (
+                        (-1, 2),
+                        (0.5 - self.distinguish_threshold_of_absolute_direction, -1),
+                    ),
+                    "in the right half of the image": (
+                        (0.5 + self.distinguish_threshold_of_absolute_direction, 2),
+                        (2, -1),
+                    ),
+                    "in the top left quarter of the image": (
+                        (-1, 2),
+                        (
+                            0.5 - self.distinguish_threshold_of_absolute_direction,
+                            0.5 + self.distinguish_threshold_of_absolute_direction,
+                        ),
+                    ),
+                    "in the top right quarter of the image": (
+                        (0.5 + self.distinguish_threshold_of_absolute_direction, 2),
+                        (2, 0.5 + self.distinguish_threshold_of_absolute_direction),
+                    ),
+                    "in the bottom left quarter of the image": (
+                        (-1, 0.5 - self.distinguish_threshold_of_absolute_direction),
+                        (0.5 - self.distinguish_threshold_of_absolute_direction, -1),
+                    ),
+                    "in the bottom right quarter of the image": (
+                        (
+                            0.5 + self.distinguish_threshold_of_absolute_direction,
+                            0.5 - self.distinguish_threshold_of_absolute_direction,
+                        ),
+                        (2, -1),
+                    ),
+                }
+            ),
+        )
+
 
 @dataclass
 class FeatureRecognizeArgs:
@@ -160,6 +243,15 @@ class FeatureRecognizeArgs:
     )
     volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
+
+
+@dataclass
+class FeatureRecognizeArgs:
+    houghcircle_params: dict[str, float] = field(
+        default_factory=lambda: {"dp": 1.5, "minDist": 100, "param1": 150, "param2": 0.5},
+        metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
+    )
+    volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args = HfArgumentParser(
     [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
@@ -171,10 +263,12 @@ rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
+feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
+run_args.log_level = run_args.log_level.upper()
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
@@ -188,3 +282,4 @@ data_args.llava_data_path = (
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
+logger.setLevel(run_args.log_level)
