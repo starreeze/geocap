@@ -452,12 +452,12 @@ class EllipseRelationGenerator:
             d_centers = distance_2points(self.ellipse.center, new_center)
             d_radius_vec = distance_2points(self.ellipse.center, tangent_point)
             radius = abs(d_centers - d_radius_vec)
-        
+
         if d_centers < d_radius_vec:
             tangent_type = "internal tangent circle"
         else:
             tangent_type = "external tangent circle"
-        
+
         circle = Ellipse(center=new_center)
         circle.to_circle(radius)
 
