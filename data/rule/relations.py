@@ -430,31 +430,34 @@ class EllipseRelationGenerator:
         return polygon
 
     def get_tangent_circle(self) -> tuple[Ellipse | None, str]:
-        if "circle" in self.ellipse.special_info:
-            x, y = self.ellipse.center
-            new_center = (x + uniform(-0.5, 0.5), y + uniform(-0.5, 0.5))
-            angle = polar_angle(self.ellipse.center, new_center)
-            tangent_point = self.ellipse.get_point(theta=angle)
-        else:  # tangent circle to a ellipse
-            theta = np.random.choice([0.5 * np.pi, 1.5 * np.pi])
-            tangent_point = self.ellipse.get_point(theta)  # a vertice on minor axis
-            radius_vec = line_given2points([self.ellipse.center, tangent_point])
-            new_center = another_2points_on_line(line=radius_vec, point=tangent_point)[0]
+        def random_center_and_tangent_point():
+            if "circle" in self.ellipse.special_info:
+                x, y = self.ellipse.center
+                new_center = (x + uniform(-0.5, 0.5), y + uniform(-0.5, 0.5))
+                angle = polar_angle(self.ellipse.center, new_center)
+                tangent_point = self.ellipse.get_point(theta=angle)
+            else:  # tangent circle to a ellipse
+                theta = np.random.choice([0.5 * np.pi, 1.5 * np.pi])
+                tangent_point = self.ellipse.get_point(theta)  # a vertice on minor axis
+                radius_vec = line_given2points([self.ellipse.center, tangent_point])
+                new_center = another_2points_on_line(line=radius_vec, point=tangent_point)[0]
+            return new_center, tangent_point
 
+        new_center, tangent_point = random_center_and_tangent_point()
         d_centers = distance_2points(self.ellipse.center, new_center)
-        if d_centers > 0.6:
-            return None, "none"
-
         d_radius_vec = distance_2points(self.ellipse.center, tangent_point)
-
+        radius = abs(d_centers - d_radius_vec)
+        while not 0.02 < radius < 0.3:
+            new_center, tangent_point = random_center_and_tangent_point()
+            d_centers = distance_2points(self.ellipse.center, new_center)
+            d_radius_vec = distance_2points(self.ellipse.center, tangent_point)
+            radius = abs(d_centers - d_radius_vec)
+        
         if d_centers < d_radius_vec:
             tangent_type = "internal tangent circle"
-            radius = d_radius_vec - d_centers
-
         else:
             tangent_type = "external tangent circle"
-            radius = d_centers - d_radius_vec
-
+        
         circle = Ellipse(center=new_center)
         circle.to_circle(radius)
 
