@@ -227,55 +227,55 @@ class RuleBasedQAGenerator(GeneratorBase):
 
         # Size-based questions (largest/smallest area)
         # TODO: compare instead of extreme
-        attr = random.choice(["largest", "smallest"])
-        sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
-        max_area = sorted_shapes[0]["area"]
-        all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
-        correct_type = sorted_shapes[0]["type"]
-        question = f"What type of shape presented in the image has the {attr} area?"
-        qa_pairs.append(
-            {
-                "question": question,
-                "answer": correct_type,
-                "exclude_types": all_correct_types,
-            }
-        )
+        # attr = random.choice(["largest", "smallest"])
+        # sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
+        # max_area = sorted_shapes[0]["area"]
+        # all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
+        # correct_type = sorted_shapes[0]["type"]
+        # question = f"What type of shape presented in the image has the {attr} area?"
+        # qa_pairs.append(
+        #     {
+        #         "question": question,
+        #         "answer": correct_type,
+        #         "exclude_types": all_correct_types,
+        #     }
+        # )
 
         attr = random.choice(["larger", "smaller"])
         sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "larger"))
-        appearence_shapes = {}
+        appearance_shapes = {}
         for j in range(len(sorted_shapes)):
             shape_type = sorted_shapes[j]["type"]
-            if shape_type not in appearence_shapes:
-                appearence_shapes[shape_type] = []
-            appearence_shapes[shape_type].append(j)
-        appearence_shapes_keys = list(appearence_shapes.keys())
+            if shape_type not in appearance_shapes:
+                appearance_shapes[shape_type] = []
+            appearance_shapes[shape_type].append(j)
+        appearance_shapes_keys = list(appearance_shapes.keys())
         size_qa_shapes = []
-        for j in range(len(appearence_shapes_keys)):
-            for i in range(len(appearence_shapes_keys)):
+        for j in range(len(appearance_shapes_keys)):
+            for i in range(len(appearance_shapes_keys)):
                 if i == j:
                     continue
-                if appearence_shapes[appearence_shapes_keys[i]][-1] >= appearence_shapes[appearence_shapes_keys[j]][0]:
+                if appearance_shapes[appearance_shapes_keys[i]][-1] >= appearance_shapes[appearance_shapes_keys[j]][0]:
                     continue
-                answer_type = appearence_shapes_keys[i]
-                anchor_type = appearence_shapes_keys[j]
+                answer_type = appearance_shapes_keys[i]
+                anchor_type = appearance_shapes_keys[j]
                 choices_types = []
-                for k in range(len(appearence_shapes_keys)):
+                for k in range(len(appearance_shapes_keys)):
                     if k == i or k == j:
                         continue
                     if (
-                        appearence_shapes[appearence_shapes_keys[k]][0]
-                        < appearence_shapes[appearence_shapes_keys[j]][-1]
+                        appearance_shapes[appearance_shapes_keys[k]][0]
+                        < appearance_shapes[appearance_shapes_keys[j]][-1]
                     ):
                         continue
-                    choices_types.append(appearence_shapes_keys[k])
+                    choices_types.append(appearance_shapes_keys[k])
                 size_qa_shapes.append((answer_type, anchor_type, choices_types))
         size_freq_qa_pairs = []
         if len(size_qa_shapes) > 0:
             answer_type, anchor_type, choices_types = random.choice(size_qa_shapes)
             answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"], "size")
             if counts[anchor_type] == 1:
-                anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+                anchor_type = "the " + cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
             else:
                 anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
                 if " (" in anchor_type:
@@ -298,29 +298,29 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes (in the image) is {attr} than all {anchor_type} in the image?",
+                    "question": f"Which of the following shapes presented in the image is {attr} than {anchor_type} in the image?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
             )
 
         # Frequency-based questions
-        attr = random.choice(["most", "least"])
-        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
-        max_count = sorted_types[0][1]
-        all_correct_types = {t for t, c in counts.items() if c == max_count}
-        correct_type = sorted_types[0][0]
-        question = f"What type of shape presented in the image appears {attr} frequently?"
-        qa_pairs.append(
-            {
-                "question": question,
-                "answer": correct_type,
-                "exclude_types": all_correct_types,
-            }
-        )
+        # attr = random.choice(["most", "least"])
+        # sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
+        # max_count = sorted_types[0][1]
+        # all_correct_types = {t for t, c in counts.items() if c == max_count}
+        # correct_type = sorted_types[0][0]
+        # question = f"What type of shape presented in the image appears {attr} frequently?"
+        # qa_pairs.append(
+        #     {
+        #         "question": question,
+        #         "answer": correct_type,
+        #         "exclude_types": all_correct_types,
+        #     }
+        # )
 
-        attr: str = random.choice(["a greater number", "fewer in number"])
-        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "fewer in number"))
+        attr: str = random.choice(["more", "less"])
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "less"))
         freq_qa_shapes = []
         for _j, (shape_type_j, freq_j) in enumerate(sorted_types):
             for shape_type_i, freq_i in sorted_types[:_j]:
@@ -353,34 +353,34 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes (in the image) has {attr} than {anchor_type} in the image? (considering concentric circles as multiple shapes)",
+                    "question": f"Which of the following shapes presented in the image appears {attr} frequently than {anchor_type} in the image?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
             )
 
         # Location-based questions
-        loc_attrs = {
-            "leftmost": lambda s: s["center"][0],
-            "rightmost": lambda s: -s["center"][0],
-            "uppermost": lambda s: s["center"][1],
-            "lowermost": lambda s: -s["center"][1],
-        }
-        attr, key_func = random.choice(list(loc_attrs.items()))
-        sorted_shapes = sorted(shapes, key=key_func)
-        extreme_val = key_func(sorted_shapes[0])
-        all_correct_types = {
-            s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
-        }
-        correct_type = sorted_shapes[0]["type"]
-        question = f"What type of shape presented in the image has the {attr} centroid?"
-        qa_pairs.append(
-            {
-                "question": question,
-                "answer": correct_type,
-                "exclude_types": all_correct_types,
-            }
-        )
+        # loc_attrs = {
+        #     "leftmost": lambda s: s["center"][0],
+        #     "rightmost": lambda s: -s["center"][0],
+        #     "uppermost": lambda s: s["center"][1],
+        #     "lowermost": lambda s: -s["center"][1],
+        # }
+        # attr, key_func = random.choice(list(loc_attrs.items()))
+        # sorted_shapes = sorted(shapes, key=key_func)
+        # extreme_val = key_func(sorted_shapes[0])
+        # all_correct_types = {
+        #     s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
+        # }
+        # correct_type = sorted_shapes[0]["type"]
+        # question = f"What type of shape presented in the image has the {attr} centroid?"
+        # qa_pairs.append(
+        #     {
+        #         "question": question,
+        #         "answer": correct_type,
+        #         "exclude_types": all_correct_types,
+        #     }
+        # )
 
         # Location-based questions (relatively & absolutely comparison)
         distinguish_threshold = (
@@ -445,7 +445,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                         continue
                     if (answer_proj_para_length - proj_para_length) < distinguish_threshold:
                         continue
-                    _angle = np.atan2(
+                    _angle = np.arctan2(
                         abs((answer_proj_perp_length - proj_perp_length)),
                         abs((answer_proj_para_length - proj_para_length)),
                     )
@@ -463,7 +463,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     if __flag:
                         continue
                     for _tmp_proj_para_length, _tmp_proj_perp_length, _tmp_shape in sorted_shapes_data[1:_j]:
-                        _angle = np.atan2(
+                        _angle = np.arctan2(
                             abs((_tmp_proj_perp_length - proj_perp_length)),
                             abs((_tmp_proj_para_length - proj_para_length)),
                         )
@@ -599,7 +599,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             del qa["exclude_types"]
 
         qa_pairs.extend(direction_qa_pairs + size_freq_qa_pairs)
-        return qa_pairs
+        return random.sample(qa_pairs, k=min(vqa_args.max_q_ip, len(qa_pairs)))
 
     @classmethod
     def existence(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
