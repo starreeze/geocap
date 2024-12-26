@@ -153,6 +153,14 @@ def get_tangent_line(
     assert tangent_point in curve_points, "tangent point is not on the curve"
 
     x, y = zip(*curve_points)
+    # Remove points with duplicate x values
+    unique_x = []
+    unique_y = []
+    for x_val, y_val in zip(x, y):
+        if x_val not in unique_x:
+            unique_x.append(x_val)
+            unique_y.append(y_val)
+    x, y = unique_x, unique_y
 
     curve_func = interp1d(x, y, kind="cubic", fill_value="extrapolate")
 
