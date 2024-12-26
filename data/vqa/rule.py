@@ -320,7 +320,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         # )
 
         attr: str = random.choice(["more", "less"])
-        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "less"))
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "more"))
         freq_qa_shapes = []
         for _j, (shape_type_j, freq_j) in enumerate(sorted_types):
             for shape_type_i, freq_i in sorted_types[:_j]:
@@ -328,7 +328,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     break
                 answer_type = shape_type_i
                 anchor_type = shape_type_j
-                choices_types = sorted_types[_j + 1 :]
+                choices_types = [x[0] for x in sorted_types[_j + 1 :]]
                 freq_qa_shapes.append((answer_type, anchor_type, choices_types))
         if len(freq_qa_shapes) > 0:
             answer_type, anchor_type, choices_types = random.choice(freq_qa_shapes)
