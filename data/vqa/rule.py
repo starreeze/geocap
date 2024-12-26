@@ -3,7 +3,7 @@
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
 
 import random
-from itertools import product
+from itertools import count, product
 from typing import Any, cast
 
 import numpy as np
@@ -245,6 +245,124 @@ class RuleBasedQAGenerator(GeneratorBase):
             }
         )
 
+        attr = random.choice(["larger", "smaller"])
+        sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "larger"))
+        appearence_shapes = {}
+        for j in range(len(sorted_shapes)):
+            shape_type = sorted_shapes[j]["type"]
+            if shape_type not in appearence_shapes:
+                appearence_shapes[shape_type] = []
+            appearence_shapes[shape_type].append(j)
+        appearence_shapes_keys = list(appearence_shapes.keys())
+        size_qa_shapes = []
+        for j in range(len(appearence_shapes_keys)):
+            for i in range(len(appearence_shapes_keys)):
+                if i == j:
+                    continue
+                if appearence_shapes[appearence_shapes_keys[i]][-1] >= appearence_shapes[appearence_shapes_keys[j]][0]:
+                    continue
+                answer_type = appearence_shapes_keys[i]
+                anchor_type = appearence_shapes_keys[j]
+                choices_types = []
+                for k in range(len(appearence_shapes_keys)):
+                    if k == i or k == j:
+                        continue
+                    if (
+                        appearence_shapes[appearence_shapes_keys[k]][0]
+                        < appearence_shapes[appearence_shapes_keys[j]][-1]
+                    ):
+                        continue
+                    choices_types.append(appearence_shapes_keys[k])
+                size_qa_shapes.append((answer_type, anchor_type, choices_types))
+        size_freq_qa_pairs = []
+        if len(size_qa_shapes) > 0:
+            answer_type, anchor_type, choices_types = random.choice(size_qa_shapes)
+            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"], "size")
+            if counts[anchor_type] == 1:
+                anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+            else:
+                anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+                if " (" in anchor_type:
+                    anchor_type = anchor_type.replace(" (", "s (")
+                else:
+                    anchor_type += "s"
+                anchor_type = "all " + anchor_type
+            choices_types = (
+                [
+                    cls.clarify_hierarchical_text(choices_type, figure["counts"], "size")
+                    for choices_type in choices_types
+                ]
+                + [
+                    cls.clarify_hierarchical_text(t, figure["counts"], "size")
+                    for t in cls.total_shapes
+                    if t not in counts
+                ]
+            )[:3]
+            choices_types.append(answer_type)
+            random.shuffle(choices_types)
+            size_freq_qa_pairs.append(
+                {
+                    "question": f"Which of the following shapes (in the image) is {attr} than all {anchor_type} in the image?",
+                    "choices": choices_types,
+                    "answer": answer_type,
+                }
+            )
+
+        # Frequency-based questions
+        attr = random.choice(["most", "least"])
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
+        max_count = sorted_types[0][1]
+        all_correct_types = {t for t, c in counts.items() if c == max_count}
+        correct_type = sorted_types[0][0]
+        question = f"What type of shape presented in the image appears {attr} frequently?"
+        qa_pairs.append(
+            {
+                "question": question,
+                "answer": correct_type,
+                "exclude_types": all_correct_types,
+            }
+        )
+
+        attr: str = random.choice(["a greater number", "fewer in number"])
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "fewer in number"))
+        freq_qa_shapes = []
+        for _j, (shape_type_j, freq_j) in enumerate(sorted_types):
+            for shape_type_i, freq_i in sorted_types[:_j]:
+                if freq_i == freq_j:
+                    break
+                answer_type = shape_type_i
+                anchor_type = shape_type_j
+                choices_types = sorted_types[_j + 1 :]
+                freq_qa_shapes.append((answer_type, anchor_type, choices_types))
+        if len(freq_qa_shapes) > 0:
+            answer_type, anchor_type, choices_types = random.choice(freq_qa_shapes)
+            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"], "size")
+            anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+            if " (" in anchor_type:
+                anchor_type = anchor_type.replace(" (", "s (")
+            else:
+                anchor_type += "s"
+            choices_types = (
+                [
+                    cls.clarify_hierarchical_text(choices_type, figure["counts"], "counting")
+                    for choices_type in choices_types
+                ]
+                + [
+                    cls.clarify_hierarchical_text(t, figure["counts"], "counting")
+                    for t in cls.total_shapes
+                    if t not in counts
+                ]
+            )[:3]
+            choices_types.append(answer_type)
+            random.shuffle(choices_types)
+            size_freq_qa_pairs.append(
+                {
+                    "question": f"Which of the following shapes (in the image) has {attr} than {anchor_type} in the image? (considering concentric circles as multiple shapes)",
+                    "choices": choices_types,
+                    "answer": answer_type,
+                }
+            )
+
         # Location-based questions
         loc_attrs = {
             "leftmost": lambda s: s["center"][0],
@@ -268,28 +386,15 @@ class RuleBasedQAGenerator(GeneratorBase):
             }
         )
 
-        # Frequency-based questions
-        attr = random.choice(["most", "least"])
-        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
-        max_count = sorted_types[0][1]
-        all_correct_types = {t for t, c in counts.items() if c == max_count}
-        correct_type = sorted_types[0][0]
-        question = f"What type of shape presented in the image appears {attr} frequently?"
-        qa_pairs.append(
-            {
-                "question": question,
-                "answer": correct_type,
-                "exclude_types": all_correct_types,
-            }
-        )
-
-        # Position-based questions
-        distinguish_threshold = 0.04  # The minimum distance between two shapes.
+        # Location-based questions (relatively & absolutely comparison)
+        distinguish_threshold = (
+            vqa_args.distinguish_threshold_of_relative_direction
+        )  # The minimum distance between two shapes.
         deviation_threshold = (
-            np.pi / 9
+            vqa_args.deviation_threshold_of_relative_direction
         )  # The maximum deviation angle between the direction of the anchor shape related to the answer shape && the direction of vec.
         exclusiv_deviation_threshold = (
-            np.pi / 5
+            vqa_args.exclusiv_deviation_threshold_of_relative_direction
         )  # The minimum deviation angle between the direction of the shape (excluding the answer shape) related to the anchor shape && the direction of vec.
         #     acquire all shapes that appears only once
         candidate_types = []
@@ -327,16 +432,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             direction_qa_pairs = []
             proj_para_func = lambda shape: shape["center"][0] * vec[0] + shape["center"][1] * vec[1]
             proj_perp_func = lambda shape: shape["center"][0] * vec[1] - shape["center"][1] * vec[0]
-            for direction, vec in {
-                "directly to the top of": (0, 1),
-                "directly to the bottom of": (0, -1),
-                "directly to the left of": (-1, 0),
-                "directly to the right of": (1, 0),
-                "to the upper left of": (-0.7071067811865475244, 0.7071067811865475244),
-                "to the upper right of": (0.7071067811865475244, 0.7071067811865475244),
-                "to the lower left of": (-0.7071067811865475244, -0.7071067811865475244),
-                "to the lower right of": (0.7071067811865475244, -0.7071067811865475244),
-            }.items():
+            for direction, vec in vqa_args.relative_direction_text_and_vector_dict.items():
                 sorted_shapes_data = sorted(
                     map(lambda shape: (proj_para_func(shape), proj_perp_func(shape), shape), candidate_shapes),
                     key=lambda info: (info[0], info[1]),
@@ -424,29 +520,8 @@ class RuleBasedQAGenerator(GeneratorBase):
                     }
                 )
 
-        distinguish_threshold *= 2.5
-        for direction, part_box in [
-            ("in the upper half of the image", ((-1, 2), (2, 0.5 + distinguish_threshold))),
-            ("in the lower half of the image", ((-1, 0.5 - distinguish_threshold), (2, -1))),
-            ("in the left half of the image", ((-1, 2), (0.5 - distinguish_threshold, -1))),
-            ("in the right half of the image", ((0.5 + distinguish_threshold, 2), (2, -1))),
-            (
-                "in the top left quarter of the image",
-                ((-1, 2), (0.5 - distinguish_threshold, 0.5 + distinguish_threshold)),
-            ),
-            (
-                "in the top right quarter of the image",
-                ((0.5 + distinguish_threshold, 2), (2, 0.5 + distinguish_threshold)),
-            ),
-            (
-                "in the bottom left quarter of the image",
-                ((-1, 0.5 - distinguish_threshold), (0.5 - distinguish_threshold, -1)),
-            ),
-            (
-                "in the bottom right quarter of the image",
-                ((0.5 + distinguish_threshold, 0.5 - distinguish_threshold), (2, -1)),
-            ),
-        ]:
+        distinguish_threshold = vqa_args.distinguish_threshold_of_absolute_direction
+        for direction, part_box in vqa_args.absolute_direction_text_and_box_dict.items():
             exclusiv_part_box = (
                 (part_box[0][0] - 2 * distinguish_threshold, part_box[0][1] + 2 * distinguish_threshold),
                 (part_box[1][0] + 2 * distinguish_threshold, part_box[1][1] - 2 * distinguish_threshold),
@@ -462,7 +537,10 @@ class RuleBasedQAGenerator(GeneratorBase):
                 shape_box_area = abs((shape_box[1][0] - shape_box[0][0]) * (shape_box[0][1] - shape_box[1][1]))
                 inclusiv_ratio = overlap_area(part_box, shape_box) / shape_box_area
                 exclusiv_ratio = overlap_area(exclusiv_part_box, shape_box) / shape_box_area
-                if exclusiv_ratio >= 0.999 and inclusiv_ratio >= 0.8:
+                if (
+                    exclusiv_ratio >= 0.9999
+                    and inclusiv_ratio >= vqa_args.inclusiv_overlapping_threshold_of_absolute_direction
+                ):
                     candidates_types.add(shape["type"])
                 if exclusiv_ratio >= 0.5:
                     nonchoices_types.add(shape["type"])
@@ -504,6 +582,8 @@ class RuleBasedQAGenerator(GeneratorBase):
             if _qa_pair["answer"] not in different_answer_qa_pairs:
                 different_answer_qa_pairs[_qa_pair["answer"]] = []
             different_answer_qa_pairs[_qa_pair["answer"]].append(_qa_pair)
+        if "line" in different_answer_qa_pairs:
+            del different_answer_qa_pairs["line"]
         if len(different_answer_qa_pairs) <= 2:
             direction_qa_pairs = list(different_answer_qa_pairs.values())
         else:
@@ -522,7 +602,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa["choices"] = choices
             del qa["exclude_types"]
 
-        qa_pairs.extend(direction_qa_pairs)
+        qa_pairs.extend(direction_qa_pairs + size_freq_qa_pairs)
         return qa_pairs
 
     @classmethod
