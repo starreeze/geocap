@@ -163,11 +163,11 @@ class VQAArgs:
     distinguish_threshold_of_relative_direction: float = field(default=0.04)
     deviation_threshold_of_relative_direction: float = field(default=math.pi / 9)
     exclusiv_deviation_threshold_of_relative_direction: float = field(default=math.pi / 5)
-    relative_direction_text_and_vector_dict: MappingProxyType[str, tuple[float, float]] = field(default=None)
+    # relative_direction_text_and_vector_dict: MappingProxyType[str, tuple[float, float]] = field(default=None)
     distinguish_threshold_of_absolute_direction: float = field(default=0.1)
-    absolute_direction_text_and_box_dict: MappingProxyType[str, tuple[tuple[float, float], tuple[float, float]]] = (
-        field(default=None)
-    )
+    # absolute_direction_text_and_box_dict: MappingProxyType[str, tuple[tuple[float, float], tuple[float, float]]] = (
+    #     field(default=None)
+    # )
     inclusiv_overlapping_threshold_of_absolute_direction: float = field(default=0.8)
 
     def __post_init__(self):
