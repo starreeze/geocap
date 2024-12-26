@@ -96,16 +96,23 @@ class DrawArgs:
     size: "list[float]" = field(default_factory=lambda: [6.4, 6.4])
     dpi: int = field(default=100)
     line_weight: int = field(default=4)
-    line_style: str = field(default="none")
+    line_style: Literal["none", "gradient", "xkcd"] = field(default="none")
     color: list[float] = field(default_factory=lambda: [])
     n_white_line: None | int = field(default=None)
     white_line_range: float = field(default=0.25)
     Gaussian_mean: int = field(default=0)
     Gaussian_var: float = field(default=10)
+    Gaussian_proba: float = field(default=1)
     Perlin_lattice: int = field(default=20)
     Perlin_power: float = field(default=16)
     Perlin_bias: float = field(default=-16)
+    Perlin_proba: float = field(default=1)
+    inline_noise: bool = field(default=True)
     stylish: bool = field(default=False)
+    stylish_alpha: float = field(default=3.1416 / 4)
+    stylish_depth: int = field(default=10)
+    stylish_height: float = field(default=3.1416 / 2.2)
+
 
 
 @dataclass
@@ -248,10 +255,12 @@ rule_args = cast(RuleArgs, rule_args)
 draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
+feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
+run_args.log_level = run_args.log_level.upper()
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
@@ -265,3 +274,4 @@ data_args.llava_data_path = (
 
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
+logger.setLevel(run_args.log_level)
