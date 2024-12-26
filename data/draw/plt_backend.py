@@ -187,9 +187,9 @@ class Figure:
                         linewidth=self.line_weight * (self.shape[0] / 640),
                     )
                 )
-
-        mask = self.__fig2img(mask)
-        mask = mask.convert("L")
+        img_mask = self.__fig2img(mask)
+        plt.close(mask)
+        mask = img_mask.convert("L")
         mask = np.array(mask)
         mask = np.where(mask > 128, 0, 1)
         return mask
@@ -776,6 +776,9 @@ class Figure:
             (255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8")
         )
 
+    def close(self):
+        plt.close(self.image)
+
 
 def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
@@ -785,6 +788,7 @@ def draw_figure(rules: "dict", path: str):
     figure = Figure(rules, random_seed=0, xkcd=True)
     figure.draw(stylish=True)
     figure.save_release(path)
+    figure.close()
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
