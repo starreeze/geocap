@@ -1,17 +1,20 @@
+from copy import deepcopy
 from typing import Any, Literal, Optional
+
 import numpy as np
-from numpy.random import uniform, randint, normal
-from data.rule.shapes import Polygon, Line, Ellipse, Fusiform, Fusiform_2, Curve, CustomedShape
+from numpy.random import normal, randint, uniform
+
+from data.rule.shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2, Line, Polygon
 from data.rule.utils import (
-    distance_2points,
-    polar_angle,
-    line_given2points,
-    distance_point_to_line,
     another_2points_on_line,
+    distance_2points,
+    distance_point_to_line,
     find_intersection,
+    find_perpendicular_line,
     find_symmetric_point,
     get_tangent_line,
-    find_perpendicular_line,
+    line_given2points,
+    polar_angle,
 )
 
 
@@ -633,14 +636,14 @@ class FusiformRelationGenerator:
             volution_0_swing = self.get_random_fusiform(initial_chamber, fusiform_type=2)
             volutions = [volution_0, volution_0_swing]
 
-        scale_factor = [normal(0.6, 0.1), uniform(1.2, 1.5)]
-        x_delta = uniform(-0.05, -0.02)
+        scale_factor = [normal(0.55, 0.03), uniform(1.1, 1.3)]
+        x_delta = uniform(-0.05, -0.03)
 
-        max_num_volutions = randint(5, 13)
+        max_num_volutions = randint(4, 9)
         for i in range(max_num_volutions):
             self.fusiform = volutions[-1]
 
-            x_delta = x_delta * (1.01**i)
+            x_delta = x_delta * (1.02**i)
             if "concentric" in volution_type:
                 new_volutions = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)
             elif "swing" in volution_type:
@@ -683,11 +686,11 @@ class FusiformRelationGenerator:
                 )
             elif fusiform_type == 2:
                 focal_length = normal(1200, 100)
-                x_offset = center[0] - normal(1.6, 0.1) * initial_chamber.major_axis
+                x_offset = center[0] - normal(1.8, 0.1) * initial_chamber.major_axis
                 y_offset = center[1]
-                power = max(3.0, normal(3.2, 0.2))
+                power = max(3.0, normal(3.2, 0.1))
                 x_symmetric_axis = center[0]
-                epsilon = normal(2e-3, 5e-4)
+                epsilon = normal(1e-3, 1e-4)
                 # epsilon = 0
                 omega = 3 * np.pi
                 phi = np.pi
@@ -697,34 +700,6 @@ class FusiformRelationGenerator:
                 )
 
         return volution_0
-
-    """
-    old version: homogeneous septas with fixed num_septa
-    """
-    # def generate_septa(self, volutions: list[Fusiform] | list[Ellipse]) -> tuple[list[Ellipse], list[int]]:
-    #     septa_list = []
-
-    #     num_septa = [randint(3, 60) for _ in range(20)]
-    #     num_septa.sort()
-    #     for i, volution in enumerate(volutions[:-1]):
-    #         next_volution = volutions[i + 1]
-
-    #         angle_per_sec = (2 * np.pi) / num_septa[i]
-    #         theta = uniform(0, 2 * np.pi)
-    #         for _ in range(num_septa[i]):
-    #             theta = theta + angle_per_sec
-    #             p1 = volution.get_point(theta)
-    #             p2 = next_volution.get_point(theta)
-    #             interval = distance_2points(p1, p2)
-
-    #             center = (0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]))
-    #             major_axis = uniform(0.5 * interval, 0.9 * interval)
-    #             minor_axis = uniform(0.6 * major_axis, major_axis)
-    #             rotation = normal(theta, 0.2 * theta)
-    #             septa = Ellipse(center, major_axis, minor_axis, rotation, special_info=f"septa of volution {i+1}")
-    #             septa_list.append(septa)
-
-    #     return septa_list, num_septa[: len(volutions) - 1]
 
 
 class CustomedShapeGenerator:
@@ -880,10 +855,8 @@ class CustomedShapeGenerator:
 
 
 class SeptaGenerator:
-    def __init__(self, init_septa_prob=None) -> None:
-        if init_septa_prob is None:
-            init_septa_prob = max(0.2, uniform(0.3, 0.1))
-        self.init_septa_prob = init_septa_prob
+    def __init__(self, rule_args) -> None:
+        self.rule_args = rule_args
 
     def generate_chomata(
         self,
@@ -896,6 +869,7 @@ class SeptaGenerator:
         fossil_center = volutions[0].center
         chomata_list = []
 
+        self.tunnel_angles_by_volution = [[0.0, 0.0, 0.0, 0.0] for _ in range(num_volutions)]
         # Add chomatas by volutions
         step = 1 if "concentric" in volution_type else 2
         for i, volution in enumerate(volutions[:-step]):
@@ -924,6 +898,7 @@ class SeptaGenerator:
                 thetas = thetas_upper + thetas_lower
             elif "swing" in volution_type:
                 thetas = thetas_upper if i % 2 == 0 else thetas_lower
+            self.tunnel_angles_by_volution[i] = deepcopy(thetas)  # save for septa generation
 
             for theta in thetas:
                 interval, center = self.get_interval_center(volution, next_volution, theta)
@@ -993,6 +968,16 @@ class SeptaGenerator:
                 thetas = thetas_upper if i % 2 == 0 else thetas_lower
 
             for t, theta in enumerate(thetas):
+                # Check if theta in angle range of tunnel
+                tunnel_angles = self.tunnel_angles_by_volution[i]
+                if len(tunnel_angles) == 4:
+                    tunnel_upper = tunnel_angles[:2]
+                    tunnel_lower = tunnel_angles[2:]
+                    if tunnel_upper[0] > theta > tunnel_upper[1] or tunnel_lower[0] > theta > tunnel_lower[1]:
+                        continue
+                elif len(tunnel_angles) == 2:
+                    raise NotImplementedError
+
                 # Check if theta in angle range of axial filling (main)
                 in_axial_main_angle = False
                 for angle_range in axial_main_angles:
@@ -1006,6 +991,10 @@ class SeptaGenerator:
                 for angle_range in axial_extension_angles:
                     if angle_range[0] < theta < angle_range[1] or angle_range[0] < theta - 2 * np.pi < angle_range[1]:
                         in_axial_extension_angle = True
+
+                # Filter angle near horizontal direction
+                if 0.95 * np.pi < theta < 1.05 * np.pi or -0.05 * np.pi < theta < 0.05 * np.pi:
+                    continue
 
                 # Generate septa
                 interval, center = self.get_interval_center(volution, next_volution, theta)
@@ -1025,148 +1014,6 @@ class SeptaGenerator:
                 septa.special_info = f"septa of volution {i//step}"
                 septa_list.append(septa)
                 num_septa[i // step] += 1
-
-        return septa_list, num_septa
-
-    def generate_septa_v1(
-        self,
-        volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape],
-        volution_type: Literal["concentric", "swing"],
-        num_volutions: int,
-        axial_filling: list[dict],
-    ) -> tuple[list[Ellipse | Polygon], list[int]]:
-        fossil_center = volutions[0].center
-        septa_list = []
-
-        init_septa_prob = self.init_septa_prob
-        prob_scaler = normal(1.3, 0.1)
-
-        # Add septa between volutions
-        step = 1 if "concentric" in volution_type else 2
-        num_septa = [0 for _ in range(num_volutions)]
-        for i, volution in enumerate(volutions[:-step]):
-            if i // step >= num_volutions:
-                break
-
-            next_volution = volutions[i + step]
-
-            interval, center = self.get_interval_center(volution, next_volution, theta=0.5 * np.pi)
-            angle_per_sec = np.arctan2(0.5 * interval, distance_2points(fossil_center, center))
-
-            thetas = np.arange(0, 2 * np.pi, angle_per_sec)
-            for t in range(len(thetas)):
-                p1 = volution.get_point(thetas[t])
-                p2 = volution.get_point(thetas[(t + 1) % len(thetas)])
-
-                next_p1 = next_volution.get_point(thetas[t])
-                next_p2 = next_volution.get_point(thetas[(t + 1) % len(thetas)])
-
-                p1_mid = (0.3 * p1[0] + 0.7 * next_p1[0], 0.3 * p1[1] + 0.7 * next_p1[1])
-                p2_mid = (0.3 * p2[0] + 0.7 * next_p2[0], 0.3 * p2[1] + 0.7 * next_p2[1])
-                p3 = (p1_mid[0] + normal(0, 0.1 * interval), p1_mid[1] + normal(0, 0.1 * interval))
-                p4 = (p2_mid[0] + normal(0, 0.1 * interval), p2_mid[1] + normal(0, 0.1 * interval))
-
-                curve = Curve([p1, p3, p4, p2])
-                # curve = Curve([p1,next_p1, next_p2, p2])
-                septa_list.append(curve)
-
-        return septa_list, num_septa
-
-    def generate_septa_v0(
-        self,
-        volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape],
-        volution_type: Literal["concentric", "swing"],
-        num_volutions: int,
-        axial_filling: list[dict],
-    ) -> tuple[list[Ellipse | Polygon], list[int]]:
-        fossil_center = volutions[0].center
-        septa_list = []
-
-        init_septa_prob = self.init_septa_prob
-        prob_scaler = normal(1.3, 0.1)
-
-        # Add septa between volutions
-        step = 1 if "concentric" in volution_type else 2
-        num_septa = [0 for _ in range(num_volutions)]
-        for i, volution in enumerate(volutions[:-step]):
-            if i // step >= num_volutions:
-                break
-
-            next_volution = volutions[i + step]
-            prob = init_septa_prob * (prob_scaler**i)  # more septas in outer volutions
-
-            interval, center = self.get_interval_center(volution, next_volution, theta=0.5 * np.pi)
-
-            angle_per_sec = np.arctan2(0.5 * interval, distance_2points(fossil_center, center))
-            max_num_septa = int(2 * np.pi / angle_per_sec * (0.9 ** (len(volutions) - i)))
-
-            thetas_upper = np.arange(0, np.pi, angle_per_sec)
-            thetas_lower = np.arange(np.pi, 2 * np.pi, angle_per_sec)
-            if "concentric" in volution_type:
-                thetas = np.concatenate([thetas_upper, thetas_lower])
-            elif "swing" in volution_type:
-                thetas = thetas_upper if i % 2 == 0 else thetas_lower
-
-            continuous_septa = -1
-            for theta in thetas:
-                # ignore horizontal septa
-                # if theta < 0.12 * np.pi or 0.88 * np.pi < theta < 1.12 * np.pi or 1.88 * np.pi < theta:
-                #     continue
-
-                if np.random.random() < prob or continuous_septa > 0:
-                    septa_type = np.random.choice(["ellipse", "polygon"])
-                    if continuous_septa > 0:
-                        continuous_septa = continuous_septa - 1
-                    else:
-                        continuous_septa = randint(i // 2, 1 + i)
-                        # size = np.random.choice(["big", "small"])
-                        size = "small"
-
-                    _, center = self.get_interval_center(volution, next_volution, theta)
-
-                    if septa_type == "ellipse":
-                        septa = self.one_ellipse_septa(
-                            interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="no"
-                        )
-                    elif septa_type == "polygon":
-                        septa = self.one_polygon_septa(
-                            interval, center, theta, volution, next_volution, size=size, fill_mode="no"
-                        )
-                    septa.special_info = f"septa of volution {i//step}"
-                    septa_list.append(septa)
-                    num_septa[i // step] += 1
-
-        # # Add horizontal septa
-        # for i, volution in enumerate(volutions[:-1]):
-        #     next_volution = volutions[i + 1]
-        #     prob = 0.5 * init_septa_prob * (prob_scaler**i)
-
-        #     interval, center = self.get_interval_center(volution, next_volution, theta=0)
-
-        #     angle_per_sec = np.arctan2(0.7 * interval, distance_2points(fossil_center, center))
-        #     num_theta_sec = int((np.pi / 3) / angle_per_sec)
-
-        #     theta_range_1 = np.linspace(-0.1 * np.pi, 0.1 * np.pi, num_theta_sec)
-        #     theta_range_2 = np.linspace(0.9 * np.pi, 1.1 * np.pi, num_theta_sec)
-        #     for theta in np.concatenate((theta_range_1, theta_range_2)):
-        #         _, center = self.get_interval_center(volution, next_volution, theta)
-
-        #         # outer horizontal septa
-        #         if np.random.random() < prob:
-        #             outer_septa = self.one_ellipse_septa(
-        #                 interval, center, fossil_center, theta + normal(0, 0.1), mode="outer", size="small"
-        #             )
-        #             outer_septa.special_info = f"septa of volution {i+1}"
-        #             septa_list.append(outer_septa)
-        #             num_septa[i] += 1
-        #         # inner horizontal septa
-        #         if np.random.random() < prob:
-        #             inner_septa = self.one_ellipse_septa(
-        #                 interval, center, fossil_center, theta + normal(0, 0.1), mode="inner", size="small"
-        #             )
-        #             inner_septa.special_info = f"septa of volution {i+1}"
-        #             septa_list.append(inner_septa)
-        #             num_septa[i] += 1
 
         return septa_list, num_septa
 
@@ -1197,7 +1044,7 @@ class SeptaGenerator:
             major_axis = uniform(0.6 * interval, 0.8 * interval)
             minor_axis = uniform(0.6 * major_axis, major_axis)
         elif size == "small":
-            major_axis = uniform(0.4 * interval, 0.6 * interval)
+            major_axis = uniform(0.4 * interval, 0.5 * interval)
             minor_axis = uniform(0.6 * major_axis, major_axis)
         rotation = theta * normal(1, 0.1)
 
@@ -1235,7 +1082,7 @@ class SeptaGenerator:
             if size == "big":
                 p3 = next_volution.get_point(theta + normal(0, 0.05))
             elif size == "small":
-                p3 = (center[0] + normal(0, 0.25 * interval), center[1] + normal(0, 0.25 * interval))
+                p3 = (center[0] + normal(0, 0.2 * interval), center[1] + normal(0, 0.2 * interval))
             points = [p1, p2, p3]
         elif num_edges == 4:
             if size == "big":
@@ -1313,8 +1160,6 @@ class SeptaGenerator:
 
             # Get normal line of volution at p
             points = [tuple(p) for p in volution.curve_points[index_range]]
-            # points = list(dict.fromkeys(points))
-            points = list(set(points))  # remove duplicates
             tangent_line = get_tangent_line(p, points)
 
             normal_line = find_perpendicular_line(tangent_line, p)

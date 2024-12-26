@@ -32,12 +32,8 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["center"] = fossil_center
         shapes.append(initial_chamber)
 
-        # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
-
-        # volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
+        # Generate volutions/whorls
         volution_shape = choice(["fusiform", "customed_shape"], p=[0.3, 0.7])
-        # volution_type = choice(["concentric", "swing"])
-        # volution_shape = "ellipse"
         volution_type = "concentric"
         if volution_shape == "ellipse":
             volution_generator = EllipseRelationGenerator(rule_args)
@@ -55,7 +51,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["fossil_bbox"] = fossil_bbox
 
         shapes.extend(volutions)
-        shapes.reverse()  # reverse for overlap in 'swing' volution_type
+        # shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
         tunnel_angle = normal(18, 2)  # initialize
@@ -70,8 +66,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["tunnel_angles"] = tunnel_angles[tunnel_start_idx:]
 
         # Generate chomata
-        # septa_generator = SeptaGenerator()
-        septa_generator = SeptaGenerator(init_septa_prob=1)
+        septa_generator = SeptaGenerator(rule_args)
         chomata_list = septa_generator.generate_chomata(
             volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
         )
@@ -88,7 +83,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate other septa folds
         have_septa_folds = choice([True, False])
-        # have_septa_folds = True
+
         if have_septa_folds:
             global_gap = normal(0.8, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
