@@ -96,10 +96,16 @@ To use `plt_backend.py`, the following arguments are expected:
 - white_line_range:float. The default value is 0.25. Indicate the maximum length of a white line.
 - Gaussian_mean: float. The default value is 0. Control the mean value of the Gaussian noise. The higher the value is, the grayer the image will be.
 - Gaussian_var: float. The default value is 10. Control the variance of the Gaussian Noise. The higher the value is, the stronger the Gaussian Noise will be.
+- Gaussian_proba: float. The default value is 1. Control the probability of applying Gaussian noise.
 - Perlin_lattice: int. The default value is 20. Control the number of lattices while generating Perlin noise. The value is not recommended to change and may cause the crash the the module.
 - Perlin_power: float. The default value is 16. Control the power of the Perlin noise, will affect the contrast ratio of the noise and the image.
 - Perlin_bias: float. The default value is -16. Control the bias of the Perlin noise. The lower it is, the brighter the image will be.
+- Perlin_proba: float. The default value is 1. Control the probability of applying Perlin noise per shape.
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
+- stylish_depth: int. The default value is 10. Control the depth of the sharpening.
+- stylish_height: float. The default value is 3.1416 / 2.2. Control the height of the sharpening.
+- stylish_alpha: float. The default value is 3.1416 / 4. Control the alpha of the sharpening.
+- inline_noise: bool. The default value is True. Setting to true will apply noise to the line/ray/segment. It may not very obvious in default setting in which Perlin_power is relatively low and the line color is close to black.
 
 To simply generate a picture with default settings, use the following command:
 
