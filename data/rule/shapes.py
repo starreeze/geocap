@@ -160,17 +160,24 @@ class Polygon(GSRule):
         if min_angle < thres_low or max_angle > thres_high:
             pass_check = False
 
-        # Check whether each angle is around np.pi/2 if not a rectangle
+        # Check whether all angles are around np.pi/2 if not a rectangle
         if len(self.points) == 4 and "rectangle" not in self.special_info:
+            all_around = True
             for angle in angles:
-                if abs(angle - np.pi / 2) < rule_args.general_quadrilateral_angle_thres:
-                    pass_check = False
+                if abs(angle - np.pi / 2) > rule_args.general_quadrilateral_angle_thres:
+                    all_around = False
+                    break
+            if all_around:
+                pass_check = False
 
-        # Check whether each angle is around np.pi/3 if not a equilateral triangle
+        # Check whether all angles are around np.pi/3 if not a equilateral triangle
         if len(self.points) == 3 and "equilateral triangle" not in self.special_info:
+            all_around = True
             for angle in angles:
-                if abs(angle - np.pi / 3) < rule_args.general_triangle_angle_thres:
-                    pass_check = False
+                if abs(angle - np.pi / 3) > rule_args.general_triangle_angle_thres:
+                    all_around = False
+            if all_around:
+                pass_check = False
 
         return pass_check
 

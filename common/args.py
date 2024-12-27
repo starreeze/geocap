@@ -58,14 +58,14 @@ class RuleArgs:
 
     # numerical params for shapes
     polygon_points_min_distance: float = field(default=0.01)
-    rectangle_ratio_thres: list[float] = field(default_factory=lambda: [1.5, 3.0])
+    rectangle_ratio_thres: list[float] = field(default_factory=lambda: [1.2, 4.0])
     general_quadrilateral_angle_thres: float = field(default=0.3)
     general_triangle_angle_thres: float = field(default=0.3)
 
     line_min_length: float = field(default=0.2)
     line_max_length: float = field(default=0.5)
 
-    ellipse_ratio_thres: list[float] = field(default_factory=lambda: [1.5, 3.0])
+    ellipse_ratio_thres: list[float] = field(default_factory=lambda: [1.2, 4.0])
 
     # levels of polygon relation
     polygon_tangent_line_level: int = field(default=1)
