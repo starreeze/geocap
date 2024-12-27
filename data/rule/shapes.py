@@ -163,13 +163,13 @@ class Polygon(GSRule):
         # Check whether each angle is around np.pi/2 if not a rectangle
         if len(self.points) == 4 and "rectangle" not in self.special_info:
             for angle in angles:
-                if abs(angle - np.pi / 2) < rule_args.vanilla_quadrilateral_angle_thres:
+                if abs(angle - np.pi / 2) < rule_args.general_quadrilateral_angle_thres:
                     pass_check = False
 
         # Check whether each angle is around np.pi/3 if not a equilateral triangle
         if len(self.points) == 3 and "equilateral triangle" not in self.special_info:
             for angle in angles:
-                if abs(angle - np.pi / 3) < rule_args.vanilla_triangle_angle_thres:
+                if abs(angle - np.pi / 3) < rule_args.general_triangle_angle_thres:
                     pass_check = False
 
         return pass_check

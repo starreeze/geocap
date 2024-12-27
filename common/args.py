@@ -59,8 +59,8 @@ class RuleArgs:
     # numerical params for shapes
     polygon_points_min_distance: float = field(default=0.01)
     rectangle_ratio_thres: list[float] = field(default_factory=lambda: [1.5, 3.0])
-    vanilla_quadrilateral_angle_thres: float = field(default=0.3)
-    vanilla_triangle_angle_thres: float = field(default=0.3)
+    general_quadrilateral_angle_thres: float = field(default=0.3)
+    general_triangle_angle_thres: float = field(default=0.3)
 
     line_min_length: float = field(default=0.2)
     line_max_length: float = field(default=0.5)
