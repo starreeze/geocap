@@ -6,11 +6,12 @@ import importlib
 import json
 import os
 import re
+import sys
 from typing import Any
 
 from tqdm import tqdm
 
-from common.args import data_args, logger, vqa_args
+from common.args import data_args, logger, run_args, vqa_args
 from data.rule.utils import round_floats
 from eval.base import GenerateModelBase
 
@@ -48,6 +49,11 @@ def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> li
 
 
 def main():
+    if run_args.end_pos != sys.maxsize or run_args.start_pos != 0:
+        logger.warning(
+            f"Evaluating only on {run_args.start_pos} - {run_args.end_pos} images; answers may not be aligned with the questions"
+        )
+
     model: GenerateModelBase = Model()
     scores: list[float] = []
 
@@ -55,6 +61,8 @@ def main():
         logger.info(f"Evaluating {perspective} on model {vqa_args.eval_model}...")
         with open(os.path.join(data_args.vqa_question_dir, f"{perspective}.jsonl"), "r") as f:
             data = [json.loads(line) for line in f]
+        # only keep start_pos: end_pos image_ids
+        data = list(filter(lambda x: run_args.start_pos <= x["image_id"] < run_args.end_pos, data))
         truths = [item["choices"].index(item["answer"]) for item in data]
 
         answers = batched_evaluate(model, data)

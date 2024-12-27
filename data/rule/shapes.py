@@ -83,18 +83,20 @@ class Polygon(GSRule):
     def get_bbox(self) -> list[tuple[float, float]]:
         return self.bbox_from_points(self.points)
 
-    def get_area(self) -> float:
+    def _get_area_v(self) -> float:
         n = len(self.points)
         area = 0.0
         for i in range(n):
             x_i, y_i = self.points[i]
             x_next, y_next = self.points[(i + 1) % n]
             area += x_i * y_next - x_next * y_i
-        area = abs(area) / 2.0
-        return area
+        return area / 2.0
+
+    def get_area(self) -> float:
+        return abs(self._get_area_v())
 
     def get_centroid(self) -> tuple[float, float]:
-        A = self.get_area()
+        A = self._get_area_v()
         C_x = 0
         C_y = 0
         n = len(self.points)
@@ -106,6 +108,7 @@ class Polygon(GSRule):
             C_y += (y_i + y_next) * common_term
         C_x /= 6 * A
         C_y /= 6 * A
+        assert 0 < C_x < 1 and 0 < C_y < 1
         return C_x, C_y
 
     def normalize_points(self):

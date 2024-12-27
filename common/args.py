@@ -1,13 +1,13 @@
 import logging
+import math
 import os
+import sys
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Literal, cast
 
 from rich.logging import RichHandler
 from transformers import HfArgumentParser
-
-import math
 
 
 @dataclass
@@ -37,7 +37,7 @@ class RunArgs:
     num_workers: int = field(default=32)
     progress_bar: bool = field(default=True)
     start_pos: int = field(default=0)
-    end_pos: int = field(default=100000)
+    end_pos: int = field(default=sys.maxsize)
     api_key_file: str = field(default="api_key.yaml")
 
 
@@ -124,14 +124,7 @@ class CaptionArgs:
 @dataclass
 class VQAArgs:
     perspectives: list[str] = field(
-        default_factory=lambda: [
-            "existence",
-            "counting",
-            "size",
-            "location",
-            "reference",
-            "relation",
-        ]
+        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
     )
     # llm generator
     vqa_batchsize: int = field(default=4)
@@ -261,15 +254,7 @@ class FeatureRecognizeArgs:
     volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
 
-(
-    data_args,
-    run_args,
-    rule_args,
-    draw_args,
-    caption_args,
-    vqa_args,
-    feat_recog_args,
-) = HfArgumentParser(
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args = HfArgumentParser(
     [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
@@ -284,7 +269,6 @@ feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
 data_args.figure_prefix = (
     data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
-run_args.log_level = run_args.log_level.upper()
 data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
@@ -301,7 +285,7 @@ data_args.llava_data_path = (
         f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
     )
 )
-
+run_args.log_level = run_args.log_level.upper()
 logging.basicConfig(
     level=run_args.log_level,
     format="%(message)s",
