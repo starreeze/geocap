@@ -1,4 +1,5 @@
 from copy import deepcopy
+import random
 from typing import Any, Literal, Optional
 
 import numpy as np
@@ -440,7 +441,7 @@ class EllipseRelationGenerator:
                 theta = np.random.choice([0.5 * np.pi, 1.5 * np.pi])
                 tangent_point = self.ellipse.get_point(theta)  # a vertice on minor axis
                 radius_vec = line_given2points([self.ellipse.center, tangent_point])
-                new_center = another_2points_on_line(line=radius_vec, point=tangent_point)[0]
+                new_center = random.choice(another_2points_on_line(line=radius_vec, point=tangent_point))
             return new_center, tangent_point
 
         new_center, tangent_point = random_center_and_tangent_point()
