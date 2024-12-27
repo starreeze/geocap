@@ -139,7 +139,7 @@ class PolygonRelationGenerator:
             mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
             new_point = (mid_point[0] + side_len * uniform(0.3, 1), mid_point[1] + side_len * uniform(0.3, 1))
             polygon = Polygon([points[0], points[1], new_point], special_info="triangle")
-            if polygon.check_angle():
+            if polygon.check_angle() and polygon.check_points_distance():
                 polygon_list.append(polygon)
 
         return polygon_list
