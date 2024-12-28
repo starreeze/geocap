@@ -40,10 +40,10 @@ def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> li
         for resp in responses:
             words = re.findall(r"\b\w+\b", resp)  # Match full word A/B/C/D with word boundaries
             answer = "-"
-            for letter in "ABCD":
-                if letter in words[::-1]:
-                    answer = letter
-                    break  # always find the last one
+            for word in words[::-1]:  # always find the last one
+                if word in "ABCD":
+                    answer = word
+                    break
             answers.append(answer)
     return answers
 
