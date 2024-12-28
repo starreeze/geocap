@@ -18,9 +18,9 @@ from eval.base import GenerateModelBase
 Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").GenerateModel
 
 
-def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:
+def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:
     batched_data = [data[i : i + vqa_args.eval_batchsize] for i in range(0, len(data), vqa_args.eval_batchsize)]
-    answers = []
+    responses = []
     for batch in tqdm(batched_data):
         image_paths = [
             os.path.join(
@@ -35,17 +35,20 @@ def batched_evaluate(model: GenerateModelBase, data: list[dict[str, Any]]) -> li
             for item in batch
         ]
 
-        responses = model.generate(image_paths, questions)
+        resps = model.generate(image_paths, questions)
+        responses.extend(resps)
 
-        for resp in responses:
-            words = re.findall(r"\b\w+\b", resp)  # Match full word A/B/C/D with word boundaries
-            answer = "-"
-            for word in words[::-1]:  # always find the last one
-                if word in "ABCD":
-                    answer = word
-                    break
-            answers.append(answer)
-    return answers
+    return responses
+
+
+def find_answer(resp: str) -> str:
+    words = re.findall(r"\b\w+\b", resp)  # Match full word A/B/C/D with word boundaries
+    answer = "-"
+    for word in words[::-1]:  # always find the last one
+        if len(word) == 1 and word in "ABCD":
+            answer = word
+            break
+    return answer
 
 
 def main():
@@ -65,19 +68,21 @@ def main():
         data = list(filter(lambda x: run_args.start_pos <= x["image_id"] < run_args.end_pos, data))
         truths = [item["choices"].index(item["answer"]) for item in data]
 
-        answers = batched_evaluate(model, data)
+        responses = batched_inference(model, data)
+        answers = [find_answer(resp) for resp in responses]
 
         output_dir = os.path.join(data_args.vqa_output_dir, vqa_args.eval_model)
         os.makedirs(output_dir, exist_ok=True)
-        with open(os.path.join(output_dir, f"{perspective}.txt"), "w") as f:
-            f.write("\n".join(answers))
-        logger.info(f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.txt")
+        with open(os.path.join(output_dir, f"{perspective}.jsonl"), "w") as f:
+            for resp, item, ans in zip(responses, data, answers):
+                f.write(json.dumps(item | {"response": resp, "pred": ans}) + "\n")
+        logger.info(f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.jsonl")
 
         # calculate the accuracy
         correct = sum(1 for pred, item in zip(answers, truths) if ord(pred) - ord("A") == item)
         accuracy = correct / len(data) * 100
         scores.append(accuracy)
-        logger.info(f"{perspective} - Acc: {accuracy:.2f}, Correct: {correct}, Total: {len(data)}")
+        logger.info(f"{perspective} - Acc: {accuracy:.1f}, Correct: {correct}, Total: {len(data)}")
 
     with open(os.path.join(output_dir, f"scores.csv"), "w") as f:
         f.write(",".join(vqa_args.perspectives) + "\n")
