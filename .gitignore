@@ -5,4 +5,4 @@ dataset
 .vscode
 common/iterwrap.ckpt
 *.ckpt
-api_key.yaml
+api_*.yaml

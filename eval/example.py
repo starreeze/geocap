@@ -6,6 +6,7 @@
 # please also modify the file header and copyright information
 
 import os
+from time import sleep
 from typing import Any
 
 from common.args import vqa_args
@@ -55,6 +56,7 @@ class GenerateModel(GenerateModelBase):
         # Instead of writing `for` loop, try using the batched version of the model's generation function
         # set temperature to 0 and disable top-k sampling, and control the length of the output
         assert len(image_paths) == len(prompts)
+        sleep(0.1)
         return ["A"] * len(image_paths)
 
 

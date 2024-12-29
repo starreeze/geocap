@@ -7,7 +7,7 @@ import json
 import os
 import re
 import sys
-from typing import Any
+from typing import Any, TextIO
 
 from tqdm import tqdm
 
@@ -18,9 +18,9 @@ from eval.base import GenerateModelBase
 Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").GenerateModel
 
 
-def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]]) -> list[str]:
+def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: TextIO) -> list[str]:
     batched_data = [data[i : i + vqa_args.eval_batchsize] for i in range(0, len(data), vqa_args.eval_batchsize)]
-    responses = []
+    all_answer = []
     for batch in tqdm(batched_data):
         image_paths = [
             os.path.join(
@@ -36,9 +36,12 @@ def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]]) -> l
         ]
 
         resps = model.generate(image_paths, questions)
-        responses.extend(resps)
+        answers = [find_answer(resp) for resp in resps]
+        for resp, item, ans in zip(resps, batch, answers):
+            f.write(json.dumps(item | {"response": resp, "pred": ans}) + "\n")
+        all_answer.extend(answers)
 
-    return responses
+    return all_answer
 
 
 def find_answer(resp: str) -> str:
@@ -68,18 +71,14 @@ def main():
         data = list(filter(lambda x: run_args.start_pos <= x["image_id"] < run_args.end_pos, data))
         truths = [item["choices"].index(item["answer"]) for item in data]
 
-        responses = batched_inference(model, data)
-        answers = [find_answer(resp) for resp in responses]
-
         output_dir = os.path.join(data_args.vqa_output_dir, vqa_args.eval_model)
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, f"{perspective}.jsonl"), "w") as f:
-            for resp, item, ans in zip(responses, data, answers):
-                f.write(json.dumps(item | {"response": resp, "pred": ans}) + "\n")
+            answers = batched_inference(model, data, f)
         logger.info(f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.jsonl")
 
         # calculate the accuracy
-        correct = sum(1 for pred, item in zip(answers, truths) if ord(pred) - ord("A") == item)
+        correct = sum(1 for pred, label in zip(answers, truths) if ord(pred) - ord("A") == label)
         accuracy = correct / len(data) * 100
         scores.append(accuracy)
         logger.info(f"{perspective} - Acc: {accuracy:.1f}, Correct: {correct}, Total: {len(data)}")
