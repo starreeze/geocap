@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 
@@ -85,3 +86,23 @@ def fit_line(points: list) -> tuple:
     slope, intercept = np.linalg.lstsq(A, y, rcond=None)[0]
 
     return slope, intercept
+
+
+def resize_img(img, short_edge_len=448):
+    # Get original dimensions
+    orig_height, orig_width = img.shape[:2]
+
+    # Calculate new dimensions while maintaining aspect ratio
+    if orig_height < orig_width:
+        # Portrait orientation
+        new_height = short_edge_len
+        new_width = int(orig_width * (new_height / orig_height))
+    else:
+        # Landscape orientation
+        new_width = short_edge_len
+        new_height = int(orig_height * (new_width / orig_width))
+
+    # Resize images
+    img = cv2.resize(img, (new_width, new_height))
+
+    return img
