@@ -400,11 +400,11 @@ class VolutionCounter:
                 - Negative numbers represent lower volutions (e.g., -1, -2, -3...)
             * Value (list): List of (x, y) tuples representing points along the volution curve,
                 where x and y are normalized coordinates (0.0 to 1.0)
-        
+
         thickness_dict (dict): Dictionary of volution thickness measurements where:
             * Key (int): Volution index number (matches keys in volutions_dict)
             * Value (float): Normalized thickness of the volution (0.0 to 1.0)
-        
+
         success_initial_chamber (bool): Whether the initial chamber is detected successfully (with a high confidence level).
         """
         self.process_img(img_path)
@@ -468,7 +468,7 @@ class VolutionCounter:
             vols = volutions[i]
             thicks = thickness_per_vol[i]
             for j in range(len(vols)):
-                vol_idx = (len(vols) - j) * (-1)**i  # positive value for upper voluitons, negative for lower
+                vol_idx = (len(vols) - j) * (-1) ** i  # positive value for upper voluitons, negative for lower
                 volutions_dict[vol_idx] = vols[j]
                 thickness_dict[vol_idx] = thicks[j]
 
