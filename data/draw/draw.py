@@ -102,7 +102,7 @@ def main():
                 sample,
                 os.path.join(
                     data_args.figure_dir,
-                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx),
+                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx + draw_args.fig_id_start),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,
@@ -111,7 +111,7 @@ def main():
     else:
         iterate_wrapper(
             process_single,
-            list(enumerate(samples)),
+            list(enumerate(samples, start=draw_args.fig_id_start)),
             num_workers=run_args.num_workers,
             run_name="draw",
             bar=run_args.progress_bar,

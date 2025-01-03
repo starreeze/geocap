@@ -13,7 +13,7 @@ from transformers import HfArgumentParser
 @dataclass
 class DataArgs:
     rules_path: str = field(default="dataset/rules.json")
-    figure_dir: str = field(default="dataset/geo-shapes")
+    figure_dir: str = field(default="dataset/figures")
     figure_name: str = field(default="{prefix}_{id:08d}.jpg")
     caption_dir: str = field(default="dataset")
     vqa_question_dir: str = field(default="dataset/vqa")
@@ -97,6 +97,7 @@ class RuleArgs:
 @dataclass
 class DrawArgs:
     serial_version: bool = field(default=False)
+    fig_id_start: int = field(default=0)
     backend: "str" = field(default="plt")
     random_seed: None | int = field(default=None)
     randomize: bool = field(default=True)
