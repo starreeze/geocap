@@ -7,6 +7,7 @@ import numpy as np
 from numpy.random import normal, randint, uniform
 from scipy.integrate import quad
 
+from common.args import rule_args
 from data.rule.utils import distance_2points, distance_point_to_line, polar_angle
 
 
@@ -83,18 +84,20 @@ class Polygon(GSRule):
     def get_bbox(self) -> list[tuple[float, float]]:
         return self.bbox_from_points(self.points)
 
-    def get_area(self) -> float:
+    def _get_area_v(self) -> float:
         n = len(self.points)
         area = 0.0
         for i in range(n):
             x_i, y_i = self.points[i]
             x_next, y_next = self.points[(i + 1) % n]
             area += x_i * y_next - x_next * y_i
-        area = abs(area) / 2.0
-        return area
+        return area / 2.0
+
+    def get_area(self) -> float:
+        return abs(self._get_area_v())
 
     def get_centroid(self) -> tuple[float, float]:
-        A = self.get_area()
+        A = self._get_area_v()
         C_x = 0
         C_y = 0
         n = len(self.points)
@@ -106,6 +109,7 @@ class Polygon(GSRule):
             C_y += (y_i + y_next) * common_term
         C_x /= 6 * A
         C_y /= 6 * A
+        assert 0 < C_x < 1 and 0 < C_y < 1
         return C_x, C_y
 
     def normalize_points(self):
@@ -139,6 +143,8 @@ class Polygon(GSRule):
         return True
 
     def check_angle(self, thres_low=0.15 * np.pi, thres_high=0.85 * np.pi) -> bool:
+        pass_check = True
+
         # Check if each angle is greater than thres
         def angle_between(v1, v2):
             return np.arccos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-9))
@@ -151,7 +157,29 @@ class Polygon(GSRule):
 
         min_angle = min(angles)
         max_angle = max(angles)
-        return min_angle > thres_low and max_angle < thres_high
+        if min_angle < thres_low or max_angle > thres_high:
+            pass_check = False
+
+        # Check whether all angles are around np.pi/2 if not a rectangle
+        if len(self.points) == 4 and "rectangle" not in self.special_info:
+            all_around = True
+            for angle in angles:
+                if abs(angle - np.pi / 2) > rule_args.general_quadrilateral_angle_thres:
+                    all_around = False
+                    break
+            if all_around:
+                pass_check = False
+
+        # Check whether all angles are around np.pi/3 if not a equilateral triangle
+        if len(self.points) == 3 and "equilateral triangle" not in self.special_info:
+            all_around = True
+            for angle in angles:
+                if abs(angle - np.pi / 3) > rule_args.general_triangle_angle_thres:
+                    all_around = False
+            if all_around:
+                pass_check = False
+
+        return pass_check
 
     def to_simple_polygon(self):
         n = len(self.points)
@@ -161,11 +189,11 @@ class Polygon(GSRule):
         )
         self.points.sort(key=lambda p: (polar_angle(center, p), -distance_2points(center, p)))
 
-    def check_points_distance(self, distance_thres=0.05) -> bool:
+    def check_points_distance(self) -> bool:
         n = len(self.points)
         pass_check = True
         for i in range(n - 1):
-            if distance_2points(self.points[i], self.points[i + 1]) < distance_thres:
+            if distance_2points(self.points[i], self.points[i + 1]) < rule_args.polygon_points_min_distance:
                 pass_check = False
         return pass_check
 
@@ -182,7 +210,7 @@ class Polygon(GSRule):
         self.points = [(x0, y0), (x1, y1), (x2, y2)]
 
     def to_rectangle(self, width: float, height: float, rotation: float):
-        self.special_info += "rectangle"
+        self.special_info = "rectangle"
         self.width = width
         self.height = height
 
@@ -770,7 +798,7 @@ class ShapeGenerator:
             not polygon.is_convex()
             or polygon.get_area() < 0.01
             or not polygon.check_angle()
-            or not polygon.check_points_distance(self.rule_args.polygon_points_min_distance)
+            or not polygon.check_points_distance()
         ):
             points = [(uniform(0.2, 0.8), uniform(0.2, 0.8)) for _ in range(num_points)]
             polygon = Polygon(points)
@@ -779,6 +807,10 @@ class ShapeGenerator:
         special_polygon = np.random.choice(["no", "rectangle", "equilateral triangle"])
         if special_polygon == "rectangle":
             width, height = (uniform(0.1, 0.6), uniform(0.1, 0.6))
+            if width >= height:
+                height = width / uniform(rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1])
+            else:
+                width = height / uniform(rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1])
             rotation = uniform(0, 2 * np.pi)
             polygon.to_rectangle(width, height, rotation)
         elif special_polygon == "equilateral triangle":
@@ -786,7 +818,7 @@ class ShapeGenerator:
             rotation = uniform(0, 2 * np.pi)
             polygon.to_equilateral_triangle(side_len, rotation)
         elif len(points) == 3:
-            polygon.special_info += "triangle"
+            polygon.special_info = "triangle"
 
         polygon.normalize_points()
         return polygon
@@ -820,12 +852,12 @@ class ShapeGenerator:
         else:
             center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
             major_axis = normal(0.5, 0.1)
-            minor_axis = uniform(0.3 * major_axis, 0.95 * major_axis)
+            minor_axis = major_axis / uniform(rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1])
             rotation = uniform(0, np.pi)
             ellipse = Ellipse(center, major_axis, minor_axis, rotation)
             while ellipse.get_area() < 0.01:
                 major_axis = normal(0.5, 0.1)
-                minor_axis = uniform(0.3 * major_axis, 0.95 * major_axis)
+                minor_axis = major_axis / uniform(rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1])
                 ellipse = Ellipse(center, major_axis, minor_axis, rotation)
 
             special_ellipse = np.random.choice(["no", "circle"])

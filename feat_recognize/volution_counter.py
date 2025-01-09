@@ -5,13 +5,13 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from feat_recognize.initial_chamber import detect_initial_chamber
-from feat_recognize.utils import bresenham, fit_line, get_bbox, split_into_segments
+from feat_recognize.utils import bresenham, fit_line, get_bbox, split_into_segments, resize_img
 
 
 class VolutionCounter:
     def __init__(
         self,
-        vis_tool_args,
+        feat_recog_args,
         width_ratio: float = 0.3,
         adsorption_thres: float = 0.8,
         volution_thres: float = 0.85,
@@ -21,28 +21,35 @@ class VolutionCounter:
         max_adsorption_time: int = 7,
         use_initial_chamber: bool = True,
     ):
-        self.vis_tool_args = vis_tool_args
+        self.feat_recog_args = feat_recog_args
         self.width_ratio = width_ratio
         self.adsorption_thres = adsorption_thres
         self.volution_thres = volution_thres
-        if "volution_threshold" in vis_tool_args:
-            self.volution_thres = vis_tool_args.volution_threshold
+        if hasattr(feat_recog_args, "volution_thres"):
+            self.volution_thres = feat_recog_args.volution_thres
         self.step = step
         self.num_segments = num_segments
         self.filter_max_y_ratio = filter_max_y_ratio
         self.max_adsorption_time = max_adsorption_time
         self.use_initial_chamber = use_initial_chamber
 
-    def process_img(self, img: np.ndarray):
-        if img.ndim == 3:
-            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        elif img.ndim == 2:
-            img_gray = img
+    def process_img(self, img_path: str):
+        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+        img_rgb = img[:, :, :3]
+
+        # Opening preprocess and resize
+        kernel = np.ones((3, 3), np.int8)
+        img_rgb = cv2.morphologyEx(img_rgb, cv2.MORPH_OPEN, kernel)
+        # img_rgb = cv2.resize(img_rgb, (896, 448))
+        # img = cv2.resize(img, (896, 448))
+        img_rgb = resize_img(img_rgb)
+        img = resize_img(img)
+
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         assert img_gray.ndim == 2, "grayscale image required."
-        self.img_gray = img_gray
 
         # Detect initial chamber (with a high confidence level)
-        initial_chamber = detect_initial_chamber(self.img_gray, param2=self.vis_tool_args.houghcircle_params["param2"])
+        initial_chamber = detect_initial_chamber(img_gray, param2=self.feat_recog_args.houghcircle_params["param2"])
         if self.use_initial_chamber and initial_chamber is not None:
             self.center = initial_chamber[:-1].tolist()
             self.success_initial_chamber = True
@@ -52,16 +59,41 @@ class VolutionCounter:
             self.success_initial_chamber = False
 
         # Binarization
-        self.img_gray = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, 2)
+        img_gray = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, 2)
 
         # Morphological opening to remove noise
         kernel = np.ones((5, 5), np.int8)
-        self.img_gray = cv2.morphologyEx(self.img_gray, cv2.MORPH_OPEN, kernel)
+        self.img_gray = cv2.morphologyEx(img_gray, cv2.MORPH_OPEN, kernel)
 
+        # self.get_outer_volution(img)
         self.get_outer_volution()
 
     def set_scan_direction(self, line: list[tuple[int, int]]):
         self.direction = np.sign(self.center[1] - line[0][1])
+
+    # def get_outer_volution(self, img: np.ndarray):
+    #     assert img.shape[-1] == 4
+    #     # Process countour info
+    #     img_countour = img[:, :, 3]
+    #     contours, _ = cv2.findContours(img_countour, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    #     contour = max(contours, key=cv2.contourArea)
+
+    #     # Get initial line for volution detection
+    #     line_upper = []
+    #     line_lower = []
+    #     x_mid, y_mid = self.center
+    #     mid_img_width = int(self.width_ratio * 0.5 * img.shape[1])
+    #     x_range = [x_mid - mid_img_width, x_mid + mid_img_width]
+    #     for point in contour:
+    #         x, y = point[0]
+    #         if x_range[0] <= x <= x_range[1]:
+    #             if y > y_mid:
+    #                 line_lower.append((x, y))
+    #             elif y < y_mid:
+    #                 line_upper.append((x, y))
+
+    #     self.line_upper = sorted(line_upper, key=lambda point: point[0])
+    #     self.line_lower = sorted(line_lower, key=lambda point: point[0])
 
     def get_outer_volution(self):
         img_gray = self.img_gray
@@ -102,8 +134,11 @@ class VolutionCounter:
         return indensity / len(points) > self.adsorption_thres
 
     def is_volution(self, check_adsorption_mask: list[bool]) -> bool:
-        adsorption_rate = sum(check_adsorption_mask) / len(check_adsorption_mask)
-        return adsorption_rate > self.volution_thres
+        if check_adsorption_mask:
+            adsorption_rate = sum(check_adsorption_mask) / len(check_adsorption_mask)
+            return adsorption_rate > self.volution_thres
+        else:
+            return False
 
     def move(self, points: list[tuple[int, int]]) -> tuple[bool, bool]:
         """Move the points towards the center of the volution."""
@@ -160,7 +195,7 @@ class VolutionCounter:
             for s in range(len(segment) - 1):
                 point = segment[s]
                 next_point = segment[s + 1]
-                if abs(point[1] - next_point[1]) > 1:
+                if abs(point[1] - next_point[1]) > 3:
                     save = False
                     break
 
@@ -272,17 +307,21 @@ class VolutionCounter:
         return line_segments
 
     def update_line_segments(self, line_segments: list[list[tuple[int, int]]], num_split: int = 9):
+        if not line_segments:
+            return line_segments
         new_line = []
         while num_split > len(line_segments):
             num_split = num_split // 2
         split_len = len(line_segments) // num_split
-        for idx in range(0, len(line_segments) - split_len, split_len):
-            p1 = line_segments[idx][0]
-            p2 = line_segments[idx + split_len][0]
-            new_line.extend(bresenham(p1, p2))
 
-        new_line.extend(bresenham(p2, line_segments[-1][-1]))
-        line_segments = split_into_segments(new_line, self.num_segments)
+        if len(line_segments) - split_len > 0:
+            for idx in range(0, len(line_segments) - split_len, split_len):
+                p1 = line_segments[idx][0]
+                p2 = line_segments[idx + split_len][0]
+                new_line.extend(bresenham(p1, p2))
+
+            new_line.extend(bresenham(p2, line_segments[-1][-1]))
+            line_segments = split_into_segments(new_line, self.num_segments)
         return line_segments
 
     def reach_step_limit(self, step_forward: list[int]) -> bool:
@@ -346,19 +385,29 @@ class VolutionCounter:
 
         return line_segments, finish
 
-    def count_volutions(self, img: np.ndarray):
+    def count_volutions(self, img_path: str) -> tuple[dict[int, list], dict[int, float], bool]:
         """
         Detect the volutions and measure the thickness of each volution in the image.
+        Try to detect the initial chamber with a high confidence level.
 
         Parameters:
-        img (np.ndarray): The input image.
+        img_path (string): The path of input image.
 
         Returns:
-        volutions (list): The detected volutions, which is a list of length 2 (upper and lower). Each containes a list of detected volutions.
-        thickness_per_vol (list): The thickness of each volution.
+        volutions_dict (dict): Dictionary of detected volutions where:
+            * Key (int): Volution index number, 1 represents the innermost volution:
+                - Positive numbers represent upper volutions (e.g., 1, 2, 3...)
+                - Negative numbers represent lower volutions (e.g., -1, -2, -3...)
+            * Value (list): List of (x, y) tuples representing points along the volution curve,
+                where x and y are normalized coordinates (0.0 to 1.0)
+
+        thickness_dict (dict): Dictionary of volution thickness measurements where:
+            * Key (int): Volution index number (matches keys in volutions_dict)
+            * Value (float): Normalized thickness of the volution (0.0 to 1.0)
+
         success_initial_chamber (bool): Whether the initial chamber is detected successfully (with a high confidence level).
         """
-        self.process_img(img)
+        self.process_img(img_path)
 
         volutions = [[], []]  # upper and lower
         thickness_per_vol = [[], []]
@@ -372,6 +421,13 @@ class VolutionCounter:
 
             while not finish:
                 detected_volution = [segment[0] for segment in line_segments]
+                # Remove points with duplicate x values
+                unique_x_points = {}
+                for point in detected_volution:
+                    x = point[0]
+                    if x not in unique_x_points:
+                        unique_x_points[x] = point
+                detected_volution = list(unique_x_points.values())
                 volutions[i].append(detected_volution)
 
                 line_segments, thickness, finish = self.scan_in_volution(line_segments)
@@ -394,4 +450,26 @@ class VolutionCounter:
                 if not line_segments:
                     finish = True
 
-        return volutions, thickness_per_vol, self.success_initial_chamber
+        # Return relative values
+        h, w = self.img_gray.shape
+        for volution in volutions:
+            for line_segments in volution:
+                for i, point in enumerate(line_segments):
+                    line_segments[i] = (point[0] / w, point[1] / h)
+
+        for thickness_list in thickness_per_vol:
+            for i in range(len(thickness_list)):
+                thickness_list[i] = thickness_list[i] / h
+
+        # Reformat into dict
+        volutions_dict = {}
+        thickness_dict = {}
+        for i in range(2):
+            vols = volutions[i]
+            thicks = thickness_per_vol[i]
+            for j in range(len(vols)):
+                vol_idx = (len(vols) - j) * (-1) ** i  # positive value for upper voluitons, negative for lower
+                volutions_dict[vol_idx] = vols[j]
+                thickness_dict[vol_idx] = thicks[j]
+
+        return volutions_dict, thickness_dict, self.success_initial_chamber

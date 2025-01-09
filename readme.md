@@ -59,7 +59,13 @@ You can control the generation process with the following arguments:
 
 there are some arguments for controling the numerical characteristics of geometric shapes:
 - in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8
+
+- polygon_points_min_distance: the minimum distance between any two points of a polygon. Default is 0.01
+- rectangle_ratio_thres: the aspect ratio constraints of rectangle, where the two items in the list represent the lower bound and upper bound respectively. Default is [1.5, 3.0]
+- general_quadrilateral_angle_thres: the minimun angular difference between the angle of a general quadrilateral and &pi; / 2
+- general_triangle_angle_thres: the minimun angular difference between the angle of a general triangle and &pi; / 3
 - line_min/max_length: control the min/max length of line(segment). Default is 0.2/0.5
+- ellipse_ratio_thres: the aspect ratio constraints of ellipse, where the two items in the list represent the lower bound and upper bound respectively. Default is [1.5, 3.0]
 
 and there are arguments for controling the proportion of different shapes and relations, for example:
 - polygon_shape_level: the proportion of polygon in all shapes

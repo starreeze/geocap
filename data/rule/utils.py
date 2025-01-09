@@ -54,10 +54,17 @@ def another_2points_on_line(line: tuple[float, float], point: tuple[float, float
 
     if slope != float("inf"):
         assert np.isclose(slope * x + intercept, y), "The point is not on the line."
-        x1 = x + np.random.uniform(0.05, 0.2)
-        y1 = slope * x1 + intercept
-        x2 = x - np.random.uniform(0.05, 0.2)
-        y2 = slope * x2 + intercept
+        if abs(slope) <= 1:
+            x1 = x + np.random.uniform(0.05, 0.2)
+            y1 = slope * x1 + intercept
+            x2 = x - np.random.uniform(0.05, 0.2)
+            y2 = slope * x2 + intercept
+        else:
+            y1 = y + np.random.uniform(0.05, 0.2)
+            x1 = (y1 - intercept) / slope
+            y2 = y - np.random.uniform(0.05, 0.2)
+            x2 = (y2 - intercept) / slope
+
     else:
         assert x == intercept, "The point is not on the line."
         x1 = x

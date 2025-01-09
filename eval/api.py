@@ -33,7 +33,7 @@ class GenerateModel(GenerateModelBase):
 if __name__ == "__main__":
     model = GenerateModel()
     res = model.generate(
-        ["dataset/geo-shapes/plt_00000000.jpg"],
+        ["test-dataset/geo-shapes/plt_00000000.jpg"],
         [
             "What is the number of triangles in the image?\nA. 0\nB. 1\nC. 2\nD. 3\n"
             "Please directly answer A, B, C or D and nothing else."

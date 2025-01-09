@@ -1,9 +1,8 @@
 import random
-from itertools import count, product
+from itertools import product
 from typing import Any, cast
 
 import numpy as np
-from sympy import discrete_log
 from tqdm import tqdm
 
 from common.args import logger, vqa_args
@@ -108,8 +107,6 @@ class RuleBasedQAGenerator(GeneratorBase):
     @classmethod
     def size(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
         "what's the width, height, area of [shape]?"
-        # exclude line as it has no area
-        types = [k for k, v in figure["counts"].items() if v == 1 and k != "line"]
 
         qa_pairs: list[dict[str, Any]] = []
         dimensions = ["horizontal span", "vertical span", "area"]
@@ -117,6 +114,11 @@ class RuleBasedQAGenerator(GeneratorBase):
         remaining = vqa_args.max_q_ip % 3
 
         for i, dim in enumerate(dimensions):
+            # exclude line as it has no area
+            if dim == "area":
+                types = [k for k, v in figure["counts"].items() if v == 1 and k != "line"]
+            else:
+                types = [k for k, v in figure["counts"].items() if v == 1]
             num_questions = questions_per_dim + (1 if remaining > 0 else 0)
             remaining -= 1
             sampled_types = random.sample(types, min(len(types), num_questions))
@@ -226,7 +228,6 @@ class RuleBasedQAGenerator(GeneratorBase):
         counts = figure["counts"]
 
         # Size-based questions (largest/smallest area)
-        # TODO: compare instead of extreme
         # attr = random.choice(["largest", "smallest"])
         # sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
         # max_area = sorted_shapes[0]["area"]
@@ -242,7 +243,9 @@ class RuleBasedQAGenerator(GeneratorBase):
         # )
 
         attr = random.choice(["larger", "smaller"])
-        sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "larger"))
+        # filter out line as it has no area
+        shapes_n_line = [s for s in shapes if s["type"] != "line"]
+        sorted_shapes = sorted(shapes_n_line, key=lambda s: s["area"], reverse=(attr == "larger"))
         appearance_shapes = {}
         for j in range(len(sorted_shapes)):
             shape_type = sorted_shapes[j]["type"]
@@ -290,7 +293,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                 ]
                 + [
                     cls.clarify_hierarchical_text(t, figure["counts"], "size")
-                    for t in cls.total_shapes
+                    for t in filter(lambda x: x != "line", cls.total_shapes)
                     if t not in counts
                 ]
             )[:3]
@@ -320,7 +323,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         # )
 
         attr: str = random.choice(["more", "less"])
-        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "less"))
+        sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "more"))
         freq_qa_shapes = []
         for _j, (shape_type_j, freq_j) in enumerate(sorted_types):
             for shape_type_i, freq_i in sorted_types[:_j]:
@@ -328,7 +331,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     break
                 answer_type = shape_type_i
                 anchor_type = shape_type_j
-                choices_types = sorted_types[_j + 1 :]
+                choices_types = [x[0] for x in sorted_types[_j + 1 :]]
                 freq_qa_shapes.append((answer_type, anchor_type, choices_types))
         if len(freq_qa_shapes) > 0:
             answer_type, anchor_type, choices_types = random.choice(freq_qa_shapes)
@@ -712,6 +715,3 @@ class RuleBasedQAGenerator(GeneratorBase):
             qa_pairs.append(qa)
 
         return qa_pairs
-
-
-# TODO llm based multihop
