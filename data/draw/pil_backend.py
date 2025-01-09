@@ -37,12 +37,19 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
+        white_line_radius: float = 0.25,
         Gaussian_mean: float = 25,
         Gaussian_var: float = 100,
         Perlin_lattice: int = 0,
         Perlin_bias: float = 0,
         Perlin_power: float = 0,
         stylish: bool = False,
+        stylish_depth: int = 10,
+        stylish_height: float = 3.1416 / 2.2,
+        stylish_alpha: float = 3.1416 / 4,
+        Gaussian_proba: float = 1,
+        Perlin_proba: float = 1,
+        inline_noise: bool = True,
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
@@ -51,11 +58,11 @@ class Figure:
             except:
                 print(index, rule)
         # print("All rules adapted.")
-        if self.randomize:
+        if self.randomize and random.random() < Gaussian_proba:
             # print("Adding Noise...")
             self.__add_noise(n_redraw, n_rand_pixels, n_white_line, Gaussian_mean, Gaussian_var)
         # print("Monochromizing the image...")
-        self.__monochromize(stylish)
+        self.__monochromize(stylish, stylish_depth, stylish_height, stylish_alpha)
 
     def save_release(self, path: str):
         self.image.save(fp=path)

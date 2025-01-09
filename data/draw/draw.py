@@ -5,16 +5,39 @@ import data.draw.pil_backend as pld
 import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
 from common.iterwrap import iterate_wrapper
+from typing import cast
 
 
 def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
+    # Color-Safe Check
+    if draw_args.color == []:
+        color = None
+    else:
+        assert len(draw_args.color) == 3
+        color = draw_args.color
+
+    assert len(draw_args.size) == 2
+
+    if draw_args.line_style == "none":
+        xkcd = False
+        gradient = False
+    elif draw_args.line_style == "gradient":
+        xkcd = False
+        gradient = True
+    elif draw_args.line_style == "xkcd":
+        xkcd = True
+        gradient = False
+    else:
+        raise ValueError("Invalid line style, not any of ['none', 'gradient', 'xkcd']")
+
     if backend == "plt":
         figure = ptd.Figure(
             rules,
             random_seed,
             randomize,
-            xkcd=draw_args.xkcd,
-            size=draw_args.size,
+            xkcd=xkcd,
+            gradient=gradient,
+            size=cast(tuple[float, float], tuple(draw_args.size)),
             dpi=draw_args.dpi,
             line_weight=draw_args.line_weight,
         )
@@ -31,15 +54,24 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
         )
     else:
         raise ValueError(f"{backend} is not a valid backend.")
+    if not randomize and color is None:
+        color = [0, 0, 0]
     figure.draw(
-        color=draw_args.color,
+        color=color,
         n_white_line=draw_args.n_white_line,
+        white_line_radius=draw_args.white_line_range,
         Gaussian_mean=draw_args.Gaussian_mean,
         Gaussian_var=draw_args.Gaussian_var,
         Perlin_lattice=draw_args.Perlin_lattice,
         Perlin_bias=draw_args.Perlin_bias,
         Perlin_power=draw_args.Perlin_power,
         stylish=draw_args.stylish,
+        stylish_alpha=draw_args.stylish_alpha,
+        stylish_depth=draw_args.stylish_depth,
+        stylish_height=draw_args.stylish_height,
+        Gaussian_proba=draw_args.Gaussian_proba,
+        Perlin_proba=draw_args.Perlin_proba,
+        inline_noise=draw_args.inline_noise,
     )
     figure.save_release(path)
 
@@ -63,13 +95,14 @@ def main():
         assert isinstance(samples, list)
     serial_version = draw_args.serial_version
     os.makedirs(data_args.figure_dir, exist_ok=True)
+
     if serial_version:
         for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,
                 os.path.join(
                     data_args.figure_dir,
-                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx),
+                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx + draw_args.fig_id_start),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,
@@ -78,7 +111,7 @@ def main():
     else:
         iterate_wrapper(
             process_single,
-            list(enumerate(samples)),
+            list(enumerate(samples, start=draw_args.fig_id_start)),
             num_workers=run_args.num_workers,
             run_name="draw",
             bar=run_args.progress_bar,

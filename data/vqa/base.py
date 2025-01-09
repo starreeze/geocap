@@ -114,9 +114,13 @@ class GeneratorBase:
     @classmethod
     def clarify_hierarchical_text(cls, type: str, image_types: list[str], perspective: str = "counting") -> str:
         if type not in cls.shape_hierarchy:
-            return type
+            return type + "s" if perspective == "counting" else type
         overlapping_children = [c for c in cls.shape_hierarchy[type] if c in image_types]
         if not overlapping_children:
             return type
-        child_desc = ", ".join(overlapping_children)
-        return f"{type} ({'excluding' if perspective == 'counting' else 'not'} {child_desc})"
+        if perspective == "counting":
+            child_desc = ", ".join(c + "s" for c in overlapping_children)
+            return f"{type}s (excluding {child_desc})"
+        else:
+            child_desc = ", ".join(overlapping_children)
+            return f"{type} (not {child_desc})"

@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 from numpy.random import choice, normal, randint
-from tqdm import trange
+from tqdm import tqdm, trange
 
 from common.args import data_args, rule_args
 from data.rule.relations import (
@@ -32,12 +32,8 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["center"] = fossil_center
         shapes.append(initial_chamber)
 
-        # Generate volutions/whorls(a set of concentric ellipses or fusiforms)
-
-        # volution_shape = choice(["ellipse", "fusiform", "customed_shape"], p=[0.1, 0.2, 0.7])
+        # Generate volutions/whorls
         volution_shape = choice(["fusiform", "customed_shape"], p=[0.3, 0.7])
-        # volution_type = choice(["concentric", "swing"])
-        # volution_shape = "ellipse"
         volution_type = "concentric"
         if volution_shape == "ellipse":
             volution_generator = EllipseRelationGenerator(rule_args)
@@ -55,7 +51,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["fossil_bbox"] = fossil_bbox
 
         shapes.extend(volutions)
-        shapes.reverse()  # reverse for overlap in 'swing' volution_type
+        # shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
         tunnel_angle = normal(18, 2)  # initialize
@@ -70,8 +66,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         numerical_info["tunnel_angles"] = tunnel_angles[tunnel_start_idx:]
 
         # Generate chomata
-        # septa_generator = SeptaGenerator()
-        septa_generator = SeptaGenerator(init_septa_prob=1)
+        septa_generator = SeptaGenerator(rule_args)
         chomata_list = septa_generator.generate_chomata(
             volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
         )
@@ -88,7 +83,7 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
 
         # Generate other septa folds
         have_septa_folds = choice([True, False])
-        # have_septa_folds = True
+
         if have_septa_folds:
             global_gap = normal(0.8, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
@@ -126,12 +121,12 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
 
     num_init_shapes = 0
     total_shapes = 0
-    for _ in trange(data_args.num_basic_geo_samples):
+    progress_bar = tqdm(total=data_args.num_basic_geo_samples, desc="Generating rules")
+    while len(results) < data_args.num_basic_geo_samples:
         shapes = []
-        num_shapes = randint(2, rule_args.max_num_shapes // 2)  # leave space for special relations
+        num_shapes = randint(1, rule_args.max_num_shapes // 2 + 1)  # leave space for special relations
         for _ in range(num_shapes):
             new_shape = shape_generator()
-            # shapes.append(new_shape)
             if no_overlap(shapes, new_shape):
                 shapes.append(new_shape)
 
@@ -144,24 +139,30 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                 continue
 
             tail_shape, relation_type = relation_generator(head_shape)
+            assert isinstance(tail_shape, list) and isinstance(relation_type, str)
 
-            if isinstance(tail_shape, list):
-                exclude_shape = [head_shape]
-                for t_shape in tail_shape:
-                    if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
-                        tail_idx = len(shapes)
-                        relations.append((head_idx, tail_idx, relation_type))
-                        shapes.append(t_shape)
-                        exclude_shape.append(t_shape)
-            else:  # tail_shape is a GSRule instance
-                if no_overlap(shapes, tail_shape, exclude_shape=[head_shape]):
+            exclude_shape = [head_shape]
+            for t_shape in tail_shape:
+                if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
+                    # Check if each tail_shape is in the canvas
+                    area_in_canvas = overlap_area(t_shape.get_bbox(), [[0, 1], [1, 0]])
+                    tail_bbox = t_shape.get_bbox()
+                    area_tail_bbox = (tail_bbox[1][0] - tail_bbox[0][0]) * (tail_bbox[0][1] - tail_bbox[1][1])
+                    if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
+                        continue
+
+                    # Add each tail_shape to shapes
                     tail_idx = len(shapes)
                     # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
                     if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
-                    shapes.append(tail_shape)
+
+                    shapes.append(t_shape)
+                    exclude_shape.append(t_shape)
+                    if len(shapes) >= rule_args.max_num_shapes:
+                        break
 
         total_shapes += len(shapes)
 
@@ -169,6 +170,7 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
             shapes_dict = [shape.to_dict() for shape in shapes]
             sample = {"shapes": shapes_dict, "relations": relations}
             results.append(sample)
+            progress_bar.update(1)
 
     # print(f"number of initial shapes = {num_init_shapes}")
     # print(f"total shapes = {total_shapes}")

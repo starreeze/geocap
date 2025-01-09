@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import base64
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Generator
 
@@ -66,16 +68,43 @@ class APIGenerator(LLMGenerator):
         super().__init__(**kwargs)
         self.model = model
         key_info: dict[str, str] = yaml.safe_load(open(run_args.api_key_file))
-        self.url = (key_info["base_url"] + "/chat/completions").replace("//", "/")
+        url = key_info["base_url"] + "/chat/completions"
+        self.url = url[:8] + url[8:].replace("//", "/")  # skip the first 8 characters containing "https://"
         self.headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key_info['api_key']}"}
+        self.temperature = kwargs.get("temperature", 0.2)
+        self.max_tokens = kwargs.get("max_tokens", 512)
+        self.sys_prompt = kwargs.get("sys_prompt", "You are a helpful assistant.")
+
+    def construct_payload(self, mixed_inputs: list[tuple[str, str]]) -> dict:
+        content = []
+        for input_type, data in mixed_inputs:
+            if input_type == "text":
+                content.append({"type": "text", "text": data})
+            elif input_type == "image":
+                if os.path.exists(data):
+                    with open(data, "rb") as f:
+                        data = base64.b64encode(f.read()).decode("utf-8")
+                content.append(
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{data}"}, "detail": "low"}
+                )
+        return {
+            "model": self.model,
+            "messages": [{"role": "system", "content": self.sys_prompt}, {"role": "user", "content": content}],
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+        }
 
     @retry_dec(retry=10, wait=10)
-    def get_one_response(self, text_inputs: list[dict[str, str]]) -> str:
-        payload = {
-            "model": self.model,
-            "messages": text_inputs,
-            "max_tokens": self.kwargs["max_new_tokens"],
-        }
+    def get_one_response(self, inputs: list[dict[str, Any]] | list[tuple[str, str]]) -> str:
+        if isinstance(inputs[0], tuple):
+            payload = self.construct_payload(inputs)  # type: ignore
+        elif isinstance(inputs[0], dict):
+            if len(inputs) > 1 or inputs[0].get("role", "") != "user":
+                raise NotImplementedError("Only single user message is supported for API generator")
+            payload = self.construct_payload([("text", inputs[0]["content"])])
+        else:
+            raise ValueError(f"Invalid input type: {type(inputs[0])}")
+
         raw = requests.post(self.url, headers=self.headers, json=payload)
         if raw.status_code != 200:
             raise Exception(f"Error calling api: {raw.status_code} {raw.text}")
@@ -91,15 +120,20 @@ class APIGenerator(LLMGenerator):
             raise Exception("API rate limit exceeded")
         raise Exception(f"Error calling api")
 
-    def __call__(self, input_texts: list[list[dict[str, str]]], batch_size=1, output_path: str | None = None):
+    def __call__(
+        self,
+        inputs: list[list[dict[str, Any]]] | list[list[tuple[str, str]]],
+        batch_size=1,
+        output_path: str | None = None,
+    ):
         if batch_size != 1:
             logger.warning("Batch size > 1 is not supported for API generator; setting batch_size to 1")
         out_file = open(output_path, "w") if output_path else None
-        target_range = range(len(input_texts))
+        target_range = range(len(inputs))
         if output_path:
             target_range = IterateWrapper(target_range, run_name="generate")
         for i in target_range:
-            outputs = self.get_one_response(input_texts[i])
+            outputs = self.get_one_response(inputs[i])
             if out_file:
                 out_file.write(outputs + "\n")
             yield [outputs]
@@ -121,7 +155,7 @@ model_path_mapping = {
 
 def main():
     messages = [[{"role": "user", "content": "Write a story beginning with 'Once upon a time'."}]]
-    print(APIGenerator("api-gpt-4o")(messages))
+    print(next(iter(APIGenerator("api-gpt-4o")(messages))))
 
 
 if __name__ == "__main__":

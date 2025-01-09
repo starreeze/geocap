@@ -55,7 +55,19 @@ Each data sample contains two parts:
 You can control the generation process with the following arguments:
 
 - max_num_shapes: the maximum number of shapes in each sample. Default is 10
-  and there are arguments for controling the proportion of different shapes and relations, for example:
+- min_num_shapes: the minimum number of shapes in each sample. Default is 2
+
+there are some arguments for controling the numerical characteristics of geometric shapes:
+- in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8
+
+- polygon_points_min_distance: the minimum distance between any two points of a polygon. Default is 0.01
+- rectangle_ratio_thres: the aspect ratio constraints of rectangle, where the two items in the list represent the lower bound and upper bound respectively. Default is [1.5, 3.0]
+- general_quadrilateral_angle_thres: the minimun angular difference between the angle of a general quadrilateral and &pi; / 2
+- general_triangle_angle_thres: the minimun angular difference between the angle of a general triangle and &pi; / 3
+- line_min/max_length: control the min/max length of line(segment). Default is 0.2/0.5
+- ellipse_ratio_thres: the aspect ratio constraints of ellipse, where the two items in the list represent the lower bound and upper bound respectively. Default is [1.5, 3.0]
+
+and there are arguments for controling the proportion of different shapes and relations, for example:
 - polygon_shape_level: the proportion of polygon in all shapes
 - line_shape_level: the proportion of line in all shapes
 - ...
@@ -84,15 +96,22 @@ To use `plt_backend.py`, the following arguments are expected:
 - size: "tuple[float, float]". The deault value is (6.4, 6.4).
 - dpi: int. The default value is 100. dpi \* size = resolution.
 - line_weight: int. The default value is 4. Control the line weight. If `randomize` is enabled, the line weight will be randomly chosen in a certain range near the value.
-- xkcd: bool. The default value is False. Enable the hand-drawing line style.
+- line_style: str. The default value is "none". Control the line style, which can be "none", "xkcd", or "gradient". "None" will make line a normal line; "xkcd" will make line a hand-drawn line; "gradient" will make line a gradient line. Notice that `line_style` could be overridden by `randomize == False` if `line_style == "xkcd"`. In this case, the line style will be set to "none". Also note that `line_style == "xkcd"` will affect all shapes whilst `"gradient"` will affect only straight lines.
 - color:None|tuple[int,int,int]. The default value is None. If a color in RGB form is provided, that rule will be drawn in the given color. The the value is None, that rule will be drawn in random colors.
 - n_white_line:None|int. The default value is None. If an integer is given, the white lines will be drawn in that certain amount. Otherwise, the value is randomly chosen.
+- white_line_range:float. The default value is 0.25. Indicate the maximum length of a white line.
 - Gaussian_mean: float. The default value is 0. Control the mean value of the Gaussian noise. The higher the value is, the grayer the image will be.
 - Gaussian_var: float. The default value is 10. Control the variance of the Gaussian Noise. The higher the value is, the stronger the Gaussian Noise will be.
+- Gaussian_proba: float. The default value is 1. Control the probability of applying Gaussian noise.
 - Perlin_lattice: int. The default value is 20. Control the number of lattices while generating Perlin noise. The value is not recommended to change and may cause the crash the the module.
 - Perlin_power: float. The default value is 16. Control the power of the Perlin noise, will affect the contrast ratio of the noise and the image.
 - Perlin_bias: float. The default value is -16. Control the bias of the Perlin noise. The lower it is, the brighter the image will be.
+- Perlin_proba: float. The default value is 1. Control the probability of applying Perlin noise per shape.
 - stylish: bool. The default value is False. Setting to true will sharpen the image.
+- stylish_depth: int. The default value is 10. Control the depth of the sharpening.
+- stylish_height: float. The default value is 3.1416 / 2.2. Control the height of the sharpening.
+- stylish_alpha: float. The default value is 3.1416 / 4. Control the alpha of the sharpening.
+- inline_noise: bool. The default value is True. Setting to true will apply noise to the line/ray/segment. It may not very obvious in default setting in which Perlin_power is relatively low and the line color is close to black.
 
 To simply generate a picture with default settings, use the following command:
 
@@ -107,6 +126,14 @@ python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ]
 ```
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
+
+### Feature Recognition (stage 3)
+
+For specific fossil feature recognition, the following arguments are provided:
+- houghcircle_params: a dictionary of `cv2.HoughCircles` params for initial chamber detection. Higher `param2` results in initial chamber with higher confident level.
+- volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
+
+For more description about feature recognition, please check out [readme.md](feat_recognize/readme.md) in `feat_recognize`.
 
 ### Generating VQA questions
 
@@ -146,10 +173,6 @@ python run.py --module data.draw.draw --backend plt --stage 1
 More arguments are provided in `DrawArgs` in `common/args.py`. And you may also read readme file in the root directory for more details.
 
 Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
-
-```
-Warning: With noise enabled, the script will encounter performance issues if there are too many ellipses standing by for drawing. Please consider reducing the number of ellipses in the rule / wait patiently :).
-```
 
 ### Caption
 

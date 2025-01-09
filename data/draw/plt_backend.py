@@ -26,6 +26,7 @@ class Figure:
         dpi: int = 100,
         line_weight: int = 4,
         xkcd: bool = False,
+        gradient: bool = False,
     ) -> None:
         self.rules: list = rules["shapes"]
         self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
@@ -33,11 +34,15 @@ class Figure:
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
         self.shape = (int(size[0] * dpi), int(size[1] * dpi))
+        self.size = size
+        self.dpi = dpi
         self.ax = self.image.add_subplot()
         plt.subplots_adjust(0, 0, 1, 1)
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
-        self.xkcd = xkcd
+        self.xkcd = xkcd if randomize else False
+        self.gradient = gradient
+
         random.seed(self.random_seed)
         np.random.seed(self.random_seed)
 
@@ -47,33 +52,49 @@ class Figure:
         n_redraw=None,
         n_rand_pixels=None,
         n_white_line=None,
+        white_line_radius: float = 0.25,
         Gaussian_mean: float = 25,
         Gaussian_var: float = 100,
+        Gaussian_proba: float = 1,
         Perlin_lattice: int = 0,
         Perlin_bias: float = 0,
         Perlin_power: float = 0,
+        Perlin_proba: float = 1,
         stylish: bool = False,
+        stylish_depth: int = 10,
+        stylish_height: float = 3.1416 / 2.2,
+        stylish_alpha: float = 3.1416 / 4,
+        inline_noise: bool = True,
     ):
         for index, rule in enumerate(self.rules):
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
-            self.__handle(rule, randomize=self.randomize, color=color)
+            if self.xkcd:
+                with plt.xkcd():
+                    self.__handle(rule, randomize=self.randomize, color=color)
+            else:
+                self.__handle(rule, randomize=self.randomize, color=color)
         # print("All rules adapted.")
-        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
-        self.__add_white_line(n_white_line)
+        if self.randomize:
+            n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            self.__add_white_line(n_white_line, white_line_radius)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
 
-        self.unprocessed_image = self.__fig2img()
+        self.unprocessed_image = self.__fig2img(self.image)
+        self.height, self.width = (
+            self.unprocessed_image.height,
+            self.unprocessed_image.width,
+        )
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
         # print("Monochromizing the image...")
-        self.__monochromize(stylish)
+        self.__monochromize(stylish, stylish_depth, stylish_height, stylish_alpha)
+
         if self.randomize:
             # print("Adding Gaussian Noise...")
-            self.__add_GaussianNoise(Gaussian_mean, Gaussian_var)
+            self.__add_GaussianNoise(Gaussian_mean, Gaussian_var, Gaussian_proba)
             # print("Adding Perlin Noise...")
-            mask = self.__get_perlin_mask()
-            # ↑Currently Buggy?
+            mask = self.__get_perlin_mask(Perlin_proba, inline_noise)
             self.__add_PerlinNoise(mask, Perlin_lattice, Perlin_power, Perlin_bias)
 
     def save_release(self, path: str):
@@ -81,74 +102,96 @@ class Figure:
         self.unprocessed_image.close()
         plt.close(self.image)
 
-    def __fig2img(self):
+    def __fig2img(self, fig):
         from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-        canvas = FigureCanvasAgg(self.image)
+        canvas = FigureCanvasAgg(fig)
         canvas.draw()
 
         img_arr = np.array(canvas.renderer.buffer_rgba())
         image = Image.fromarray(img_arr)
 
-        self.width, self.height = image.width, image.height
-
         return image
 
-    def __add_GaussianNoise(self, mean: float = 0, var: float = 25):
-        img_array = np.array(self.unprocessed_image, dtype=float)
+    def __add_GaussianNoise(self, mean: float = 0, var: float = 25, proba: float = 1):
+        if random.random() < proba:
+            img_array = np.array(self.unprocessed_image, dtype=float)
 
-        noise = np.random.normal(mean, var, img_array.shape)
+            noise = np.random.normal(mean, var, img_array.shape)
 
-        processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
-        self.unprocessed_image = Image.fromarray(processed_img)
+            processed_img = np.clip(img_array + noise, 0, 255).astype(np.uint8)
+            self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __get_perlin_mask(self) -> np.ndarray:
-        mask = np.zeros(self.shape, dtype=np.uint8)
-        for ind, rule in enumerate(self.rules):
-            if rule["type"] == "ellipse":
-                a = rule["major_axis"] / 2
-                b = rule["minor_axis"] / 2
-                c = np.sqrt(a**2 - b**2)
-                e = c / a
-                offset_x = rule["center"][0] * self.shape[0] - np.cos(rule["rotation"]) * c * self.shape[0]
-                offset_y = rule["center"][1] * self.shape[1] - np.sin(rule["rotation"]) * c * self.shape[1]
-                angle_range = np.linspace(0, 2 * 3.1416, 2880)
-                for angle in angle_range:
-                    radius_range = np.linspace(
-                        0,
-                        (a * (1 - e**2) / (1 - e * np.cos(angle))) * self.shape[0],
-                        self.shape[0] * 2,
-                    )
-                    x = radius_range * np.cos(angle + rule["rotation"]) + offset_x
-                    y = self.shape[1] - (radius_range * np.sin(angle + rule["rotation"]) + offset_y)
-                    for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] >= self.shape[0] or pos[1] < 0 or pos[1] >= self.shape[1]:
-                            continue
-                        mask[int(pos[1])][int(pos[0])] = 1
-            elif rule["type"] == "spiral":
-                if rule["max_theta"] <= 2 * 3.1416:
-                    continue
-                max_radius = rule["initial_radius"] + rule["growth_rate"] * rule["max_theta"]
-                angle_range = np.linspace(
-                    rule["max_theta"] - 2 * 3.1416,
-                    rule["max_theta"],
-                    int(2 * 3.1416 * max_radius * self.shape[0]),
-                )
-                for angle in angle_range:
-                    radius_range = rule["initial_radius"] + rule["growth_rate"] * angle
-                    radius_range = np.linspace(
-                        0,
-                        radius_range * self.shape[0],
-                        int(radius_range * self.shape[0]) * 2,
-                    )
-                    x = radius_range * np.cos(angle) + rule["center"][0] * self.shape[0]
-                    y = self.shape[1] - (radius_range * np.sin(angle) + rule["center"][1] * self.shape[1])
-                    for pos in zip(x, y):
-                        if pos[0] < 0 or pos[0] > self.shape[0] or pos[1] < 0 or pos[1] > self.shape[1]:
-                            continue
-                        mask[int(pos[1])][int(pos[0])] = 1
-            else:
+    def __get_perlin_mask(self, Perlin_proba: float = 1, inline_noise: bool = True) -> np.ndarray:
+        mask = plt.figure(figsize=self.size, dpi=self.dpi)
+        ax = mask.add_subplot()
+        plt.subplots_adjust(0, 0, 1, 1)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        for idx, rule in enumerate(self.rules):
+            if not random.random() < Perlin_proba:
                 continue
+            if rule["type"] == "ellipse":
+                ellipse_x, ellipse_y = rule["center"]
+                major = rule["major_axis"]
+                minor = rule["minor_axis"]
+                alpha = rule["rotation"] * 180 / np.pi
+                ax.add_patch(
+                    pch.Ellipse(
+                        (ellipse_x, ellipse_y),
+                        major,
+                        minor,
+                        angle=alpha,
+                        edgecolor="black",
+                        facecolor="black",
+                        linewidth=self.line_weight * (self.shape[0] / 640),
+                    )
+                )
+            if rule["type"] == "segment" and inline_noise:
+                points: list = rule["points"]
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (points[0][1], points[1][1]),
+                    color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
+                )
+            if rule["type"] == "ray" and inline_noise:
+                points: list = rule["points"]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+
+                farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (farwise[0], farwise[1]),
+                    color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
+                )
+            if rule["type"] == "line" and inline_noise:
+                points: list = rule["points"]
+                leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
+
+                ax.plot(
+                    (points[0][0], points[1][0]),
+                    (leftwise_endpoint[0], leftwise_endpoint[1]),
+                    color="black",
+                    linewidth=self.line_weight * (self.shape[0] / 640),
+                )
+            if rule["type"] == "polygon":
+                points: list = rule["points"]
+                ax.add_patch(
+                    pch.Polygon(
+                        points,
+                        closed=True,
+                        edgecolor="black",
+                        facecolor="black",
+                        linewidth=self.line_weight * (self.shape[0] / 640),
+                    )
+                )
+        img_mask = self.__fig2img(mask)
+        plt.close(mask)
+        mask = img_mask.convert("L")
+        mask = np.array(mask)
+        mask = np.where(mask > 128, 0, 1)
         return mask
 
     def __add_PerlinNoise(self, mask: np.ndarray, lattice: int = 20, power: float = 32, bias: float = 0):
@@ -173,9 +216,9 @@ class Figure:
             n11 = np.sum(np.dstack((grid[:, :, 0] - 1, grid[:, :, 1] - 1)) * g11, 2)
             # Interpolation
             t = f(grid)
-            n0 = n00 * (1 - t[:, :, 0]) + t[:, :, 0] * n10
-            n1 = n01 * (1 - t[:, :, 0]) + t[:, :, 0] * n11
-            return np.sqrt(2) * ((1 - t[:, :, 1]) * n0 + t[:, :, 1] * n1)
+            n0 = n00 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n10
+            n1 = n01 * (1 - np.array(t[:, :, 0])) + t[:, :, 0] * n11
+            return np.sqrt(2) * ((1 - np.array(t[:, :, 1])) * n0 + t[:, :, 1] * n1)
 
         img_array = np.array(self.unprocessed_image, dtype=float)
         noise = generate_perlin_noise_2d(img_array.shape, (lattice, lattice)) * power + bias
@@ -184,19 +227,22 @@ class Figure:
         processed_img = np.clip(end_array, 0, 255).astype(np.uint8)
         self.unprocessed_image = Image.fromarray(processed_img)
 
-    def __add_white_line(self, n_line: int):
+    def __add_white_line(self, n_line: int, max_radius: float = 0.25):
         with plt.xkcd():
             for _ in range(n_line):
                 x1 = random.random()
                 y1 = random.random()
-                x2 = random.random()
-                y2 = random.random()
+                angle = random.random() * 2 * np.pi
+                x2, y2 = (
+                    x1 + max_radius * np.cos(angle),
+                    y1 + max_radius * np.sin(angle),
+                )
                 self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=3)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
-            isinstance(color, tuple) and len(color) == 3
-        ), "Argument 'color' should be None or a 3-dimension tuple."
+            isinstance(color, list) and len(color) == 3
+        ), f"Argument 'color' should be None or a 3-dimension tuple instead of {color}"
         line_width = (
             self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
             if randomize
@@ -204,8 +250,6 @@ class Figure:
         )
         if randomize:
             self.randomized_line_width = line_width
-        if self.xkcd:
-            plt.xkcd()
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
@@ -288,6 +332,7 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
+                sin_params = rule["sin_params"]
                 try:
                     line_width = rule["width"]
                 except:
@@ -405,7 +450,7 @@ class Figure:
                 linewidth=line_width * (self.shape[0] / 640),
                 color=color,
             )
-        else:
+        elif self.gradient:
             ln_wths = np.linspace(line_width / 2, line_width + line_width / 2, 50)
             x = np.linspace(points[0][0], points[1][0], 50)
             y = np.linspace(points[0][1], points[1][1], 50)
@@ -414,8 +459,15 @@ class Figure:
                     x[i : i + 2],
                     y[i : i + 2],
                     linewidth=ln_wths[i] * (self.shape[0] / 640),
-                    color=(max(c + i * 0.01, 1) for c in color),
+                    color=np.clip(color + np.array((0.005, 0.005, 0.005)) * i, 0, 1),
                 )
+        else:
+            self.ax.plot(
+                (points[0][0], points[1][0]),
+                (points[0][1], points[1][1]),
+                linewidth=line_width * (self.shape[0] / 640),
+                color=color,
+            )
 
     def __handle_ellipse(
         self,
@@ -724,6 +776,9 @@ class Figure:
             (255 * (dx * uni_x + dy * uni_y + dz * uni_z)).clip(0, 255).astype("uint8")
         )
 
+    def close(self):
+        plt.close(self.image)
+
 
 def draw_figure(rules: "dict", path: str):
     # TODO apply rules to draw shapes (DONE)
@@ -733,6 +788,7 @@ def draw_figure(rules: "dict", path: str):
     figure = Figure(rules, random_seed=0, xkcd=True)
     figure.draw(stylish=True)
     figure.save_release(path)
+    figure.close()
 
 
 def process_single(f, idx_sample: tuple[int, dict], vars):
