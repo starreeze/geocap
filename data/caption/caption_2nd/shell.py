@@ -6,9 +6,9 @@ class Shell(BaseFeature):
     def __init__(self, type, ratio, length, width, curves, vertices):
         self.type = type
         self.ratio = round(ratio, 1)
-        self.length = "{:.1f}".format(round(length))
-        self.width = "{:.1f}".format(round(width))
-        self.length_width_ratio = "{:.1f}".format(round(length / width))
+        self.length = "{:.2f}".format(round(length, 2))
+        self.width = "{:.2f}".format(round(width, 2))
+        self.length_width_ratio = "{:.2f}".format(round(length / width, 2))
         self.curves = curves
         self.vertices = vertices
 

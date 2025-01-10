@@ -13,6 +13,7 @@ from data.caption.caption_2nd.tunnel import Tunnel
 from data.caption.caption_2nd.proloculus import Proloculus
 from data.caption.caption_2nd.chomata import Chomata
 import re
+from tqdm import tqdm
 from common.args import caption_args, data_args, run_args
 
 
@@ -27,11 +28,15 @@ def caption(rules: list[dict[str, Any]], generator, output_path: str):
     rule_strs = []
     input_texts: list[str] = []
     idx = 0
-    for rule in rules:
+    for rule in tqdm(rules):
         rule_str = gen_user_input_txt_2nd(rule)
-        rule_strs.append(rule_str)
+        rule_strs.append(
+            {
+                "input": "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image.",
+                "output": rule_str,
+            }
+        )
         idx += 1
-        print("finished:", str(idx) + "/" + str(len(rules)))
 
     with open(output_path, "w") as f:
         f.write(json.dumps(rule_strs, indent=4))
@@ -43,31 +48,37 @@ def gen_user_input_txt_2nd(rule):
     obj_parts = []
 
     def get_volution_index(shape):
-        a = shape["special_info"].split(".")[0]
+        a = shape["special_info"]
         return int(a[len("volution ") :])
 
     volution_max = {}
     initial_chamber = {}
     chomata_shapes = []
     for shape in rule["shapes"]:
-        if re.match("volution [0-9]+\\.", shape["special_info"]) is not None:
+        if re.match("volution [0-9]+", shape["special_info"]) is not None:
             if volution_max == {}:
                 volution_max = shape
             else:
                 if get_volution_index(shape) > get_volution_index(volution_max):
                     volution_max = shape
-        elif re.match("initial chamber\\. ", shape["special_info"]) is not None:
+        elif re.match("initial chamber", shape["special_info"]) is not None:
             initial_chamber = shape
-        elif re.match("chomata of volution [0-9]+\\. ", shape["special_info"]) is not None:
+        elif re.match("chomata of volution [0-9]+", shape["special_info"]) is not None:
             chomata_shapes.append(shape)
     if volution_max["type"] == "ellipse":
         volution_max["ratio"] = volution_max["major_axis"] / volution_max["minor_axis"]
         volution_max["width"] = volution_max["major_axis"]
         volution_max["height"] = volution_max["minor_axis"]
+        volution_max["vertices"] = []
         volution_max["control_points"] = []
     elif volution_max["type"] == "curves":
-        volution_max["width"] = volution_max["vertices"][2][0] - volution_max["vertices"][0][0]
-        volution_max["height"] = volution_max["vertices"][1][1] - volution_max["vertices"][3][1]
+        volution_max["width"] = abs(volution_max["vertices"][2][0] - volution_max["vertices"][0][0])
+        volution_max["height"] = abs(volution_max["vertices"][1][1] - volution_max["vertices"][3][1])
+    elif "fusiform" in volution_max["type"]:
+        volution_max["width"] = volution_max["x_end"] - volution_max["x_start"]
+        volution_max["height"] = volution_max["width"] / volution_max["ratio"]
+        volution_max["vertices"] = []
+        volution_max["control_points"] = []
     obj_parts.append(
         Shell(
             volution_max["type"],
@@ -97,7 +108,7 @@ def gen_user_input_txt_2nd(rule):
 def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
-    caption(samples, None, "dataset/caption_2nd_WIP.json")
+    caption(samples, None, "dataset/caption_2nd.json")
 
 
 if __name__ == "__main__":
