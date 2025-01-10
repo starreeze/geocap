@@ -514,9 +514,9 @@ class Fusiform(GSRule):
 
         n = len(self.curve_points)
         if np.isclose(theta, 0.5 * np.pi):
-            return self.curve_points[n // 4]
+            return tuple(self.curve_points[n // 4])
         elif np.isclose(theta, 1.5 * np.pi):
-            return self.curve_points[int(3 * n // 4)]
+            return tuple(self.curve_points[int(3 * n // 4)])
         else:
             slope = np.tan(theta)
             intercept = self.center[1] - slope * self.center[0]
@@ -610,9 +610,9 @@ class Fusiform_2(GSRule):
         theta = theta % (2 * np.pi)
         n = len(self.curve_points)
         if np.isclose(theta, 0.5 * np.pi):
-            return self.curve_points[n // 4]
+            return tuple(self.curve_points[n // 4])
         elif np.isclose(theta, 1.5 * np.pi):
-            return self.curve_points[int(3 * n // 4)]
+            return tuple(self.curve_points[int(3 * n // 4)])
 
         slope = np.tan(theta)
         intercept = self.center[1] - slope * self.center[0]
