@@ -8,6 +8,7 @@ from numpy.random import normal, randint, uniform
 from data.rule.shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2, Line, Polygon
 from data.rule.utils import (
     another_2points_on_line,
+    calculate_angle,
     distance_2points,
     distance_point_to_line,
     find_intersection,
@@ -255,13 +256,14 @@ class LineRelationGenerator:
         k, b = line_given2points(points)
         mid_point = ((points[0][0] + points[1][0]) * 0.5, (points[0][1] + points[1][1]) * 0.5)
 
-        center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
-        distance = distance_point_to_line(point=center, line=(k, b))
-        distance_endpoints = [distance_2points(center, point) for point in points]
-        while (not 0.01 < distance < 0.3) or distance > min(distance_endpoints):
+        while True:
             center = (mid_point[0] + uniform(-0.3, 0.3), mid_point[1] + uniform(-0.3, 0.3))
             distance = distance_point_to_line(point=center, line=(k, b))
-            distance_endpoints = [distance_2points(center, point) for point in points]
+            # Check if the angle at one endpoint of a line segment is < 90
+            angle1 = calculate_angle(vertex=points[0], point1=points[1], point2=center)
+            angle2 = calculate_angle(vertex=points[1], point1=points[0], point2=center)
+            if (0.01 < distance < 0.3) and angle1 < 90 and angle2 < 90:
+                break
 
         circle = Ellipse(center=center, rotation=0)
         circle.to_circle(radius=distance)
@@ -358,9 +360,7 @@ class EllipseRelationGenerator:
 
         for _ in range(num_concentric):
             if scale_factor is None:
-                scale_factor = uniform(0.6, 1.5)
-                while 0.9 < scale_factor < 1.1:
-                    scale_factor = uniform(0.6, 1.5)
+                scale_factor = uniform(1.1, 1.5)
             scaled_major_axis = ellipse_list[-1].major_axis * scale_factor
             scaled_minor_axis = ellipse_list[-1].minor_axis * scale_factor
             center = self.ellipse.center

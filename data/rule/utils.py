@@ -27,6 +27,38 @@ def polar_angle(point1: tuple[float, float], point2: tuple[float, float]) -> flo
     return angle_radians
 
 
+def calculate_angle(vertex: tuple, point1: tuple, point2: tuple) -> float:
+    """
+    Calculate the angle between three points with vertex as the center point.
+
+    Parameters:
+    vertex (tuple): The vertex point (x, y)
+    point1 (tuple): First point (x, y)
+    point2 (tuple): Second point (x, y)
+
+    Returns:
+    float: The angle in degrees between 0 and 180
+    """
+    # Convert points to numpy arrays
+    v = np.array(vertex)
+    p1 = np.array(point1)
+    p2 = np.array(point2)
+
+    # Calculate vectors from vertex to points
+    vec1 = p1 - v
+    vec2 = p2 - v
+
+    # Calculate dot product and magnitudes
+    dot_product = np.dot(vec1, vec2)
+    norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
+
+    # Calculate angle in radians and convert to degrees
+    angle_rad = np.arccos(np.clip(dot_product / norm_product, -1.0, 1.0))
+    angle_deg = np.degrees(angle_rad)
+
+    return angle_deg
+
+
 def line_given2points(points: list[tuple[float, float]]) -> tuple[float, float]:
     """
     Calculate slope and intercept of the line formed by two points.
