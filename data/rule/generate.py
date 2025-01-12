@@ -153,10 +153,15 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
 
                     if len(shapes) >= rule_args.max_num_shapes:
                         break
+
                     # Add each tail_shape to shapes
                     tail_idx = len(shapes)
-                    # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
+
+                    # Keep 'ellipse-polygon-relation' order in inscribed or circumscribed relation
                     if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
+                        relations.append((tail_idx, head_idx, relation_type))
+                    # Keep 'line-polygon-relation' order in diagonal relation
+                    elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
