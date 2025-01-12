@@ -173,7 +173,7 @@ class RuleBasedQAGenerator(GeneratorBase):
 
         def get_position(x: float, y: float, ref_x: float = 0.5, ref_y: float = 0.5) -> str | None:
             "if the shapes are very close to each other, return None"
-            if abs(x - ref_x) < vqa_args.location_type_t and abs(y - ref_y) < vqa_args.location_type_t:
+            if min(abs(x - ref_x), abs(y - ref_y)) < vqa_args.location_type_t:
                 return None
             return ("upper " if y > ref_y else "lower ") + ("left" if x < ref_x else "right")
 
