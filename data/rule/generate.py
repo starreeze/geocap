@@ -151,6 +151,8 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                     if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
                         continue
 
+                    if len(shapes) >= rule_args.max_num_shapes:
+                        break
                     # Add each tail_shape to shapes
                     tail_idx = len(shapes)
                     # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
@@ -161,8 +163,6 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
 
                     shapes.append(t_shape)
                     exclude_shape.append(t_shape)
-                    if len(shapes) >= rule_args.max_num_shapes:
-                        break
 
         total_shapes += len(shapes)
 
