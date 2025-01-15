@@ -130,7 +130,9 @@ class RuleBasedQAGenerator(GeneratorBase):
                     correct_value = shape["area"]
                     question = f"which of the following is closest to the area of the {clarified_type}?"
                 else:
-                    correct_value = abs(shape["box"][1][i] - shape["box"][0][i])
+                    # ensure the box is in range
+                    box = np.array(shape["box"]).clip(0, 1)
+                    correct_value = abs(box[1, i] - box[0, i])
                     question = f"which of the following is closest to the {dim} of the {clarified_type}?"
                 question = "Suppose that the width and height of the image is 1, " + question
 
@@ -145,17 +147,13 @@ class RuleBasedQAGenerator(GeneratorBase):
                     candidates.pop(idx)
                     weights.pop(idx)
                     test_choices = [correct_value + factor * (i - pos) for i in range(4)]
+                    # ensure all choices are in range
                     if all(0 <= v <= 1 for v in test_choices):
                         position = pos
                         valid_choices = test_choices
                         break
-                # If no valid position found, adjust factor to fit range
-                if valid_choices is None:
-                    factor = min(correct_value / 2, (1 - correct_value) / 2)
-                    logger.warning(f"Adjusting factor to {factor} to fit range for {dim} of {clarified_type}")
-                    logger.info(f"In image: {figure}")
-                    position = random.randint(0, 3)
-                    valid_choices = [correct_value + factor * (i - position) for i in range(4)]
+                # we should always have valid choices as the gt is in range and factor is not too large
+                assert valid_choices is not None
 
                 choices = [str(round(v, vqa_args.vqa_digits)) for v in valid_choices]
                 answer = choices[position]
@@ -193,7 +191,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             correct_pos = get_position(x, y)
             if correct_pos is None:
                 continue
-            question = f"Where is the {clarified_type} located in the image?"
+            question = f"Considering the centroid, where is the {clarified_type} located in the image?"
             choices = generate_choices(correct_pos)
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
             if len(qa_pairs) >= abs_questions:
@@ -213,7 +211,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             correct_pos = get_position(x_a, y_a, x_b, y_b)
             if correct_pos is None:
                 continue
-            question = f"Where is the {type_a_clear} located relative to the {type_b_clear}?"
+            question = f"Considering the centroid, where is the {type_a_clear} located relative to the {type_b_clear}?"
             choices = generate_choices(correct_pos)
             relative_qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
             if len(relative_qa_pairs) >= rel_questions:
@@ -222,26 +220,11 @@ class RuleBasedQAGenerator(GeneratorBase):
 
     @classmethod
     def reference(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
-        "what's the type of [attribute] shape?"
         qa_pairs: list[dict[str, Any]] = []
         shapes = figure["shapes"]
         counts = figure["counts"]
 
-        # Size-based questions (largest/smallest area)
-        # attr = random.choice(["largest", "smallest"])
-        # sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
-        # max_area = sorted_shapes[0]["area"]
-        # all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
-        # correct_type = sorted_shapes[0]["type"]
-        # question = f"What type of shape presented in the image has the {attr} area?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
-
+        # size-based questions
         attr = random.choice(["larger", "smaller"])
         # filter out line as it has no area
         shapes_n_line = [s for s in shapes if s["type"] != "line"]
@@ -258,7 +241,13 @@ class RuleBasedQAGenerator(GeneratorBase):
             for i in range(len(appearance_shapes_keys)):
                 if i == j:
                     continue
-                if appearance_shapes[appearance_shapes_keys[i]][-1] >= appearance_shapes[appearance_shapes_keys[j]][0]:
+                shape_i_rank = appearance_shapes[appearance_shapes_keys[i]][-1]
+                shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][0]
+                if (
+                    shape_i_rank >= shape_j_rank
+                    or abs(sorted_shapes[shape_i_rank]["area"] - sorted_shapes[shape_j_rank]["area"])
+                    < vqa_args.area_type_t
+                ):
                     continue
                 answer_type = appearance_shapes_keys[i]
                 anchor_type = appearance_shapes_keys[j]
@@ -266,9 +255,12 @@ class RuleBasedQAGenerator(GeneratorBase):
                 for k in range(len(appearance_shapes_keys)):
                     if k == i or k == j:
                         continue
+                    shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][-1]
+                    shape_k_rank = appearance_shapes[appearance_shapes_keys[k]][0]
                     if (
-                        appearance_shapes[appearance_shapes_keys[k]][0]
-                        < appearance_shapes[appearance_shapes_keys[j]][-1]
+                        shape_j_rank >= shape_k_rank
+                        or abs(sorted_shapes[shape_j_rank]["area"] - sorted_shapes[shape_k_rank]["area"])
+                        < vqa_args.area_type_t
                     ):
                         continue
                     choices_types.append(appearance_shapes_keys[k])
@@ -308,20 +300,6 @@ class RuleBasedQAGenerator(GeneratorBase):
             )
 
         # Frequency-based questions
-        # attr = random.choice(["most", "least"])
-        # sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
-        # max_count = sorted_types[0][1]
-        # all_correct_types = {t for t, c in counts.items() if c == max_count}
-        # correct_type = sorted_types[0][0]
-        # question = f"What type of shape presented in the image appears {attr} frequently?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
-
         attr: str = random.choice(["more", "less"])
         sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "more"))
         freq_qa_shapes = []
@@ -361,29 +339,6 @@ class RuleBasedQAGenerator(GeneratorBase):
                     "answer": answer_type,
                 }
             )
-
-        # Location-based questions
-        # loc_attrs = {
-        #     "leftmost": lambda s: s["center"][0],
-        #     "rightmost": lambda s: -s["center"][0],
-        #     "uppermost": lambda s: s["center"][1],
-        #     "lowermost": lambda s: -s["center"][1],
-        # }
-        # attr, key_func = random.choice(list(loc_attrs.items()))
-        # sorted_shapes = sorted(shapes, key=key_func)
-        # extreme_val = key_func(sorted_shapes[0])
-        # all_correct_types = {
-        #     s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
-        # }
-        # correct_type = sorted_shapes[0]["type"]
-        # question = f"What type of shape presented in the image has the {attr} centroid?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
 
         # Location-based questions (relatively & absolutely comparison)
         distinguish_threshold = (

@@ -33,7 +33,8 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         shapes.append(initial_chamber)
 
         # Generate volutions/whorls
-        volution_shape = choice(["fusiform", "customed_shape"], p=[0.3, 0.7])
+        volution_shape = choice(["fusiform", "customed_shape"], p=[0.2, 0.8])
+        # volution_shape = "fusiform"
         volution_type = "concentric"
         if volution_shape == "ellipse":
             volution_generator = EllipseRelationGenerator(rule_args)
@@ -85,10 +86,11 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
         have_septa_folds = choice([True, False])
 
         if have_septa_folds:
-            global_gap = normal(0.8, 0.1)
+            global_gap = normal(0.7, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
-                volutions, volution_type, int(num_volutions), axial_filling, global_gap
+                volutions, volution_type, int(num_volutions), axial_filling, poles_folds, global_gap
             )
+            # shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
         else:
             septa_folds = []
@@ -153,10 +155,15 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
 
                     if len(shapes) >= rule_args.max_num_shapes:
                         break
+
                     # Add each tail_shape to shapes
                     tail_idx = len(shapes)
-                    # keep 'ellipse-polygon-relation' order when relation_type is inscribed or circumscribed
+
+                    # Keep 'ellipse-polygon-relation' order in inscribed or circumscribed relation
                     if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
+                        relations.append((tail_idx, head_idx, relation_type))
+                    # Keep 'line-polygon-relation' order in diagonal relation
+                    elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
