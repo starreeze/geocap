@@ -68,10 +68,10 @@ class RuleArgs:
     ellipse_ratio_thres: list[float] = field(default_factory=lambda: [1.2, 4.0])
 
     # levels of polygon relation
-    polygon_tangent_line_level: int = field(default=1)
+    polygon_tangent_line_level: int = field(default=2)
     polygon_symmetric_level: int = field(default=1)
     polygon_similar_level: int = field(default=1)
-    polygon_shared_edge_level: int = field(default=3)
+    polygon_shared_edge_level: int = field(default=2)
     polygon_circumscribed_circle_of_triangle_level: int = field(default=2)
     polygon_inscribed_circle_level: int = field(default=2)
     polygon_circumscribed_circle_of_rectangle_level: int = field(default=2)
@@ -83,9 +83,9 @@ class RuleArgs:
     line_axis_of_ellipse_level: int = field(default=2)
 
     # levels of ellipse relation
-    ellipse_tangent_line_level: int = field(default=1)
-    ellipse_tangent_circle_level: int = field(default=2)
-    ellipse_concentric_level: int = field(default=3)
+    ellipse_tangent_line_level: int = field(default=3)
+    ellipse_tangent_circle_level: int = field(default=3)
+    ellipse_concentric_level: int = field(default=2)
     ellipse_circumscribed_level: int = field(default=3)
     ellipse_inscribed_level: int = field(default=3)
 
@@ -146,7 +146,7 @@ class VQAArgs:
     vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
     nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     gt_choice_w: list[float] = field(
-        default_factory=lambda: [0.1, 0.2, 0.3, 0.4],
+        default_factory=lambda: [0.05, 0.15, 0.25, 0.55],
         metadata={
             "help": "weight of the correct answer in the 4 choices; "
             "we need this to balance the answer distribution "
@@ -162,7 +162,7 @@ class VQAArgs:
         metadata={"help": "tolerate threshold for area difference to be considered"},
     )
     location_type_t: float = field(
-        default=0.1,
+        default=0.03,
         metadata={"help": "tolerate threshold for location difference to be considered"},
     )
     # evaluation
@@ -293,6 +293,7 @@ data_args.llava_data_path = (
         f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
     )
 )
+assert vqa_args.size_diff < 0.2, "size_diff should be less than 0.2"
 run_args.log_level = run_args.log_level.upper()
 logging.basicConfig(
     level=run_args.log_level,

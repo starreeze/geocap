@@ -130,7 +130,9 @@ class RuleBasedQAGenerator(GeneratorBase):
                     correct_value = shape["area"]
                     question = f"which of the following is closest to the area of the {clarified_type}?"
                 else:
-                    correct_value = abs(shape["box"][1][i] - shape["box"][0][i])
+                    # ensure the box is in range
+                    box = np.array(shape["box"]).clip(0, 1)
+                    correct_value = abs(box[1, i] - box[0, i])
                     question = f"which of the following is closest to the {dim} of the {clarified_type}?"
                 question = "Suppose that the width and height of the image is 1, " + question
 
@@ -145,17 +147,13 @@ class RuleBasedQAGenerator(GeneratorBase):
                     candidates.pop(idx)
                     weights.pop(idx)
                     test_choices = [correct_value + factor * (i - pos) for i in range(4)]
+                    # ensure all choices are in range
                     if all(0 <= v <= 1 for v in test_choices):
                         position = pos
                         valid_choices = test_choices
                         break
-                # If no valid position found, adjust factor to fit range
-                if valid_choices is None:
-                    factor = min(correct_value / 2, (1 - correct_value) / 2)
-                    logger.warning(f"Adjusting factor to {factor} to fit range for {dim} of {clarified_type}")
-                    logger.info(f"In image: {figure}")
-                    position = random.randint(0, 3)
-                    valid_choices = [correct_value + factor * (i - position) for i in range(4)]
+                # we should always have valid choices as the gt is in range and factor is not too large
+                assert valid_choices is not None
 
                 choices = [str(round(v, vqa_args.vqa_digits)) for v in valid_choices]
                 answer = choices[position]
@@ -193,7 +191,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             correct_pos = get_position(x, y)
             if correct_pos is None:
                 continue
-            question = f"Where is the {clarified_type} located in the image?"
+            question = f"Considering the centroid, where is the {clarified_type} located in the image?"
             choices = generate_choices(correct_pos)
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
             if len(qa_pairs) >= abs_questions:
@@ -213,7 +211,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             correct_pos = get_position(x_a, y_a, x_b, y_b)
             if correct_pos is None:
                 continue
-            question = f"Where is the {type_a_clear} located relative to the {type_b_clear}?"
+            question = f"Considering the centroid, where is the {type_a_clear} located relative to the {type_b_clear}?"
             choices = generate_choices(correct_pos)
             relative_qa_pairs.append({"question": question, "choices": choices, "answer": correct_pos})
             if len(relative_qa_pairs) >= rel_questions:
