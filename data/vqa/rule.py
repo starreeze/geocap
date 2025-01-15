@@ -245,7 +245,8 @@ class RuleBasedQAGenerator(GeneratorBase):
                 shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][0]
                 if (
                     shape_i_rank >= shape_j_rank
-                    or abs(sorted_shapes[shape_i_rank]["area"] - sorted_shapes[shape_j_rank]["area"]) < vqa.area_type_t
+                    or abs(sorted_shapes[shape_i_rank]["area"] - sorted_shapes[shape_j_rank]["area"])
+                    < vqa_args.area_type_t
                 ):
                     continue
                 answer_type = appearance_shapes_keys[i]
@@ -259,7 +260,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     if (
                         shape_j_rank >= shape_k_rank
                         or abs(sorted_shapes[shape_j_rank]["area"] - sorted_shapes[shape_k_rank]["area"])
-                        < vqa.area_type_t
+                        < vqa_args.area_type_t
                     ):
                         continue
                     choices_types.append(appearance_shapes_keys[k])
