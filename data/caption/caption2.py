@@ -12,6 +12,8 @@ from data.caption.caption_2nd.volution import Volution
 from data.caption.caption_2nd.tunnel import Tunnel
 from data.caption.caption_2nd.proloculus import Proloculus
 from data.caption.caption_2nd.chomata import Chomata
+from data.caption.caption_2nd.deposit import Deposit
+from data.caption.prompt import *
 import re
 from tqdm import tqdm
 from common.args import caption_args, data_args, run_args
@@ -29,10 +31,10 @@ def caption(rules: list[dict[str, Any]], generator, output_path: str):
     input_texts: list[str] = []
     idx = 0
     for rule in tqdm(rules):
-        rule_str = gen_user_input_txt_2nd(rule)
+        input_str, rule_str = gen_user_input_txt_2nd(rule)
         rule_strs.append(
             {
-                "input": "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image.",
+                "input": input_str,
                 "output": rule_str,
             }
         )
@@ -87,6 +89,7 @@ def gen_user_input_txt_2nd(rule):
             volution_max["height"],
             volution_max["control_points"],
             volution_max["vertices"],
+            initial_chamber["center"],
         )
     )
     obj_parts.append(
@@ -100,9 +103,12 @@ def gen_user_input_txt_2nd(rule):
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
     )
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"]))
+    obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
+    txt2 = head_start_2nd + "\n"
     for part in obj_parts:
         txt += part.genUserInput() + ""
-    return txt
+        txt2 += part.genInput() + ""
+    return txt2.strip(), txt.strip()
 
 
 def main():

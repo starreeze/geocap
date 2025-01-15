@@ -1,3 +1,4 @@
+# 1st start
 context = """
 The user will provide you with all the necessary information to describe a picture, which includes several geometric shapes. You need to generate a smooth and detailed descriptive text to depict the image, including the total number of shapes in the picture, what they are individually, their positions on the picture, and their relationships with each other. You should utilize all the information in the “relations” attribute in the results you generate. Your response should not include attributes that the user has not mentioned. Below are a few examples:
 
@@ -95,6 +96,13 @@ head_end_pool = [
     "Your depiction should correctly represent where each shape is placed on the canvas.",
     "Your narrative should accurately detail the exact positioning of the shapes on the canvas. ",
 ]
+# 1st end
+# 2nd start
+head_start_no_param_2nd = (
+    "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image."
+)
+head_start_2nd = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. Here is some information about the fossil that must be included in the description:"
+# 2nd end
 ordinal_numbers = [
     "first",
     "second",

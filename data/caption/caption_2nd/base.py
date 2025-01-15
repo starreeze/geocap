@@ -99,3 +99,17 @@ class BaseFeature:
         cos_b = (x1 * x2 + y1 * y2 + z1 * z2) / (math.sqrt(x1**2 + y1**2 + z1**2) * (math.sqrt(x2**2 + y2**2 + z2**2)))
         B = math.degrees(math.acos(cos_b))
         return B
+
+    def convex_or_concave(self, top, a, b):
+        vec1 = (b[0] - a[0], b[1] - a[1])
+        vec2 = (top[0] - a[0], top[1] - a[1])
+        cross = vec1[0] * vec2[1] - vec2[0] * vec1[1]
+        if cross > 0:
+            return 1
+        elif cross < 0:
+            return -1
+        else:
+            return 0
+
+    def genInput(self):
+        return ""
