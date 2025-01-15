@@ -220,26 +220,11 @@ class RuleBasedQAGenerator(GeneratorBase):
 
     @classmethod
     def reference(cls, figure: dict[str, Any]) -> list[dict[str, Any]]:
-        "what's the type of [attribute] shape?"
         qa_pairs: list[dict[str, Any]] = []
         shapes = figure["shapes"]
         counts = figure["counts"]
 
-        # Size-based questions (largest/smallest area)
-        # attr = random.choice(["largest", "smallest"])
-        # sorted_shapes = sorted(shapes, key=lambda s: s["area"], reverse=(attr == "largest"))
-        # max_area = sorted_shapes[0]["area"]
-        # all_correct_types = {s["type"] for s in sorted_shapes if abs(s["area"] - max_area) < vqa_args.area_type_t}
-        # correct_type = sorted_shapes[0]["type"]
-        # question = f"What type of shape presented in the image has the {attr} area?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
-
+        # size-based questions
         attr = random.choice(["larger", "smaller"])
         # filter out line as it has no area
         shapes_n_line = [s for s in shapes if s["type"] != "line"]
@@ -306,20 +291,6 @@ class RuleBasedQAGenerator(GeneratorBase):
             )
 
         # Frequency-based questions
-        # attr = random.choice(["most", "least"])
-        # sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "most"))
-        # max_count = sorted_types[0][1]
-        # all_correct_types = {t for t, c in counts.items() if c == max_count}
-        # correct_type = sorted_types[0][0]
-        # question = f"What type of shape presented in the image appears {attr} frequently?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
-
         attr: str = random.choice(["more", "less"])
         sorted_types = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=(attr == "more"))
         freq_qa_shapes = []
@@ -359,29 +330,6 @@ class RuleBasedQAGenerator(GeneratorBase):
                     "answer": answer_type,
                 }
             )
-
-        # Location-based questions
-        # loc_attrs = {
-        #     "leftmost": lambda s: s["center"][0],
-        #     "rightmost": lambda s: -s["center"][0],
-        #     "uppermost": lambda s: s["center"][1],
-        #     "lowermost": lambda s: -s["center"][1],
-        # }
-        # attr, key_func = random.choice(list(loc_attrs.items()))
-        # sorted_shapes = sorted(shapes, key=key_func)
-        # extreme_val = key_func(sorted_shapes[0])
-        # all_correct_types = {
-        #     s["type"] for s in sorted_shapes if abs(key_func(s) - extreme_val) < vqa_args.location_type_t
-        # }
-        # correct_type = sorted_shapes[0]["type"]
-        # question = f"What type of shape presented in the image has the {attr} centroid?"
-        # qa_pairs.append(
-        #     {
-        #         "question": question,
-        #         "answer": correct_type,
-        #         "exclude_types": all_correct_types,
-        #     }
-        # )
 
         # Location-based questions (relatively & absolutely comparison)
         distinguish_threshold = (

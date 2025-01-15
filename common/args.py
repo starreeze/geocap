@@ -158,7 +158,7 @@ class VQAArgs:
         metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
     area_type_t: float = field(
-        default=0.05,
+        default=0.02,
         metadata={"help": "tolerate threshold for area difference to be considered"},
     )
     location_type_t: float = field(
