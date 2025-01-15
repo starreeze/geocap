@@ -242,8 +242,11 @@ class RuleBasedQAGenerator(GeneratorBase):
                 if i == j:
                     continue
                 shape_i_rank = appearance_shapes[appearance_shapes_keys[i]][-1]
-                shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][0]:
-                if shape_i_rank >= shape_j_rank or abs(sorted_shapes[shape_i_rank]["area"] - sorted_shapes[shape_j_rank]["area"]) < area_type_t:
+                shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][0]
+                if (
+                    shape_i_rank >= shape_j_rank
+                    or abs(sorted_shapes[shape_i_rank]["area"] - sorted_shapes[shape_j_rank]["area"]) < area_type_t
+                ):
                     continue
                 answer_type = appearance_shapes_keys[i]
                 anchor_type = appearance_shapes_keys[j]
@@ -253,7 +256,10 @@ class RuleBasedQAGenerator(GeneratorBase):
                         continue
                     shape_j_rank = appearance_shapes[appearance_shapes_keys[j]][-1]
                     shape_k_rank = appearance_shapes[appearance_shapes_keys[k]][0]
-                    if shape_j_rank >= shape_k_rank or abs(sorted_shapes[shape_j_rank]["area"] - sorted_shapes[shape_k_rank]["area"]) < area_type_t:
+                    if (
+                        shape_j_rank >= shape_k_rank
+                        or abs(sorted_shapes[shape_j_rank]["area"] - sorted_shapes[shape_k_rank]["area"]) < area_type_t
+                    ):
                         continue
                     choices_types.append(appearance_shapes_keys[k])
                 size_qa_shapes.append((answer_type, anchor_type, choices_types))
