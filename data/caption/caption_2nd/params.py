@@ -13,6 +13,10 @@ shell_slope_classes = {"convex": [0, 0.5], "concave": [0.5, 1]}
 
 shell_pole_classes = {"bluntly rounded": [100, 999], "bluntly pointed": [80, 100], "elongated": [0, 80]}
 
+shell_fusiform_pole_classes = {"bluntly rounded": [0, 6], "elongated": [6.1, 99]}
+
+shell_axis_classes = {"straight": [170, 180], "other": [0, 170]}
+
 proloculus_size_classes = {"small": [0, 0.33], "medium": [0.33, 0.67], "large": [0.67, 1]}
 
 proloculus_shape_classes = {"spherical": [0, 0.33], "": [0.33, 0.67], "kidney-shaped": [0.67, 1]}
@@ -22,6 +26,8 @@ tunnel_angle_classes = {"narrow": [0, 20], "": [21, 30], "broad": [31, 99]}
 chomata_size_classes = {"small": [0, 1], "": [1, 2], "massive": [2, 9999]}
 
 chomata_development_classes = {"absence": [0, 1], "": [1, 2], "well developed": [2, 999]}
+
+deposit_development_classes = {"absence": [0, 0.1], "": [0.1, 0.6], "well developed": [0.6, 1], "absence": [1, 999]}
 
 ordinal_numbers = [
     "first",
