@@ -113,13 +113,17 @@ class Polygon(GSRule):
         return C_x, C_y
 
     def normalize_points(self):
-        min_x = min(x for x, y in self.points)
-        min_y = min(y for x, y in self.points)
-        max_x = max(x for x, y in self.points)
-        max_y = max(y for x, y in self.points)
-        max_range = max(max_x - min_x, max_y - min_y) * 1.2
-        if min_x < 0 or min_y < 0 or max_x > 1 or max_y > 1:
+        while True:
+            min_x = min(x for x, y in self.points)
+            min_y = min(y for x, y in self.points)
+            max_x = max(x for x, y in self.points)
+            max_y = max(y for x, y in self.points)
+            max_range = max(max_x - min_x, max_y - min_y) * 1.2
+            if min_x > 0 and min_y > 0 and max_x < 1 and max_y < 1:
+                break
             self.points = [((x - min_x) / max_range, (y - min_y) / max_range) for x, y in self.points]
+            offset = uniform(-0.3, 0.3)
+            self.points = [(x + offset, y + offset) for x, y in self.points]
 
     def is_convex(self) -> bool:
         n = len(self.points)
@@ -514,9 +518,9 @@ class Fusiform(GSRule):
 
         n = len(self.curve_points)
         if np.isclose(theta, 0.5 * np.pi):
-            return self.curve_points[n // 4]
+            return tuple(self.curve_points[n // 4])
         elif np.isclose(theta, 1.5 * np.pi):
-            return self.curve_points[int(3 * n // 4)]
+            return tuple(self.curve_points[int(3 * n // 4)])
         else:
             slope = np.tan(theta)
             intercept = self.center[1] - slope * self.center[0]
@@ -610,9 +614,9 @@ class Fusiform_2(GSRule):
         theta = theta % (2 * np.pi)
         n = len(self.curve_points)
         if np.isclose(theta, 0.5 * np.pi):
-            return self.curve_points[n // 4]
+            return tuple(self.curve_points[n // 4])
         elif np.isclose(theta, 1.5 * np.pi):
-            return self.curve_points[int(3 * n // 4)]
+            return tuple(self.curve_points[int(3 * n // 4)])
 
         slope = np.tan(theta)
         intercept = self.center[1] - slope * self.center[0]
@@ -823,17 +827,38 @@ class ShapeGenerator:
         polygon.normalize_points()
         return polygon
 
-    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.5) -> Line:
-        if points is None:
-            point1 = (uniform(0, 1), uniform(0, 1))
-            point2 = (uniform(0, 1), uniform(0, 1))
+    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.8) -> Line:
+        def random_point_on_edge(edge) -> tuple:
+            if edge == "left":
+                return (0, uniform(0.1, 0.9))
+            elif edge == "right":
+                return (1, uniform(0.1, 0.9))
+            elif edge == "top":
+                return (uniform(0.1, 0.9), 1)
+            else:  # bottom
+                return (uniform(0.1, 0.9), 0)
+
+        if points is not None:
+            line = Line(type="segment", points=points)
+            return line
 
         line_type = np.random.choice(["line", "segment", "ray"])
-        line = Line(type=line_type, points=[point1, point2])
-        while line.get_length() < min_length or line.get_length() > max_length:
-            point1 = (uniform(0, 1), uniform(0, 1))
-            point2 = (uniform(0, 1), uniform(0, 1))
-            line = Line(type=line_type, points=[point1, point2])
+        while True:
+            if line_type == "segment":
+                point1 = (uniform(0, 1), uniform(0, 1))
+                point2 = (uniform(0, 1), uniform(0, 1))
+                line = Line(type=line_type, points=[point1, point2])
+            elif line_type == "ray":
+                point1 = (uniform(0, 1), uniform(0, 1))
+                point2 = random_point_on_edge(np.random.choice(["left", "right", "top", "bottom"]))
+                line = Line(type=line_type, points=[point1, point2])
+            elif line_type == "line":
+                edge1, edge2 = np.random.choice(["left", "right", "top", "bottom"], size=2, replace=False)
+                point1 = random_point_on_edge(edge1)
+                point2 = random_point_on_edge(edge2)
+                line = Line(type=line_type, points=[point1, point2])
+            if min_length < line.get_length() < max_length:
+                break
         return line
 
     def generate_ellipse(
@@ -890,7 +915,7 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.002), 0.5 + normal(0, 0.002))
-        major_axis = max(0.02, normal(0.02, 6e-3))
+        major_axis = max(0.03, normal(0.03, 6e-3))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber"

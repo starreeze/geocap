@@ -26,3 +26,7 @@ class Volution(BaseFeature):
         txt = "The number of volutions is {num}. ".format(num=self.num)
         # txt+=self.genWallThickness()
         return txt
+
+    def genInput(self):
+        txt = "number of volutions(whorls): {num}\n".format(num=self.num)
+        return txt
