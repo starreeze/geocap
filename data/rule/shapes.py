@@ -165,7 +165,7 @@ class Polygon(GSRule):
             pass_check = False
 
         # Check whether all angles are around np.pi/2 if not a rectangle
-        if len(self.points) == 4 and "rectangle" not in self.special_info:
+        if len(self.points) == 4 and "rectangle" not in self.special_info and "square" not in self.special_info:
             all_around = True
             for angle in angles:
                 if abs(angle - np.pi / 2) > rule_args.general_quadrilateral_angle_thres:
@@ -212,6 +212,21 @@ class Polygon(GSRule):
         x2 = x0 + side_len * np.cos(r + np.pi / 3)
         y2 = y0 + side_len * np.sin(r + np.pi / 3)
         self.points = [(x0, y0), (x1, y1), (x2, y2)]
+
+    def to_square(self, side_len: float, rotation: float):
+        self.special_info = "square"
+        self.side_len = side_len
+
+        x0, y0 = self.points[0]
+        r = rotation
+
+        x1 = x0 + side_len * np.cos(r)
+        y1 = y0 + side_len * np.sin(r)
+        x2 = x1 - side_len * np.sin(r)
+        y2 = y1 + side_len * np.cos(r)
+        x3 = x0 - side_len * np.sin(r)
+        y3 = y0 + side_len * np.cos(r)
+        self.points = [(x0, y0), (x1, y1), (x2, y2), (x3, y3)]
 
     def to_rectangle(self, width: float, height: float, rotation: float):
         self.special_info = "rectangle"
@@ -808,8 +823,14 @@ class ShapeGenerator:
             polygon = Polygon(points)
             polygon.to_simple_polygon()
 
-        special_polygon = np.random.choice(["no", "rectangle", "equilateral triangle"])
-        if special_polygon == "rectangle":
+        special_polygon = np.random.choice(
+            ["no", "square", "rectangle", "equilateral triangle"], p=[0.3, 0.2, 0.2, 0.3]
+        )
+        if special_polygon == "square":
+            side_len = uniform(0.1, 0.6)
+            rotation = uniform(0, 2 * np.pi)
+            polygon.to_square(side_len, rotation)
+        elif special_polygon == "rectangle":
             width, height = (uniform(0.1, 0.6), uniform(0.1, 0.6))
             if width >= height:
                 height = width / uniform(rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1])

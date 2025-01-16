@@ -54,12 +54,13 @@ class PolygonRelationGenerator:
         self.base_rel = ["tangent line", "symmetric", "similar"]
         self.triangle_only_rel = ["shared edge", "circumscribed circle of triangle", "inscribed circle"]
         self.rectangle_only_rel = ["circumscribed circle of rectangle", "diagonal"]
-        all_relations = self.base_rel + self.triangle_only_rel + self.rectangle_only_rel
+        self.square_only_rel = ["circumscribed circle of square", "diagonal"]
+        all_relations = self.base_rel + self.triangle_only_rel + self.rectangle_only_rel + self.square_only_rel
 
-        self.relation_level = []
+        self.relation_level = {}
         for relation_type in all_relations:
             level = eval(f"rule_args.polygon_{relation_type.replace(' ', '_')}_level")
-            self.relation_level.append(level)
+            self.relation_level[relation_type] = level
 
     def generate_relation(self, polygon: Polygon) -> tuple[Any, str]:
         self.polygon = polygon
@@ -68,9 +69,11 @@ class PolygonRelationGenerator:
             opt_rel = opt_rel + self.triangle_only_rel
         elif "rectangle" in self.polygon.special_info:
             opt_rel = opt_rel + self.rectangle_only_rel
+        elif "square" in self.polygon.special_info:
+            opt_rel = opt_rel + self.square_only_rel
 
-        opt_relation_level = self.relation_level[: len(opt_rel)]
-        relation_prob = [x / sum(opt_relation_level) for x in opt_relation_level]
+        relation_prob = np.array([self.relation_level[rel] for rel in opt_rel])
+        relation_prob = relation_prob / relation_prob.sum()
         relation_type = np.random.choice(opt_rel, p=relation_prob)
         if "tangent line" in relation_type:
             new_shape = self.get_tangent_line()
@@ -161,7 +164,7 @@ class PolygonRelationGenerator:
             circle = Ellipse(center=center)
             circle.to_circle(radius)
 
-        elif "rectangle" in self.polygon.special_info:
+        elif "rectangle" in self.polygon.special_info or "square" in self.polygon.special_info:
             center = (
                 sum(x for x, y in self.polygon.points) / 4,
                 sum(y for x, y in self.polygon.points) / 4,
@@ -171,7 +174,7 @@ class PolygonRelationGenerator:
             circle.to_circle(radius)
 
         else:
-            raise ValueError("The polygon is not a triangle or rectangle.")
+            raise ValueError("The polygon is not a triangle or rectangle or square.")
 
         return circle
 
@@ -199,7 +202,7 @@ class PolygonRelationGenerator:
         return circle
 
     def get_diagonal(self) -> Line:
-        assert "rectangle" in self.polygon.special_info
+        assert "rectangle" in self.polygon.special_info or "square" in self.polygon.special_info
         idx = randint(0, 2)
         p1 = self.polygon.points[idx]
         p2 = self.polygon.points[idx + 2]
@@ -213,12 +216,13 @@ class LineRelationGenerator:
 
         self.base_rel = ["parallel", "tangent line", "axis of ellipse"]
 
-        self.relation_level = []
+        self.relation_level = {}
         for relation_type in self.base_rel:
             level = eval(f"rule_args.line_{relation_type.replace(' ', '_')}_level")
-            self.relation_level.append(level)
+            self.relation_level[relation_type] = level
 
-        self.relation_prob = [x / sum(self.relation_level) for x in self.relation_level]
+        relation_prob = np.array([self.relation_level[rel] for rel in self.base_rel])
+        self.relation_prob = relation_prob / relation_prob.sum()
 
     def generate_relation(self, line: Line) -> tuple[Any, str]:
         self.line = line
@@ -311,10 +315,10 @@ class EllipseRelationGenerator:
         ]
         self.circle_rel = []
 
-        self.relation_level = []
+        self.relation_level = {}
         for relation_type in self.base_rel:
             level = eval(f"rule_args.ellipse_{relation_type.replace(' ', '_')}_level")
-            self.relation_level.append(level)
+            self.relation_level[relation_type] = level
 
     def generate_relation(self, ellipse: Ellipse) -> tuple[Any, str]:
         self.ellipse = ellipse
@@ -322,8 +326,8 @@ class EllipseRelationGenerator:
         if "circle" in self.ellipse.special_info:
             opt_rel = opt_rel + self.circle_rel
 
-        opt_relation_level = self.relation_level[: len(opt_rel)]
-        relation_prob = [x / sum(opt_relation_level) for x in opt_relation_level]
+        relation_prob = np.array([self.relation_level[rel] for rel in opt_rel])
+        relation_prob = relation_prob / relation_prob.sum()
         relation_type = np.random.choice(opt_rel, p=relation_prob)
 
         if relation_type == "tangent line":
@@ -372,9 +376,15 @@ class EllipseRelationGenerator:
         return ellipse_list[1:]
 
     def get_inscribed_polygon(self, special_polygon="") -> Polygon:
-        special_polygon = np.random.choice(["", "rectangle", "equilateral triangle"])
-        if "rectangle" in special_polygon:
+        special_polygon = np.random.choice(["", "square", "rectangle", "equilateral triangle"])
+        if "square" in special_polygon:
+            theta_0 = -0.25 * np.pi
+            theta_1 = 0.25 * np.pi
+            theta_list = [theta_0, theta_1, theta_0 + np.pi, theta_1 + np.pi]
+        elif "rectangle" in special_polygon:
             random_angle = np.pi * uniform(0.1, 0.4)
+            while abs(random_angle - 0.25 * np.pi) < 0.1:
+                random_angle = np.pi * uniform(0.1, 0.4)
             theta_0 = -random_angle
             theta_1 = random_angle
             theta_list = [theta_0, theta_1, theta_0 + np.pi, theta_1 + np.pi]
@@ -399,20 +409,33 @@ class EllipseRelationGenerator:
         return polygon
 
     def get_circumscribed_polygon(self) -> Polygon:
-        special_polygon = np.random.choice(["", "rectangle", "equilateral triangle"])
-        # choose tangent point on ellipse, and get intersections of tangent lines
-        if "rectangle" in special_polygon and "circle" in self.ellipse.special_info:
-            theta_0 = uniform(0, np.pi)
-            theta_list = [theta_0 + i * np.pi / 2 for i in range(4)]
-        elif "equilateral" in special_polygon and "circle" in self.ellipse.special_info:
-            theta_0 = uniform(0, np.pi)
-            theta_list = [theta_0, theta_0 + np.pi * 2 / 3, theta_0 + np.pi * 4 / 3]
+        # choose tangent points on ellipse, and get intersections of tangent lines
+        if "circle" in self.ellipse.special_info:
+            special_polygon = np.random.choice(["", "square", "equilateral triangle"])
+            if "square" in special_polygon:
+                theta_0 = uniform(0, np.pi)
+                theta_list = [theta_0 + i * np.pi / 2 for i in range(4)]
+            elif "equilateral" in special_polygon:
+                theta_0 = uniform(0, np.pi)
+                theta_list = [theta_0, theta_0 + np.pi * 2 / 3, theta_0 + np.pi * 4 / 3]
+            else:
+                # divide the ellipse to equal sections, and choose a point on each section
+                num_points = np.random.randint(3, 7)
+                theta_each_section = 2 * np.pi / num_points
+                theta_list = [
+                    uniform(i * theta_each_section, (i + 0.5) * theta_each_section) for i in range(num_points)
+                ]
         else:
-            special_polygon = ""
-            # divide the ellipse to equal sections, and choose a point on each section
-            num_points = np.random.randint(3, 7)
-            theta_each_section = 2 * np.pi / num_points
-            theta_list = [uniform(i * theta_each_section, (i + 0.5) * theta_each_section) for i in range(num_points)]
+            special_polygon = np.random.choice(["", "rectangle"], p=[0.7, 0.3])
+            if "rectangle" in special_polygon:
+                theta_list = [self.ellipse.rotation + i * np.pi / 2 for i in range(4)]
+            else:
+                # divide the ellipse to equal sections, and choose a point on each section
+                num_points = np.random.randint(3, 7)
+                theta_each_section = 2 * np.pi / num_points
+                theta_list = [
+                    uniform(i * theta_each_section, (i + 0.5) * theta_each_section) for i in range(num_points)
+                ]
 
         tangent_points = [self.ellipse.get_point(theta) for theta in theta_list]
 
