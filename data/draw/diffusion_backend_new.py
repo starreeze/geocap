@@ -6,7 +6,7 @@ import matplotlib.patches as pch
 from PIL import Image, ImageDraw, ImageFilter
 import random
 from common.args import data_args, run_args
-from common.iterwrap import iterate_wrapper
+from iterwrap import iterate_wrapper
 import cv2
 from io import BytesIO
 

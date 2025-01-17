@@ -15,7 +15,7 @@ import yaml
 from transformers import pipeline
 
 from common.args import logger, run_args
-from common.iterwrap import IterateWrapper, retry_dec
+from iterwrap import IterateWrapper, retry_dec
 
 
 class LLMGenerator(ABC):
