@@ -49,3 +49,22 @@ class Tunnel(BaseFeature):
         txt += self.genTunnelFeatures()
         txt += self.genTunnelAngleDescription()
         return txt
+
+    def genInput(self):
+        txt = "tunnel angles: "
+        for i in range(len(self.tunnel_angles)):
+            if self.tunnel_start_idx + i == 0:
+                txt += "{angle} in the 1st volution".format(angle=self.tunnel_angles[i])
+            elif self.tunnel_start_idx + i == 1:
+                txt += "{angle} in the 2nd volution".format(angle=self.tunnel_angles[i])
+            elif self.tunnel_start_idx + i == 2:
+                txt += "{angle} in the 3rd volution".format(angle=self.tunnel_angles[i])
+            else:
+                txt += "{angle} in the {idx}th volution".format(
+                    angle=self.tunnel_angles[i], idx=self.tunnel_start_idx + i + 1
+                )
+            if i != len(self.tunnel_angles) - 1:
+                txt += ", "
+            else:
+                txt += ".\n"
+        return txt
