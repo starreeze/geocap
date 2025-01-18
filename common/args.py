@@ -20,6 +20,19 @@ class DataArgs:
     vqa_output_dir: str = field(default="results")
     stage: int = field(default=1)
     num_basic_geo_samples: int = field(default=100000)
+    # set num_samples for each num_shapes
+    # key: num_shapes, value: num_samples
+    num_samples_per_num_shapes: dict[int, int] = field(
+        default_factory=lambda: {
+            2: 10,
+            3: 10,
+            4: 10,
+            5: 10,
+            6: 10,
+            7: 10,
+            8: 10,
+        }
+    )
     num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
 

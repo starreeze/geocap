@@ -20,7 +20,7 @@ python run.py --module data.format --action to_llava  # you can also specify the
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 
 ```shell
-python run.py --module data.rule.generate --stage 1 --num_basic_geo_samples 10
+python run.py --module data.rule.generate --stage 1 --num_workers 2
 ```
 
 or generate rules for synthetic fossil samples:
@@ -54,8 +54,8 @@ Each data sample contains two parts:
 
 You can control the generation process with the following arguments:
 
-- max_num_shapes: the maximum number of shapes in each sample. Default is 10
-- min_num_shapes: the minimum number of shapes in each sample. Default is 2
+- num_samples_per_num_shapes: a dictionary for setting `num_samples` for each `num_shapes`.
+NOTE: Please set the value in `args.py/DataArgs`
 
 there are some arguments for controling the numerical characteristics of geometric shapes:
 - in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8
