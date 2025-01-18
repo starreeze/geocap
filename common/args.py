@@ -19,20 +19,9 @@ class DataArgs:
     vqa_question_dir: str = field(default="dataset/vqa")
     vqa_output_dir: str = field(default="results")
     stage: int = field(default=1)
-    num_basic_geo_samples: int = field(default=100000)
     # set num_samples for each num_shapes
-    # key: num_shapes, value: num_samples
-    num_samples_per_num_shapes: dict[int, int] = field(
-        default_factory=lambda: {
-            2: 10,
-            3: 10,
-            4: 10,
-            5: 10,
-            6: 10,
-            7: 10,
-            8: 10,
-        }
-    )
+    # num_samples_per_num_shapes[i]: number of samples for num_shapes=(min_num_shapes + i)
+    num_samples_per_num_shapes: list[int] = field(default_factory=lambda: [10, 10, 10])
     num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
 
@@ -59,9 +48,7 @@ class RuleArgs:
     output_fp_precision: int = field(default=4)
 
     """args for stage 1"""
-    max_num_shapes: int = field(default=10)
     min_num_shapes: int = field(default=2)
-
     in_canvas_area_thres: float = field(default=0.8)
     # levels of shape generation
     polygon_shape_level: int = field(default=5)

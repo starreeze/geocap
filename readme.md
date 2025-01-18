@@ -54,8 +54,8 @@ Each data sample contains two parts:
 
 You can control the generation process with the following arguments:
 
-- num_samples_per_num_shapes: a dictionary for setting `num_samples` for each `num_shapes`.
-NOTE: Please set the value in `args.py/DataArgs`
+- min_num_shapes: the minimum number of shapes in each sample. Default is 2
+- num_samples_per_num_shapes: a list for setting `num_samples` for each `num_shapes`. The number of samples with `num_shapes=min_num_shapes + i` is `num_samples_per_num_shapes[i]`.
 
 there are some arguments for controling the numerical characteristics of geometric shapes:
 - in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8

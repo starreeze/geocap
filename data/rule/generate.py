@@ -196,10 +196,14 @@ def process_single(f, idx_sample: tuple[int, dict], vars):
 
 def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
     """Multiprocessing version"""
-    target_samples_list = []
 
-    base_samples = {k: v // num_workers for k, v in data_args.num_samples_per_num_shapes.items()}
-    remainder_samples = {k: v % num_workers for k, v in data_args.num_samples_per_num_shapes.items()}
+    target_num_samples = {}
+    for i, num_samples in enumerate(data_args.num_samples_per_num_shapes):
+        target_num_samples[i + rule_args.min_num_shapes] = num_samples
+
+    target_samples_list = []
+    base_samples = {k: v // num_workers for k, v in target_num_samples.items()}
+    remainder_samples = {k: v % num_workers for k, v in target_num_samples.items()}
 
     # Create target samples for all workers except last
     for _ in range(num_workers - 1):
@@ -231,7 +235,10 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 def main():
     if data_args.stage == 1:
         if run_args.num_workers == 1:
-            samples = generate_rules(data_args.num_samples_per_num_shapes)
+            target_num_samples = {}
+            for i, num_samples in enumerate(data_args.num_samples_per_num_shapes):
+                target_num_samples[i + rule_args.min_num_shapes] = num_samples
+            samples = generate_rules(target_num_samples)
         else:
             samples = generate_rules_multiprocess(run_args.num_workers)
     elif data_args.stage == 2:
