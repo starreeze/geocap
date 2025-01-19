@@ -1,0 +1,14 @@
+Task:
+Please paraphrase the following text.
+
+Requirements:
+1. Paraphrase the translated/English text while maintaining:
+   - The original scientific tone and accuracy
+   - All numerical values and units
+   - The logical structure and key concepts
+2. If the input text is not in English, first translate it to English while preserving numerical values
+
+Input text:
+{text}
+
+Paraphrased text:
