@@ -3,10 +3,11 @@ import json
 import os
 
 import numpy as np
+from iterwrap import iterate_wrapper
 from numpy.random import choice, normal, randint
 from tqdm import tqdm, trange
 
-from common.args import data_args, rule_args
+from common.args import data_args, rule_args, run_args
 from data.rule.relations import (
     CustomedShapeGenerator,
     EllipseRelationGenerator,
@@ -15,10 +16,10 @@ from data.rule.relations import (
     SeptaGenerator,
 )
 from data.rule.shapes import ShapeGenerator
-from data.rule.utils import overlap_area, round_floats
+from data.rule.utils import no_overlap, overlap_area, round_floats
 
 
-def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
+def generate_fossil_rules() -> list[dict[str, list]]:
     shape_generator = ShapeGenerator(rule_args)
     results = []
 
@@ -112,27 +113,33 @@ def generate_fossil_rules(data_args, rule_args) -> list[dict[str, list]]:
     return results
 
 
-def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
+def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, list]]:
     """
     Generate random rules across different types and shapes. Then mix them together.
-    Returns: a list of samples where each consists a list of shapes and a list of relations.
+    Input:
+    target_num_samples (dict): Dictionary of expected number of samples where:
+        * Key (int): num_shapes
+        * Value (int): num_samples
+    Returns:
+    a list of samples where each consists a list of shapes and a list of relations.
     """
+    idx, target_num_samples = idx_target
+    results = []
     shape_generator = ShapeGenerator(rule_args)
     relation_generator = RelationGenerator(rule_args)
-    results = []
 
-    num_init_shapes = 0
-    total_shapes = 0
-    progress_bar = tqdm(total=data_args.num_basic_geo_samples, desc="Generating rules")
-    while len(results) < data_args.num_basic_geo_samples:
+    max_num_shapes = max([key for key in target_num_samples])
+    progress_bar = tqdm(total=sum(target_num_samples.values()), desc="Generating rules", position=idx)
+    cur_num_samples = {k: 0 for k in target_num_samples.keys()}
+
+    # Generate samples until reaching the target number of samples for each shape count
+    while not all(cur_num_samples.get(k, 0) >= v for k, v in target_num_samples.items()):
         shapes = []
-        num_shapes = randint(1, rule_args.max_num_shapes // 2 + 1)  # leave space for special relations
+        num_shapes = randint(1, max_num_shapes // 2 + 1)  # leave space for special relations
         for _ in range(num_shapes):
             new_shape = shape_generator()
             if no_overlap(shapes, new_shape):
                 shapes.append(new_shape)
-
-        num_init_shapes = num_init_shapes + len(shapes)
 
         relations = []
         for head_idx in range(len(shapes)):
@@ -153,8 +160,8 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                     if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
                         continue
 
-                    if len(shapes) >= rule_args.max_num_shapes:
-                        break
+                    # if len(shapes) >= rule_args.max_num_shapes:
+                    #     break
 
                     # Add each tail_shape to shapes
                     tail_idx = len(shapes)
@@ -171,41 +178,48 @@ def generate_rules(data_args, rule_args) -> list[dict[str, list]]:
                     shapes.append(t_shape)
                     exclude_shape.append(t_shape)
 
-        total_shapes += len(shapes)
-
-        if len(shapes) >= rule_args.min_num_shapes:
+        if cur_num_samples.get(len(shapes), 0) < target_num_samples.get(len(shapes), 0):
             shapes_dict = [shape.to_dict() for shape in shapes]
             sample = {"shapes": shapes_dict, "relations": relations}
+            cur_num_samples[len(shapes)] += 1
             results.append(sample)
             progress_bar.update(1)
 
-    # print(f"number of initial shapes = {num_init_shapes}")
-    # print(f"total shapes = {total_shapes}")
-    # assert len(results) == data_args.num_basic_geo_samples
     return results
 
 
-def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.2) -> bool:
-    if new_shape is None:
-        return False
+def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
+    """Multiprocessing version"""
 
-    if exclude_shape is None:
-        exclude_shape = []
+    target_num_samples = {}
+    for i, num_samples in enumerate(data_args.num_samples_per_num_shapes):
+        target_num_samples[i + rule_args.min_num_shapes] = num_samples
 
-    iou_sum = 0
-    for cur_shape in shapes:
-        if cur_shape not in exclude_shape:
-            cur_bbox = cur_shape.get_bbox()
-            new_bbox = new_shape.get_bbox()
-            cur_area = (cur_bbox[1][0] - cur_bbox[0][0]) * (cur_bbox[0][1] - cur_bbox[1][1])
-            new_area = (new_bbox[1][0] - new_bbox[0][0]) * (new_bbox[0][1] - new_bbox[1][1])
-            intersection = overlap_area(cur_bbox, new_bbox)
-            union = cur_area + new_area - intersection
-            iou_sum += intersection / union
+    target_samples_list = []
+    base_samples = {k: v // num_workers for k, v in target_num_samples.items()}
+    remainder_samples = {k: v % num_workers for k, v in target_num_samples.items()}
 
-    if iou_sum > thres:
-        return False
-    return True
+    # Create target samples for all workers except last
+    for _ in range(num_workers - 1):
+        target_samples_list.append(base_samples.copy())
+
+    # Create last target sample with base + remainders
+    last_sample = base_samples.copy()
+    for k, v in remainder_samples.items():
+        last_sample[k] += v
+    target_samples_list.append(last_sample)
+
+    results_list = iterate_wrapper(
+        generate_rules,
+        list(enumerate(target_samples_list)),
+        num_workers=num_workers,
+        run_name="generate_rules",
+        bar=False,
+    )
+    assert results_list is not None
+    # Flatten the list of lists into a single list
+    results = [item for sublist in results_list for item in sublist]
+    return results
 
 
 def save_rules(rules: list[dict[str, list]], output_file: str):
@@ -215,9 +229,9 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 
 def main():
     if data_args.stage == 1:
-        samples = generate_rules(data_args, rule_args)
+        samples = generate_rules_multiprocess(run_args.num_workers)
     elif data_args.stage == 2:
-        samples = generate_fossil_rules(data_args, rule_args)
+        samples = generate_fossil_rules()
 
     os.makedirs(os.path.dirname(data_args.rules_path), exist_ok=True)
     save_rules(samples, data_args.rules_path)

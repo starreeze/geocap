@@ -1,14 +1,18 @@
-import os, json, sys
-import numpy as np
-from typing import Any
-import matplotlib.pyplot as plt
-import matplotlib.patches as pch
-from PIL import Image, ImageDraw, ImageFilter
+import json
+import os
 import random
-from common.args import data_args, run_args
-from common.iterwrap import iterate_wrapper
-import cv2
+import sys
 from io import BytesIO
+from typing import Any
+
+import cv2
+import matplotlib.patches as pch
+import matplotlib.pyplot as plt
+import numpy as np
+from iterwrap import iterate_wrapper
+from PIL import Image, ImageDraw, ImageFilter
+
+from common.args import data_args, run_args
 
 
 class Figure_Engine:
@@ -221,8 +225,8 @@ class Figure_Engine:
         x_md = np.linspace(x_l[-1], x_rd[0], num=5)
         y_md = np.linspace(y_l[-1], y_rd[0], num=5)
 
-        x = np.concat((x_ru, x_mu, x_l, x_md, x_rd), axis=None)
-        y = np.concat((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
+        x = np.concatenate((x_ru, x_mu, x_l, x_md, x_rd), axis=None)
+        y = np.concatenate((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
 
         self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
 
@@ -476,8 +480,8 @@ def generate_basic_mask(volution_memory: dict, filling: list) -> np.ndarray:
 
 def diffuse(img: np.ndarray, mask: np.ndarray, ref_path: str, num_refs: int) -> np.ndarray:
     from MimicBrush.run_gradio3_demo import (
-        inference_single_image,
         crop_padding_and_resize,
+        inference_single_image,
     )
 
     def get_random_ref_image(ref_path: list) -> np.ndarray:
@@ -520,7 +524,7 @@ def generate_one_img(sample, img_path: str, ref_path: str, num_refs: int):
     cv2.imwrite(img_path, blended_img)
 
 
-def process_single(f, idx_sample: tuple[int, dict], vars):
+def process_single(idx_sample: tuple[int, dict], f):
     generate_one_img(
         idx_sample[1],
         os.path.join(
@@ -537,9 +541,8 @@ def main():
     with open(data_args.rules_path, "r") as f:
         samples = json.load(f)
         assert isinstance(samples, list)
-    # for idx_sample, sample in enumerate(samples):
-    #     draw_figure(sample, os.path.join(data_args.figure_dir, f"{idx_sample:08d}.jpg"))
-    iterate_wrapper(process_single, list(enumerate(samples)), num_workers=8)
+    idx_samples: list[tuple[int, dict]] = list(enumerate(samples))
+    iterate_wrapper(process_single, idx_samples, num_workers=8)
 
 
 if __name__ == "__main__":

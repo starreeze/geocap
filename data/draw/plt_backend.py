@@ -1,16 +1,20 @@
 "draw geometry shapes according to generated rules"
-import os, json, sys
-import numpy as np
-from typing import Any
-import matplotlib.pyplot as plt
-import matplotlib.patches as pch
-from PIL import Image, ImageDraw, ImageFilter
-import random
-from common.args import data_args, run_args
-from common.iterwrap import iterate_wrapper
+import json
 
 #''' Do not delete, otherwise a lot of matplotlib logs will appear.
 import logging
+import os
+import random
+import sys
+from typing import Any
+
+import matplotlib.patches as pch
+import matplotlib.pyplot as plt
+import numpy as np
+from iterwrap import iterate_wrapper
+from PIL import Image, ImageDraw, ImageFilter
+
+from common.args import data_args, run_args
 
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 #'''
@@ -609,8 +613,8 @@ class Figure:
         x_md = np.linspace(x_l[-1], x_rd[0], num=5)
         y_md = np.linspace(y_l[-1], y_rd[0], num=5)
 
-        x = np.concat((x_ru, x_mu, x_l, x_md, x_rd), axis=None)
-        y = np.concat((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
+        x = np.concatenate((x_ru, x_mu, x_l, x_md, x_rd), axis=None)
+        y = np.concatenate((y_ru, y_mu, y_l, y_md, y_rd), axis=None)
 
         self.ax.plot(x, y, color=color, linewidth=line_width * (self.shape[0] / 640))
 
@@ -791,7 +795,7 @@ def draw_figure(rules: "dict", path: str):
     figure.close()
 
 
-def process_single(f, idx_sample: tuple[int, dict], vars):
+def process_single(idx_sample: tuple[int, dict]):
     draw_figure(idx_sample[1], os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"))
 
 

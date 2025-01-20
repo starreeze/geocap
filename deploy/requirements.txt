@@ -16,7 +16,7 @@ opencv-python-headless
 webdataset
 visual_genome
 scikit-image
-visual_genome
+iterwrap==0.3.0
 decord
 peft
 sentence-transformers
@@ -24,8 +24,6 @@ gradio
 fairscale
 easydict
 pycocoevalcap
-moviepy
 pyyaml_env_tag
-open3d
 h5py
 natsort
