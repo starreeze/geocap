@@ -1,11 +1,13 @@
 import json
 import os
+from typing import cast
+
+from iterwrap import iterate_wrapper
 from tqdm import tqdm
+
 import data.draw.pil_backend as pld
 import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
-from iterwrap import iterate_wrapper
-from typing import cast
 
 
 def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
@@ -76,7 +78,7 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
     figure.save_release(path)
 
 
-def process_single(f, idx_sample: tuple[int, dict], vars):
+def process_single(idx_sample: tuple[int, dict]):
     draw_figure(
         idx_sample[1],
         os.path.join(

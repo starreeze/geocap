@@ -2,13 +2,12 @@
 import json
 import os
 
-from multiprocessing import Pool
 import numpy as np
+from iterwrap import iterate_wrapper
 from numpy.random import choice, normal, randint
 from tqdm import tqdm, trange
 
 from common.args import data_args, rule_args, run_args
-from iterwrap import iterate_wrapper
 from data.rule.relations import (
     CustomedShapeGenerator,
     EllipseRelationGenerator,
@@ -17,7 +16,7 @@ from data.rule.relations import (
     SeptaGenerator,
 )
 from data.rule.shapes import ShapeGenerator
-from data.rule.utils import overlap_area, no_overlap, round_floats
+from data.rule.utils import no_overlap, overlap_area, round_floats
 
 
 def generate_fossil_rules() -> list[dict[str, list]]:
@@ -114,7 +113,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
     return results
 
 
-def generate_rules(target_num_samples: dict[int, int]) -> list[dict[str, list]]:
+def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, list]]:
     """
     Generate random rules across different types and shapes. Then mix them together.
     Input:
@@ -124,12 +123,13 @@ def generate_rules(target_num_samples: dict[int, int]) -> list[dict[str, list]]:
     Returns:
     a list of samples where each consists a list of shapes and a list of relations.
     """
+    idx, target_num_samples = idx_target
     results = []
     shape_generator = ShapeGenerator(rule_args)
     relation_generator = RelationGenerator(rule_args)
 
     max_num_shapes = max([key for key in target_num_samples])
-    progress_bar = tqdm(total=sum(target_num_samples.values()), desc="Generating rules")
+    progress_bar = tqdm(total=sum(target_num_samples.values()), desc="Generating rules", position=idx)
     cur_num_samples = {k: 0 for k in target_num_samples.keys()}
 
     # Generate samples until reaching the target number of samples for each shape count
@@ -188,12 +188,6 @@ def generate_rules(target_num_samples: dict[int, int]) -> list[dict[str, list]]:
     return results
 
 
-def process_single(f, idx_sample: tuple[int, dict], vars):
-    target_num_samples = idx_sample[1]
-    results = generate_rules(target_num_samples)
-    return results
-
-
 def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
     """Multiprocessing version"""
 
@@ -216,12 +210,13 @@ def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
     target_samples_list.append(last_sample)
 
     results_list = iterate_wrapper(
-        process_single,
+        generate_rules,
         list(enumerate(target_samples_list)),
         num_workers=num_workers,
         run_name="generate_rules",
-        bar=run_args.progress_bar,
+        bar=False,
     )
+    assert results_list is not None
     # Flatten the list of lists into a single list
     results = [item for sublist in results_list for item in sublist]
     return results
@@ -234,13 +229,7 @@ def save_rules(rules: list[dict[str, list]], output_file: str):
 
 def main():
     if data_args.stage == 1:
-        if run_args.num_workers == 1:
-            target_num_samples = {}
-            for i, num_samples in enumerate(data_args.num_samples_per_num_shapes):
-                target_num_samples[i + rule_args.min_num_shapes] = num_samples
-            samples = generate_rules(target_num_samples)
-        else:
-            samples = generate_rules_multiprocess(run_args.num_workers)
+        samples = generate_rules_multiprocess(run_args.num_workers)
     elif data_args.stage == 2:
         samples = generate_fossil_rules()
 
