@@ -128,6 +128,7 @@ class CaptionArgs:
     caption_batchsize: int = field(default=4)
     caption_llm: str = field(default="llama31-8")
     numeric_ratio: float = field(default=0)
+    debug_option: str = field(default="")
 
 
 @dataclass

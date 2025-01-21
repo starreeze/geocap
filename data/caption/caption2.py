@@ -56,8 +56,10 @@ def gen_user_input_txt_2nd(rule):
     volution_max = {}
     initial_chamber = {}
     chomata_shapes = []
+    volutions = []
     for shape in rule["shapes"]:
         if re.match("volution [0-9]+", shape["special_info"]) is not None:
+            volutions.append(shape)
             if volution_max == {}:
                 volution_max = shape
             else:
@@ -96,6 +98,7 @@ def gen_user_input_txt_2nd(rule):
         Volution(
             rule["numerical_info"]["num_volutions"],
             [["{:.1f} mm".format(random.random()), i] for i in range(int(rule["numerical_info"]["num_volutions"]))],
+            volutions,
         )
     )
     obj_parts.append(Tunnel(rule["numerical_info"]["tunnel_start_idx"], rule["numerical_info"]["tunnel_angles"]))
