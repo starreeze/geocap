@@ -32,22 +32,28 @@ def caption(rules: list[dict[str, Any]], generator: LLMGenerator, output_path: s
         rule_strs.append(rule_str)
         input_texts.append(data_input)
 
-    messages = [
-        [
-            {"role": "system", "content": context},
-            {"role": "user", "content": rule_strs[i]},
-            {"role": "user", "content": "The descriptive text you should generate:"},
+    if caption_args.debug_option == "":
+        messages = [
+            [
+                {"role": "system", "content": context},
+                {"role": "user", "content": rule_strs[i]},
+                {"role": "user", "content": "The descriptive text you should generate:"},
+            ]
+            for i in range(len(rule_strs))
         ]
-        for i in range(len(rule_strs))
-    ]
-    bs = caption_args.caption_batchsize
-    output_texts = generator(messages, bs)
-    total_size = (len(input_texts) + bs - 1) // bs
-    with open(output_path, "w") as f:
-        for batch_idx, outputs in tqdm(enumerate(output_texts), total=total_size):
-            inputs = input_texts[batch_idx * bs : (batch_idx + 1) * bs]
-            for input, output in zip(inputs, outputs):
-                f.write(json.dumps({"input": input, "output": output}) + "\n")
+        bs = caption_args.caption_batchsize
+        output_texts = generator(messages, bs)
+        total_size = (len(input_texts) + bs - 1) // bs
+        with open(output_path, "w") as f:
+            for batch_idx, outputs in tqdm(enumerate(output_texts), total=total_size):
+                inputs = input_texts[batch_idx * bs : (batch_idx + 1) * bs]
+                for input, output in zip(inputs, outputs):
+                    f.write(json.dumps({"input": input, "output": output}) + "\n")
+                    f.flush()
+    elif "nollm" in caption_args.debug_option:
+        with open(output_path, "w") as f:
+            for batch_idx, item in tqdm(enumerate(zip(input_texts, rule_strs))):
+                f.write(json.dumps({"input": item[0], "output": item[1]}) + "\n")
                 f.flush()
 
     # with open(output_path, "w") as f:
@@ -515,6 +521,9 @@ def get_numeric_info(shape):
     if "rectangle" in name:
         wh = rect_width_height(shape["points"])
         return {"width": cut2f(wh[0]), "height": cut2f(wh[1])}
+    elif "square" in name:
+        wh = rect_width_height(shape["points"])
+        return {"side length": cut2f(wh[0])}
     elif "equilateral triangle" in name:
         return {"side length": cut2f(euc_dist(shape["points"][0], shape["points"][1]))}
     elif "circle" in name:
@@ -702,13 +711,19 @@ def gen_data_input(skeleton):
 
 def main():
     if data_args.stage == 1:
-        model_name, model_id = caption_args.caption_llm.split("-", 1)
-        generator = generator_mapping[model_name](model_path_mapping[model_name].format(model_id))
-        # generator=None
-        with open(data_args.rules_path, "r") as f:
-            samples = json.load(f)[run_args.start_pos : run_args.end_pos]
-        os.makedirs(data_args.caption_dir, exist_ok=True)
-        caption(samples, generator, data_args.caption_path)  # type: ignore
+        if caption_args.debug_option == "":
+            model_name, model_id = caption_args.caption_llm.split("-", 1)
+            generator = generator_mapping[model_name](model_path_mapping[model_name].format(model_id))
+            # generator=None
+            with open(data_args.rules_path, "r") as f:
+                samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+            os.makedirs(data_args.caption_dir, exist_ok=True)
+            caption(samples, generator, data_args.caption_path)  # type: ignore
+        elif "nollm" in caption_args.debug_option:
+            with open(data_args.rules_path, "r") as f:
+                samples = json.load(f)[run_args.start_pos : run_args.end_pos]
+            os.makedirs(data_args.caption_dir, exist_ok=True)
+            caption(samples, None, data_args.caption_path)  # type: ignore
     elif data_args.stage == 2:
         import data.caption.caption2
 
