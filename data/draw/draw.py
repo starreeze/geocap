@@ -2,12 +2,12 @@ import json
 import os
 from typing import cast
 
-from iterwrap import iterate_wrapper
 from tqdm import tqdm
 
 import data.draw.pil_backend as pld
 import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
+from iterwrap import iterate_wrapper
 
 
 def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
@@ -99,6 +99,7 @@ def main():
     os.makedirs(data_args.figure_dir, exist_ok=True)
 
     if serial_version:
+        print("YES")
         for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,

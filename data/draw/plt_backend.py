@@ -440,9 +440,9 @@ class Figure:
     def __handle_line(self, points, line_width: int, color: Any):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -484,7 +484,15 @@ class Figure:
         color: Any,
         transparency: tuple = (0, 0, 0, 0),
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (
+            (
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+            )
+            if color == None
+            else color
+        )
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
 
@@ -522,9 +530,9 @@ class Figure:
     def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -551,9 +559,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -576,9 +584,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -635,9 +643,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -674,9 +682,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -691,7 +699,7 @@ class Figure:
         y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
         # """
         if self.xkcd:
-            plt.xkcd()
+            plt.rcdefaults()
         for index in range(len(x)):
             self.ax.plot(
                 (x[index], x[index]),
@@ -705,6 +713,11 @@ class Figure:
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
     def __handle_curve(self, control_points, width: int = 5):
+        color = (
+            random.random() / 2 + 0.5,
+            random.random() / 2 + 0.5,
+            random.random() / 2 + 0.5,
+        )
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:
@@ -721,6 +734,7 @@ class Figure:
             curve_points[:, 0],
             curve_points[:, 1],
             linewidth=width * (self.shape[0] / 640),
+            color=color,
         )
 
     def __line_extend(self, points: list) -> tuple:

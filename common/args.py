@@ -134,7 +134,14 @@ class CaptionArgs:
 @dataclass
 class VQAArgs:
     perspectives: list[str] = field(
-        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
+        default_factory=lambda: [
+            "existence",
+            "counting",
+            "size",
+            "location",
+            "reference",
+            "relation",
+        ]
     )
     # llm generator
     vqa_batchsize: int = field(default=4)
@@ -269,7 +276,15 @@ class FeatureRecognizeArgs:
     save_data_path: str = field(default="dataset/")
 
 
-data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args = HfArgumentParser(
+(
+    data_args,
+    run_args,
+    rule_args,
+    draw_args,
+    caption_args,
+    vqa_args,
+    feat_recog_args,
+) = HfArgumentParser(
     [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
