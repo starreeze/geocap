@@ -19,7 +19,9 @@ class DataArgs:
     vqa_question_dir: str = field(default="dataset/vqa")
     vqa_output_dir: str = field(default="results")
     stage: int = field(default=1)
-    num_basic_geo_samples: int = field(default=100000)
+    # set num_samples for each num_shapes
+    # num_samples_per_num_shapes[i]: number of samples for num_shapes=(min_num_shapes + i)
+    num_samples_per_num_shapes: list[int] = field(default_factory=lambda: [10, 10, 10])
     num_fossil_samples: int = field(default=3)
     llava_data_dir: str = field(default="dataset/llava")
 
@@ -46,15 +48,13 @@ class RuleArgs:
     output_fp_precision: int = field(default=4)
 
     """args for stage 1"""
-    max_num_shapes: int = field(default=10)
     min_num_shapes: int = field(default=2)
-
     in_canvas_area_thres: float = field(default=0.8)
     # levels of shape generation
-    polygon_shape_level: int = field(default=3)
-    line_shape_level: int = field(default=1)
-    ellipse_shape_level: int = field(default=4)
-    spiral_shape_level: int = field(default=3)
+    polygon_shape_level: int = field(default=5)
+    line_shape_level: int = field(default=2)
+    ellipse_shape_level: int = field(default=3)
+    spiral_shape_level: int = field(default=1)
 
     # numerical params for shapes
     polygon_points_min_distance: float = field(default=0.01)
@@ -75,6 +75,7 @@ class RuleArgs:
     polygon_circumscribed_circle_of_triangle_level: int = field(default=2)
     polygon_inscribed_circle_level: int = field(default=2)
     polygon_circumscribed_circle_of_rectangle_level: int = field(default=2)
+    polygon_circumscribed_circle_of_square_level: int = field(default=2)
     polygon_diagonal_level: int = field(default=1)
 
     # levels of line relation
@@ -127,6 +128,7 @@ class CaptionArgs:
     caption_batchsize: int = field(default=4)
     caption_llm: str = field(default="llama31-8")
     numeric_ratio: float = field(default=0)
+    debug_option: str = field(default="")
 
 
 @dataclass
@@ -287,6 +289,11 @@ class FeatureRecognizeArgs:
     volution_thres: float = field(
         default=0.85, metadata={"help": "threshold for volution detection"}
     )
+
+    fossil_data_path: str = field(default="dataset/common")
+    desc_llm: str = field(default="qwen25-14")
+    desc_prompt_dir: str = field(default="feat_recognize/prompt.txt")
+    save_data_path: str = field(default="dataset/")
 
 
 (

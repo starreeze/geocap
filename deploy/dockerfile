@@ -4,4 +4,4 @@ RUN cd build && cp bashrc /root/.bashrc && cp sources.list /etc/apt/sources.list
 RUN pip install -r requirements.txt -i https://mirrors.nju.edu.cn/pypi/web/simple/
 
 # it should be run: 
-# docker build -t mm_hal:1.2 .
+# docker build -t geocap:1.0 .

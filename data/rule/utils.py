@@ -186,6 +186,29 @@ def overlap_area(bbox1, bbox2) -> float:
     return overlap_area
 
 
+def no_overlap(shapes, new_shape, exclude_shape=None, thres=0.2) -> bool:
+    if new_shape is None:
+        return False
+
+    if exclude_shape is None:
+        exclude_shape = []
+
+    iou_sum = 0
+    for cur_shape in shapes:
+        if cur_shape not in exclude_shape:
+            cur_bbox = cur_shape.get_bbox()
+            new_bbox = new_shape.get_bbox()
+            cur_area = (cur_bbox[1][0] - cur_bbox[0][0]) * (cur_bbox[0][1] - cur_bbox[1][1])
+            new_area = (new_bbox[1][0] - new_bbox[0][0]) * (new_bbox[0][1] - new_bbox[1][1])
+            intersection = overlap_area(cur_bbox, new_bbox)
+            union = cur_area + new_area - intersection
+            iou_sum += intersection / union
+
+    if iou_sum > thres:
+        return False
+    return True
+
+
 def get_tangent_line(
     tangent_point: tuple[float, float], curve_points: list[tuple[float, float]]
 ) -> tuple[float, float]:
