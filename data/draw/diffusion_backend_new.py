@@ -98,16 +98,7 @@ class Figure_Engine:
                 minor = shape["minor_axis"]
                 alpha = shape["rotation"] * 180 / np.pi
 
-                self.__handle_ellipse(
-                    ellipse_x,
-                    ellipse_y,
-                    major,
-                    minor,
-                    alpha,
-                    width,
-                    color,
-                    trans,
-                )
+                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, width, color, trans)
 
             case "polygon":
                 points: list = shape["points"]
@@ -157,15 +148,7 @@ class Figure_Engine:
         self.__keep_memory(index, ellipse_x, ellipse_y)
 
     def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
-        color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
-            if color == None
-            else color
-        )
+        color = (random.random(), random.random(), random.random()) if color == None else color
         self.ax.add_patch(
             pch.Polygon(
                 points,
@@ -186,15 +169,7 @@ class Figure_Engine:
         color: Any,
         index: int | None = None,
     ):
-        color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
-            if color == None
-            else color
-        )
+        color = (random.random(), random.random(), random.random()) if color == None else color
         theta = np.arange(0, 2 * 3.1416, 0.01)
         a = major_axis / 2
         b = minor_axis / 2
@@ -248,15 +223,7 @@ class Figure_Engine:
         line_width,
         index,
     ):
-        color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
-            if color == None
-            else color
-        )
+        color = (random.random(), random.random(), random.random()) if color == None else color
 
         def f(x):
             return 4 * focal_length * (x - x_offset) ** 2 + y_offset + eps * np.sin(omega * x + phi)
@@ -288,15 +255,7 @@ class Figure_Engine:
         line_width,
         index,
     ):
-        color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
-            if color == None
-            else color
-        )
+        color = (random.random(), random.random(), random.random()) if color == None else color
 
         x = np.linspace(x_start, x_end, 1000)
         x_left = x[:500]
@@ -314,19 +273,9 @@ class Figure_Engine:
             )
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
-        self.__keep_memory(
-            index,
-            x + x,
-            y1 + y2,
-        )
+        self.__keep_memory(index, x + x, y1 + y2)
 
-    def __handle_curve(
-        self,
-        control_points,
-        width: int = 5,
-        color=(0, 0, 0, 1),
-        index: int | None = None,
-    ):
+    def __handle_curve(self, control_points, width: int = 5, color=(0, 0, 0, 1), index: int | None = None):
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:
@@ -340,17 +289,10 @@ class Figure_Engine:
             curve_points.append(tuple(point))
         curve_points = np.array(curve_points)
         self.ax.plot(
-            curve_points[:, 0],
-            curve_points[:, 1],
-            linewidth=width * (self.shape[0] / 640),
-            color=color,
+            curve_points[:, 0], curve_points[:, 1], linewidth=width * (self.shape[0] / 640), color=color
         )
 
-        self.__keep_memory(
-            index,
-            curve_points[:, 0],
-            curve_points[:, 1],
-        )
+        self.__keep_memory(index, curve_points[:, 0], curve_points[:, 1])
 
     def __get_essential_info(self, shape):
         width = self.__get_width(shape)
@@ -479,10 +421,7 @@ def generate_basic_mask(volution_memory: dict, filling: list) -> np.ndarray:
 
 
 def diffuse(img: np.ndarray, mask: np.ndarray, ref_path: str, num_refs: int) -> np.ndarray:
-    from MimicBrush.run_gradio3_demo import (
-        crop_padding_and_resize,
-        inference_single_image,
-    )
+    from MimicBrush.run_gradio3_demo import crop_padding_and_resize, inference_single_image
 
     def get_random_ref_image(ref_path: list) -> np.ndarray:
         ref_image = cv2.imread(random.choice(ref_path))
@@ -492,13 +431,7 @@ def diffuse(img: np.ndarray, mask: np.ndarray, ref_path: str, num_refs: int) -> 
     ref_image = get_random_ref_image(ref_paths)
 
     synthesis, depth_pred = inference_single_image(
-        ref_image.copy(),
-        img.copy(),
-        mask.copy(),
-        ddim_steps=60,
-        scale=5,
-        seed=0,
-        enable_shape_control=True,
+        ref_image.copy(), img.copy(), mask.copy(), ddim_steps=60, scale=5, seed=0, enable_shape_control=True
     )
 
     synthesis = crop_padding_and_resize(img, synthesis)
@@ -514,7 +447,9 @@ def generate_septa(septas: list) -> np.ndarray:
 
 
 def generate_one_img(sample, img_path: str, ref_path: str, num_refs: int):
-    basic_img, volution_memory, max_volution = generate_basic_shape(sample["shapes"], sample["numerical_info"])
+    basic_img, volution_memory, max_volution = generate_basic_shape(
+        sample["shapes"], sample["numerical_info"]
+    )
     basic_mask = generate_basic_mask(volution_memory, sample["axial_filling"])
     diffused_basic_img = diffuse(basic_img, basic_mask, ref_path, num_refs)
     poles_mask = generate_basic_mask(volution_memory, sample["poles_filling"])
@@ -527,10 +462,7 @@ def generate_one_img(sample, img_path: str, ref_path: str, num_refs: int):
 def process_single(idx_sample: tuple[int, dict], f):
     generate_one_img(
         idx_sample[1],
-        os.path.join(
-            data_args.figure_dir,
-            f"{idx_sample[0]:08d}.jpg",
-        ),
+        os.path.join(data_args.figure_dir, f"{idx_sample[0]:08d}.jpg"),
         # ref_path=data_args.reference_dir,
         ref_path="some_directory, why so serious?",
         num_refs=10,  # some number

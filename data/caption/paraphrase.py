@@ -30,10 +30,7 @@ class Paraphraser:
         user_prompts = [f"{self.user_prompt.replace('{text}', text)}" for text in texts]
 
         messages = [
-            [
-                {"role": "system", "content": self.sys_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
+            [{"role": "system", "content": self.sys_prompt}, {"role": "user", "content": user_prompt}]
             for user_prompt in user_prompts
         ]
         return messages

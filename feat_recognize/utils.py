@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 
 
-def bresenham(point1: list[int] | tuple[int, int], point2: list[int] | tuple[int, int]) -> list[tuple[int, int]]:
+def bresenham(
+    point1: list[int] | tuple[int, int], point2: list[int] | tuple[int, int]
+) -> list[tuple[int, int]]:
     """Bresenham's Line Algorithm to generate points between (x1, y1) and (x2, y2)"""
     x1, y1 = point1
     x2, y2 = point2

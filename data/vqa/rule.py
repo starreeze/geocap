@@ -65,7 +65,9 @@ class RuleBasedQAGenerator(GeneratorBase):
             type_i, type_j = figure["shapes"][i]["type"], figure["shapes"][j]["type"]
             if type_i in types and type_j in types:
                 relations[(type_i, type_j)] = cls.get_relation(r)
-        relation_pairs = dict(random.sample(list(relations.items()), min(len(relations), vqa_args.max_q_ip - 1)))
+        relation_pairs = dict(
+            random.sample(list(relations.items()), min(len(relations), vqa_args.max_q_ip - 1))
+        )
 
         # reverse half of the relation pairs to avoid bias
         reversed_pairs = {}
@@ -80,7 +82,9 @@ class RuleBasedQAGenerator(GeneratorBase):
         none_desc = "none of the above"
         if random.random() < vqa_args.nrel_q_prob:
             total = cast(list[tuple[str, str]], list(product(types, repeat=2)))
-            no_relations = [t for t in total if t[0] != t[1] and t not in relations and t[::-1] not in relations]
+            no_relations = [
+                t for t in total if t[0] != t[1] and t not in relations and t[::-1] not in relations
+            ]
             no_relation_pairs = {k: none_desc for k in random.sample(no_relations, min(len(no_relations), 1))}
         else:
             no_relation_pairs = {}
@@ -388,7 +392,9 @@ class RuleBasedQAGenerator(GeneratorBase):
             proj_perp_func = lambda shape: shape["center"][0] * vec[1] - shape["center"][1] * vec[0]
             for direction, vec in vqa_args.relative_direction_text_and_vector_dict.items():
                 sorted_shapes_data = sorted(
-                    map(lambda shape: (proj_para_func(shape), proj_perp_func(shape), shape), candidate_shapes),
+                    map(
+                        lambda shape: (proj_para_func(shape), proj_perp_func(shape), shape), candidate_shapes
+                    ),
                     key=lambda info: (info[0], info[1]),
                     reverse=True,
                 )
@@ -488,7 +494,9 @@ class RuleBasedQAGenerator(GeneratorBase):
                     (shape["box"][0][0] - 0.0001, shape["box"][0][1] + 0.0001),
                     (shape["box"][1][0] + 0.0001, shape["box"][1][1] - 0.0001),
                 )
-                shape_box_area = abs((shape_box[1][0] - shape_box[0][0]) * (shape_box[0][1] - shape_box[1][1]))
+                shape_box_area = abs(
+                    (shape_box[1][0] - shape_box[0][0]) * (shape_box[0][1] - shape_box[1][1])
+                )
                 inclusiv_ratio = overlap_area(part_box, shape_box) / shape_box_area
                 exclusiv_ratio = overlap_area(exclusiv_part_box, shape_box) / shape_box_area
                 if (
@@ -520,7 +528,9 @@ class RuleBasedQAGenerator(GeneratorBase):
                 cls.clarify_hierarchical_text(shape_type, list(figure["counts"].keys()), "location")
                 for shape_type in choices_types
             ]
-            answer_type = cls.clarify_hierarchical_text(answer_type, list(figure["counts"].keys()), "location")
+            answer_type = cls.clarify_hierarchical_text(
+                answer_type, list(figure["counts"].keys()), "location"
+            )
             choices_types.append(answer_type)
             random.shuffle(choices_types)
             direction_qa_pairs.append(
@@ -550,7 +560,9 @@ class RuleBasedQAGenerator(GeneratorBase):
         for qa in qa_pairs:
             image_types = [t for t in counts.keys() if t not in qa["exclude_types"]]
             remaining_types = [t for t in cls.total_shapes if t not in counts]
-            wrong_choices = (image_types[:3] + random.sample(remaining_types, max(0, 3 - len(image_types))))[:3]
+            wrong_choices = (image_types[:3] + random.sample(remaining_types, max(0, 3 - len(image_types))))[
+                :3
+            ]
             choices = [qa["answer"]] + wrong_choices
             random.shuffle(choices)
             qa["choices"] = choices

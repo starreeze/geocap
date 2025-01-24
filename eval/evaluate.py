@@ -19,12 +19,15 @@ Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").Gen
 
 
 def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: TextIO) -> list[str]:
-    batched_data = [data[i : i + vqa_args.eval_batchsize] for i in range(0, len(data), vqa_args.eval_batchsize)]
+    batched_data = [
+        data[i : i + vqa_args.eval_batchsize] for i in range(0, len(data), vqa_args.eval_batchsize)
+    ]
     all_answer = []
     for batch in tqdm(batched_data):
         image_paths = [
             os.path.join(
-                data_args.figure_dir, data_args.figure_name.format(prefix=data_args.figure_prefix, id=item["image_id"])
+                data_args.figure_dir,
+                data_args.figure_name.format(prefix=data_args.figure_prefix, id=item["image_id"]),
             )
             for item in batch
         ]
