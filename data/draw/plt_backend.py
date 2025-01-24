@@ -472,9 +472,9 @@ class Figure:
     def __handle_line(self, points, line_width: int, color: Any):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -517,7 +517,11 @@ class Figure:
         transparency: tuple = (0, 0, 0, 0),
     ):
         color = (
-            (random.random(), random.random(), random.random())
+            (
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+            )
             if color == None
             else color
         )
@@ -562,9 +566,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -591,9 +595,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -616,9 +620,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -675,9 +679,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -720,9 +724,9 @@ class Figure:
     ):
         color = (
             (
-                random.random(),
-                random.random(),
-                random.random(),
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
+                random.random() / 2 + 0.5,
             )
             if color == None
             else color
@@ -755,6 +759,11 @@ class Figure:
         )
 
     def __handle_curve(self, control_points, width: int = 5):
+        color = (
+            random.random() / 2 + 0.5,
+            random.random() / 2 + 0.5,
+            random.random() / 2 + 0.5,
+        )
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:
@@ -771,6 +780,7 @@ class Figure:
             curve_points[:, 0],
             curve_points[:, 1],
             linewidth=width * (self.shape[0] / 640),
+            color=color,
         )
 
     def __line_extend(self, points: list) -> tuple:
