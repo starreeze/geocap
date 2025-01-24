@@ -70,15 +70,10 @@ class LlavaPhi3ForCausalLM(Phi3ForCausalLM, LlavaMetaForCausalLM):
         cache_position=None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         if inputs_embeds is None:
-            (
-                input_ids,
-                position_ids,
-                attention_mask,
-                past_key_values,
-                inputs_embeds,
-                labels,
-            ) = self.prepare_inputs_labels_for_multimodal(
-                input_ids, position_ids, attention_mask, past_key_values, labels, images, image_sizes
+            (input_ids, position_ids, attention_mask, past_key_values, inputs_embeds, labels) = (
+                self.prepare_inputs_labels_for_multimodal(
+                    input_ids, position_ids, attention_mask, past_key_values, labels, images, image_sizes
+                )
             )
 
         return super().forward(
@@ -108,15 +103,10 @@ class LlavaPhi3ForCausalLM(Phi3ForCausalLM, LlavaMetaForCausalLM):
             raise NotImplementedError("`inputs_embeds` is not supported")
 
         if images is not None:
-            (
-                inputs,
-                position_ids,
-                attention_mask,
-                _,
-                inputs_embeds,
-                _,
-            ) = self.prepare_inputs_labels_for_multimodal(
-                inputs, position_ids, attention_mask, None, None, images, image_sizes=image_sizes
+            (inputs, position_ids, attention_mask, _, inputs_embeds, _) = (
+                self.prepare_inputs_labels_for_multimodal(
+                    inputs, position_ids, attention_mask, None, None, images, image_sizes=image_sizes
+                )
             )
         else:
             inputs_embeds = self.get_model().embed_tokens(inputs)

@@ -194,6 +194,6 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
    If you do not like this code style or you cannot complete the config, you can also use `black` to format your code before opening a PR:
 
    ```shell
-   pip install black
+   pip install black==24.10.0
    black . --skip-magic-trailing-comma --line-length 110
    ```
