@@ -30,4 +30,4 @@ jobs:
       - name: Run Pyright lint
         run: |
           npx pyright --level warning
-          black --check . --line-length 110 --skip-magic-trailing-comma --extend-exclude llava
+          black --check . --line-length 110 --skip-magic-trailing-comma

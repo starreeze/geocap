@@ -190,7 +190,7 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 
 1. Use `Pylance` (basic level) to lint your code while doing your work. Refer to https://docs.pydantic.dev/latest/integrations/visual_studio_code/#configure-vs-code to configure your VSCode. NOTE: Be cautious of using `# type: ignore` to suppress type errors, as you may be ignoring valuable traces of bugs; usually typing.cast() is more preferred. If you want to add external modules which will not pass the linter, you can add them to `pyrightconfig.json`.
 2. Config your vscode to use black to do code formatting. The arguments are supposed to be:
-   [!](assets/black.png)
+   ![](assets/black.png)
    If you do not like this code style or you cannot complete the config, you can also use `black` to format your code before opening a PR:
 
    ```shell

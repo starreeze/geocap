@@ -1,6 +1,6 @@
-from copy import deepcopy
 import random
-from typing import Any, Literal, Optional
+from copy import deepcopy
+from typing import Any, Literal
 
 import numpy as np
 from numpy.random import normal, randint, uniform
@@ -159,9 +159,7 @@ class PolygonRelationGenerator:
 
             # calculate center by solving linear system Ax=B
             A = np.array([[x1 - x2, y1 - y2], [x1 - x3, y1 - y3]])
-            B = np.array(
-                [(x1**2 - x2**2 + y1**2 - y2**2) / 2, (x1**2 - x3**2 + y1**2 - y3**2) / 2]
-            )
+            B = np.array([(x1**2 - x2**2 + y1**2 - y2**2) / 2, (x1**2 - x3**2 + y1**2 - y3**2) / 2])
             center = tuple(np.linalg.solve(A, B))
             radius = distance_2points(center, (x1, y1))
 
