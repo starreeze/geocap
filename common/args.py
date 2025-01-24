@@ -152,12 +152,8 @@ class VQAArgs:
         default=3,
         metadata={"help": "maximum number of questions per image per perspective"},
     )
-    vqa_digits: int = field(
-        default=2, metadata={"help": "number of digits for the answer"}
-    )
-    nrel_q_prob: float = field(
-        default=0.3, metadata={"help": "probability of no-relation questions"}
-    )
+    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
+    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     gt_choice_w: list[float] = field(
         default_factory=lambda: [0.05, 0.15, 0.25, 0.55],
         metadata={
@@ -168,9 +164,7 @@ class VQAArgs:
     )
     size_diff: float = field(
         default=0.15,
-        metadata={
-            "help": "ratio of the difference of the correct answer and the other choices for size questions"
-        },
+        metadata={"help": "ratio of the difference of the correct answer and the other choices for size questions"},
     )
     area_type_t: float = field(
         default=0.02,
@@ -178,34 +172,24 @@ class VQAArgs:
     )
     location_type_t: float = field(
         default=0.03,
-        metadata={
-            "help": "tolerate threshold for location difference to be considered"
-        },
+        metadata={"help": "tolerate threshold for location difference to be considered"},
     )
     # evaluation
     eval_model: str = field(
         default="llava-7b",
-        metadata={
-            "help": "model name for evaluation. Naming convention: {model_name}-{model_size}"
-        },
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}-{model_size}"},
     )
     eval_batchsize: int = field(default=4)
-    eval_inst: str = field(
-        default="Please directly answer A, B, C or D and nothing else."
-    )
+    eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
     distinguish_threshold_of_relative_direction: float = field(default=0.04)
     deviation_threshold_of_relative_direction: float = field(default=math.pi / 9)
-    exclusiv_deviation_threshold_of_relative_direction: float = field(
-        default=math.pi / 5
-    )
-    relative_direction_text_and_vector_dict: dict[str, tuple[float, float]] = field(
+    exclusiv_deviation_threshold_of_relative_direction: float = field(default=math.pi / 5)
+    relative_direction_text_and_vector_dict: dict[str, tuple[float, float]] = field(default_factory=dict)
+    distinguish_threshold_of_absolute_direction: float = field(default=0.1)
+    absolute_direction_text_and_box_dict: dict[str, tuple[tuple[float, float], tuple[float, float]]] = field(
         default_factory=dict
     )
-    distinguish_threshold_of_absolute_direction: float = field(default=0.1)
-    absolute_direction_text_and_box_dict: dict[
-        str, tuple[tuple[float, float], tuple[float, float]]
-    ] = field(default_factory=dict)
     inclusiv_overlapping_threshold_of_absolute_direction: float = field(default=0.8)
 
     def __post_init__(self):
@@ -282,13 +266,9 @@ class FeatureRecognizeArgs:
             "param1": 150,
             "param2": 0.5,
         },
-        metadata={
-            "help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"
-        },
+        metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
     )
-    volution_thres: float = field(
-        default=0.85, metadata={"help": "threshold for volution detection"}
-    )
+    volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
     fossil_data_path: str = field(default="dataset/common")
     desc_llm: str = field(default="qwen25-14")
@@ -317,9 +297,7 @@ vqa_args = cast(VQAArgs, vqa_args)
 feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
 
 data_args.figure_prefix = (
-    data_args.figure_prefix
-    if data_args.figure_prefix
-    else (draw_args.backend if draw_args.randomize else "pure")
+    data_args.figure_prefix if data_args.figure_prefix else (draw_args.backend if draw_args.randomize else "pure")
 )
 data_args.caption_path = (
     data_args.caption_path
