@@ -58,6 +58,7 @@ You can control the generation process with the following arguments:
 - num_samples_per_num_shapes: a list for setting `num_samples` for each `num_shapes`. The number of samples with `num_shapes=min_num_shapes + i` is `num_samples_per_num_shapes[i]`.
 
 there are some arguments for controling the numerical characteristics of geometric shapes:
+
 - in_canvas_area_thres: the area threshold for shapes in the canvas, between 0 and 1. A value of 1 means the entire shape has to be fully contained within the canvas. Default is 0.8
 
 - polygon_points_min_distance: the minimum distance between any two points of a polygon. Default is 0.01
@@ -68,6 +69,7 @@ there are some arguments for controling the numerical characteristics of geometr
 - ellipse_ratio_thres: the aspect ratio constraints of ellipse, where the two items in the list represent the lower bound and upper bound respectively. Default is [1.5, 3.0]
 
 and there are arguments for controling the proportion of different shapes and relations, for example:
+
 - polygon_shape_level: the proportion of polygon in all shapes
 - line_shape_level: the proportion of line in all shapes
 - ...
@@ -130,6 +132,7 @@ Only part of the shapes will add numeric values, controlled by ${ratio}.
 ### Feature Recognition (stage 3)
 
 For specific fossil feature recognition, the following arguments are provided:
+
 - houghcircle_params: a dictionary of `cv2.HoughCircles` params for initial chamber detection. Higher `param2` results in initial chamber with higher confident level.
 - volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
 
@@ -166,6 +169,7 @@ Draw shapes according to the rule.
 In the default backend (which means `plt_backend.py`), the python script will receive the `rules.json` in path `dataset/rules.json` and handle each rule by turn. After handling all the rules, a basic image will be generated. Then, the script will add noise to the image and generate a final image. The noise here contains Gaussian noise and Perlin noise.
 
 To run the script, use the following command:
+
 ```shell
 python run.py --module data.draw.draw --backend plt --stage 1
 ```
@@ -184,12 +188,12 @@ write how you convert rules to intermediate format and generate captions...
 
 Fork and open a pull request. Follow the instructions below or your PR will fail.
 
-1. Use `Pylance` (basic level) to lint your code while doing your work. Refer to https://docs.pydantic.dev/latest/integrations/visual_studio_code/#configure-vs-code to configure your VSCode. NOTE: Be cautious of using `# type: ignore` to suppress type errors, as you may be ignoring valuable traces of bugs; usually typing.cast() is more preferred.
-2. Use `black` to format your code before opening a PR:
+1. Use `Pylance` (basic level) to lint your code while doing your work. Refer to https://docs.pydantic.dev/latest/integrations/visual_studio_code/#configure-vs-code to configure your VSCode. NOTE: Be cautious of using `# type: ignore` to suppress type errors, as you may be ignoring valuable traces of bugs; usually typing.cast() is more preferred. If you want to add external modules which will not pass the linter, you can add them to `pyrightconfig.json`.
+2. Config your vscode to use black to do code formatting. The arguments are supposed to be:
+   ![](assets/black.png)
+   If you do not like this code style or you cannot complete the config, you can also use `black` to format your code before opening a PR:
 
    ```shell
-   pip install black
-   black . --line-length 120 --extend-exclude llava
+   pip install black==24.10.0
+   black . --skip-magic-trailing-comma --line-length 110
    ```
-
-Note: If you want to add external modules which will not pass the linter, you can add them to `pyrightconfig.json` and `.github/workflows/lint_format.yaml`.

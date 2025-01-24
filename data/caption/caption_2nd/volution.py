@@ -40,7 +40,11 @@ class Volution(BaseFeature):
             elif self.volutions_table[i]["type"] == "curves":
                 height = max(
                     round(
-                        abs(self.volutions_table[i]["vertices"][1][1] - self.volutions_table[i]["vertices"][3][1]) / 2,
+                        abs(
+                            self.volutions_table[i]["vertices"][1][1]
+                            - self.volutions_table[i]["vertices"][3][1]
+                        )
+                        / 2,
                         3,
                     ),
                     0.001,

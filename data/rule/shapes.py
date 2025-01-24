@@ -45,7 +45,9 @@ class GSRule(ABC):
         if shape_type == "polygon":
             points = [tuple(point) for point in data["points"]]
             return Polygon(
-                points=points, special_info=data.get("special_info", ""), fill_mode=data.get("fill_mode", "no")
+                points=points,
+                special_info=data.get("special_info", ""),
+                fill_mode=data.get("fill_mode", "no"),
             )
         elif shape_type in ["line", "segment", "ray"]:
             return Line(type=shape_type, points=data["points"])
@@ -165,7 +167,11 @@ class Polygon(GSRule):
             pass_check = False
 
         # Check whether all angles are around np.pi/2 if not a rectangle
-        if len(self.points) == 4 and "rectangle" not in self.special_info and "square" not in self.special_info:
+        if (
+            len(self.points) == 4
+            and "rectangle" not in self.special_info
+            and "square" not in self.special_info
+        ):
             all_around = True
             for angle in angles:
                 if abs(angle - np.pi / 2) > rule_args.general_quadrilateral_angle_thres:
@@ -187,10 +193,7 @@ class Polygon(GSRule):
 
     def to_simple_polygon(self):
         n = len(self.points)
-        center = (
-            sum([p[0] for p in self.points]) / n,
-            sum([p[1] for p in self.points]) / n,
-        )
+        center = (sum([p[0] for p in self.points]) / n, sum([p[1] for p in self.points]) / n)
         self.points.sort(key=lambda p: (polar_angle(center, p), -distance_2points(center, p)))
 
     def check_points_distance(self) -> bool:
@@ -350,7 +353,9 @@ class Ellipse(GSRule):
             start_idx = int(quarter_size * quarter_idx * 0.8)
             end_idx = int(quarter_size * (quarter_idx + 1) * 1.2)
 
-            distances = [distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]]
+            distances = [
+                distance_point_to_line(point, line) for point in self.curve_points[start_idx:end_idx]
+            ]
             min_distance_idx = np.argmin(distances)
             point = self.curve_points[start_idx + min_distance_idx]
 
@@ -833,9 +838,13 @@ class ShapeGenerator:
         elif special_polygon == "rectangle":
             width, height = (uniform(0.1, 0.6), uniform(0.1, 0.6))
             if width >= height:
-                height = width / uniform(rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1])
+                height = width / uniform(
+                    rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1]
+                )
             else:
-                width = height / uniform(rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1])
+                width = height / uniform(
+                    rule_args.rectangle_ratio_thres[0], rule_args.rectangle_ratio_thres[1]
+                )
             rotation = uniform(0, 2 * np.pi)
             polygon.to_rectangle(width, height, rotation)
         elif special_polygon == "equilateral triangle":
@@ -848,7 +857,9 @@ class ShapeGenerator:
         polygon.normalize_points()
         return polygon
 
-    def generate_line(self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.8) -> Line:
+    def generate_line(
+        self, points: Optional[list[tuple[float, float]]] = None, min_length=0.2, max_length=0.8
+    ) -> Line:
         def random_point_on_edge(edge) -> tuple:
             if edge == "left":
                 return (0, uniform(0.1, 0.9))
@@ -898,12 +909,16 @@ class ShapeGenerator:
         else:
             center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
             major_axis = normal(0.5, 0.1)
-            minor_axis = major_axis / uniform(rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1])
+            minor_axis = major_axis / uniform(
+                rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1]
+            )
             rotation = uniform(0, np.pi)
             ellipse = Ellipse(center, major_axis, minor_axis, rotation)
             while ellipse.get_area() < 0.01:
                 major_axis = normal(0.5, 0.1)
-                minor_axis = major_axis / uniform(rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1])
+                minor_axis = major_axis / uniform(
+                    rule_args.ellipse_ratio_thres[0], rule_args.ellipse_ratio_thres[1]
+                )
                 ellipse = Ellipse(center, major_axis, minor_axis, rotation)
 
             special_ellipse = np.random.choice(["no", "circle"])

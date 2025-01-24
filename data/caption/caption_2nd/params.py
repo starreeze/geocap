@@ -27,7 +27,12 @@ chomata_size_classes = {"small": [0, 1], "": [1, 2], "massive": [2, 9999]}
 
 chomata_development_classes = {"absence": [0, 1], "": [1, 2], "well developed": [2, 999]}
 
-deposit_development_classes = {"absence": [0, 0.1], "": [0.1, 0.6], "well developed": [0.6, 1], "absence": [1, 999]}
+deposit_development_classes = {
+    "absence": [0, 0.1],
+    "": [0.1, 0.6],
+    "well developed": [0.6, 1],
+    "absence": [1, 999],
+}
 
 ordinal_numbers = [
     "first",

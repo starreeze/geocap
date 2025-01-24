@@ -2,12 +2,12 @@ import json
 import os
 from typing import cast
 
-from iterwrap import iterate_wrapper
 from tqdm import tqdm
 
 import data.draw.pil_backend as pld
 import data.draw.plt_backend as ptd
 from common.args import data_args, draw_args, run_args
+from iterwrap import iterate_wrapper
 
 
 def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None, randomize=True):
@@ -48,10 +48,7 @@ def draw_figure(rules: "dict", path: str, backend: str = "plt", random_seed=None
             rules,
             random_seed,
             randomize,
-            size=(
-                int(draw_args.dpi * draw_args.size[0]),
-                int(draw_args.dpi * draw_args.size[1]),
-            ),
+            size=(int(draw_args.dpi * draw_args.size[0]), int(draw_args.dpi * draw_args.size[1])),
             line_weight=draw_args.line_weight,
         )
     else:
@@ -99,12 +96,15 @@ def main():
     os.makedirs(data_args.figure_dir, exist_ok=True)
 
     if serial_version:
+        print("YES")
         for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,
                 os.path.join(
                     data_args.figure_dir,
-                    data_args.figure_name.format(prefix=data_args.figure_prefix, id=idx + draw_args.fig_id_start),
+                    data_args.figure_name.format(
+                        prefix=data_args.figure_prefix, id=idx + draw_args.fig_id_start
+                    ),
                 ),
                 draw_args.backend,
                 draw_args.random_seed,

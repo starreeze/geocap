@@ -85,10 +85,7 @@ class Figure:
         # Go to PIL. PIL works better here!
 
         self.unprocessed_image = self.__fig2img(self.image)
-        self.height, self.width = (
-            self.unprocessed_image.height,
-            self.unprocessed_image.width,
-        )
+        self.height, self.width = (self.unprocessed_image.height, self.unprocessed_image.width)
         self.canvas = ImageDraw.Draw(self.unprocessed_image)
 
         # print("Monochromizing the image...")
@@ -237,10 +234,7 @@ class Figure:
                 x1 = random.random()
                 y1 = random.random()
                 angle = random.random() * 2 * np.pi
-                x2, y2 = (
-                    x1 + max_radius * np.cos(angle),
-                    y1 + max_radius * np.sin(angle),
-                )
+                x2, y2 = (x1 + max_radius * np.cos(angle), y1 + max_radius * np.sin(angle))
                 self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=3)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
@@ -296,9 +290,7 @@ class Figure:
                 except:
                     pass
                 self.__handle_line(
-                    ((points[0][0], points[0][1]), (farwise[0], farwise[1])),
-                    line_width,
-                    color,
+                    ((points[0][0], points[0][1]), (farwise[0], farwise[1])), line_width, color
                 )
 
             case "segment":
@@ -373,18 +365,7 @@ class Figure:
                 except:
                     pass
                 self.__handle_fusiform_1(
-                    fc,
-                    x_offset,
-                    y_offset,
-                    eps,
-                    ome,
-                    phi,
-                    x_start,
-                    x_end,
-                    y_sim,
-                    color,
-                    trans,
-                    line_width,
+                    fc, x_offset, y_offset, eps, ome, phi, x_start, x_end, y_sim, color, trans, line_width
                 )
 
             case "fusiform_2":
@@ -409,18 +390,7 @@ class Figure:
                     pass
 
                 self.__handle_fusiform_2(
-                    fc,
-                    x_offset,
-                    y_offset,
-                    power,
-                    eps,
-                    ome,
-                    phi,
-                    x_start,
-                    x_end,
-                    color,
-                    trans,
-                    line_width,
+                    fc, x_offset, y_offset, power, eps, ome, phi, x_start, x_end, color, trans, line_width
                 )
 
             case "curves":
@@ -439,11 +409,7 @@ class Figure:
 
     def __handle_line(self, points, line_width: int, color: Any):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -484,7 +450,11 @@ class Figure:
         color: Any,
         transparency: tuple = (0, 0, 0, 0),
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
+            if color == None
+            else color
+        )
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
 
@@ -521,11 +491,7 @@ class Figure:
 
     def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -550,11 +516,7 @@ class Figure:
         color: Any,
     ):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -575,11 +537,7 @@ class Figure:
         color: Any,
     ):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -634,11 +592,7 @@ class Figure:
         line_width,
     ):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -673,11 +627,7 @@ class Figure:
         line_width,
     ):
         color = (
-            (
-                random.random(),
-                random.random(),
-                random.random(),
-            )
+            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
             if color == None
             else color
         )
@@ -691,7 +641,7 @@ class Figure:
         y2 = 2 * y_offset - y1  # 得到整个纺锤形的下半部分
         # """
         if self.xkcd:
-            plt.xkcd()
+            plt.rcdefaults()
         for index in range(len(x)):
             self.ax.plot(
                 (x[index], x[index]),
@@ -705,6 +655,7 @@ class Figure:
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
     def __handle_curve(self, control_points, width: int = 5):
+        color = (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:
@@ -718,9 +669,7 @@ class Figure:
             curve_points.append(tuple(point))
         curve_points = np.array(curve_points)
         self.ax.plot(
-            curve_points[:, 0],
-            curve_points[:, 1],
-            linewidth=width * (self.shape[0] / 640),
+            curve_points[:, 0], curve_points[:, 1], linewidth=width * (self.shape[0] / 640), color=color
         )
 
     def __line_extend(self, points: list) -> tuple:
@@ -734,29 +683,19 @@ class Figure:
         elif line_b < 0:
             leftwise_endpoint = (-line_b / line_k, 0)
         else:  # line_b > self.height:
-            leftwise_endpoint = (
-                (1 - line_b) / line_k,
-                1,
-            )
+            leftwise_endpoint = ((1 - line_b) / line_k, 1)
 
         if line_k * 1 + line_b >= 0 and line_k * 1 + line_b <= 1:
             rightwise_endpoint = (1, line_k * 1 + line_b)
         elif line_k * 1 + line_b < 0:
             rightwise_endpoint = (-line_b / line_k, 0)
         else:  # line_k * self.width + line_b > self.height:
-            rightwise_endpoint = (
-                (1 - line_b) / line_k,
-                1,
-            )
+            rightwise_endpoint = ((1 - line_b) / line_k, 1)
 
         return (leftwise_endpoint, rightwise_endpoint)
 
     def __monochromize(
-        self,
-        stylish: bool = False,
-        depth: int = 10,
-        height: float = 3.1416 / 2.2,
-        alpha: float = 3.1416 / 4,
+        self, stylish: bool = False, depth: int = 10, height: float = 3.1416 / 2.2, alpha: float = 3.1416 / 4
     ):
         self.unprocessed_image = self.unprocessed_image.convert("L")
         if not stylish:

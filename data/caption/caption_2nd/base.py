@@ -3,7 +3,6 @@ import math
 
 
 class BaseFeature:
-
     def __init__(self):
         pass
 
@@ -23,7 +22,6 @@ class BaseFeature:
         return txt
 
     def getCenterAndWeight(self, shapez, n_digits=4):
-
         def euc_dist(p1, p2):
             return math.sqrt(abs((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2))
 
@@ -62,9 +60,10 @@ class BaseFeature:
             shape = list(shapez["concentric"].values())[-1]
         if shape["type"] in ["segment", "polygon"]:
             p_center = points_center(shape["points"])
-            return [round(p_center[0], ndigits=n_digits), round(p_center[1], ndigits=n_digits)], calculate_polygon_C(
-                shape["points"]
-            )
+            return [
+                round(p_center[0], ndigits=n_digits),
+                round(p_center[1], ndigits=n_digits),
+            ], calculate_polygon_C(shape["points"])
         elif shape["type"] in ["spiral"]:
             return [
                 round(shape["center"][0], ndigits=n_digits),
@@ -96,7 +95,9 @@ class BaseFeature:
             a_z, b_z, c_z = 0, 0, 0
         x1, y1, z1 = (a_x - b_x), (a_y - b_y), (a_z - b_z)
         x2, y2, z2 = (c_x - b_x), (c_y - b_y), (c_z - b_z)
-        cos_b = (x1 * x2 + y1 * y2 + z1 * z2) / (math.sqrt(x1**2 + y1**2 + z1**2) * (math.sqrt(x2**2 + y2**2 + z2**2)))
+        cos_b = (x1 * x2 + y1 * y2 + z1 * z2) / (
+            math.sqrt(x1**2 + y1**2 + z1**2) * (math.sqrt(x2**2 + y2**2 + z2**2))
+        )
         B = math.degrees(math.acos(cos_b))
         return B
 

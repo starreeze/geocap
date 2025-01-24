@@ -49,7 +49,9 @@ class VolutionCounter:
         assert img_gray.ndim == 2, "grayscale image required."
 
         # Detect initial chamber (with a high confidence level)
-        initial_chamber = detect_initial_chamber(img_gray, param2=self.feat_recog_args.houghcircle_params["param2"])
+        initial_chamber = detect_initial_chamber(
+            img_gray, param2=self.feat_recog_args.houghcircle_params["param2"]
+        )
         if self.use_initial_chamber and initial_chamber is not None:
             self.center = initial_chamber[:-1].tolist()
             self.success_initial_chamber = True
@@ -167,7 +169,12 @@ class VolutionCounter:
         return adsorption_mask, finish
 
     def catch_frontier(
-        self, line_segments: list[list[tuple[int, int]]], step_forward: list[int], i: int, mask: bool, finish: bool
+        self,
+        line_segments: list[list[tuple[int, int]]],
+        step_forward: list[int],
+        i: int,
+        mask: bool,
+        finish: bool,
     ):
         max_step = max(step_forward)
         num_step = max_step - step_forward[i] - 1
@@ -176,7 +183,9 @@ class VolutionCounter:
             step_forward[i] += 1
         return mask, finish
 
-    def filter_segments(self, line_segments: list[list[tuple[int, int]]], step_forward: Optional[list] = None):
+    def filter_segments(
+        self, line_segments: list[list[tuple[int, int]]], step_forward: Optional[list] = None
+    ):
         y_means = np.array([np.mean([point[1] for point in segment]) for segment in line_segments])
         ref_y = np.median(y_means)
         filter_max_y = self.filter_max_y_ratio * self.img_gray.shape[1]
@@ -223,7 +232,9 @@ class VolutionCounter:
 
         return points, len(points)
 
-    def get_expand_points(self, vertex: tuple[int, int], theta_ref: float, theta_margin: float, max_expand_len: int):
+    def get_expand_points(
+        self, vertex: tuple[int, int], theta_ref: float, theta_margin: float, max_expand_len: int
+    ):
         expand_points = []
         max_score = -1
         theta_range = np.arange(theta_ref - theta_margin, theta_ref + theta_margin, 0.01)
@@ -468,7 +479,9 @@ class VolutionCounter:
             vols = volutions[i]
             thicks = thickness_per_vol[i]
             for j in range(len(vols)):
-                vol_idx = (len(vols) - j) * (-1) ** i  # positive value for upper voluitons, negative for lower
+                vol_idx = (len(vols) - j) * (
+                    -1
+                ) ** i  # positive value for upper voluitons, negative for lower
                 volutions_dict[vol_idx] = vols[j]
                 thickness_dict[vol_idx] = thicks[j]
 

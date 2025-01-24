@@ -1,6 +1,6 @@
-from copy import deepcopy
 import random
-from typing import Any, Literal, Optional
+from copy import deepcopy
+from typing import Any, Literal
 
 import numpy as np
 from numpy.random import normal, randint, uniform
@@ -55,7 +55,9 @@ class PolygonRelationGenerator:
         self.triangle_only_rel = ["shared edge", "circumscribed circle of triangle", "inscribed circle"]
         self.rectangle_only_rel = ["circumscribed circle of rectangle", "diagonal"]
         self.square_only_rel = ["circumscribed circle of square", "diagonal"]
-        all_relations = self.base_rel + self.triangle_only_rel + self.rectangle_only_rel + self.square_only_rel
+        all_relations = (
+            self.base_rel + self.triangle_only_rel + self.rectangle_only_rel + self.square_only_rel
+        )
 
         self.relation_level = {}
         for relation_type in all_relations:
@@ -165,10 +167,7 @@ class PolygonRelationGenerator:
             circle.to_circle(radius)
 
         elif "rectangle" in self.polygon.special_info or "square" in self.polygon.special_info:
-            center = (
-                sum(x for x, y in self.polygon.points) / 4,
-                sum(y for x, y in self.polygon.points) / 4,
-            )
+            center = (sum(x for x, y in self.polygon.points) / 4, sum(y for x, y in self.polygon.points) / 4)
             radius = distance_2points(center, self.polygon.points[0])
             circle = Ellipse(center=center)
             circle.to_circle(radius)
@@ -306,13 +305,7 @@ class EllipseRelationGenerator:
     def __init__(self, rule_args) -> None:
         self.rule_args = rule_args
 
-        self.base_rel = [
-            "tangent line",
-            "tangent circle",
-            "concentric",
-            "circumscribed",
-            "inscribed",
-        ]
+        self.base_rel = ["tangent line", "tangent circle", "concentric", "circumscribed", "inscribed"]
         self.circle_rel = []
 
         self.relation_level = {}
@@ -498,7 +491,9 @@ class EllipseRelationGenerator:
         if "concentric" in volution_type:
             volutions = [volution_0]
         elif "swing" in volution_type:
-            volution_0_swing = Ellipse(center, major_axis * 1.1, minor_axis * 1.1, rotation, special_info="volution 0")
+            volution_0_swing = Ellipse(
+                center, major_axis * 1.1, minor_axis * 1.1, rotation, special_info="volution 0"
+            )
             volutions = [volution_0, volution_0_swing]
 
         scale_factor = uniform(1.2, 1.5)
@@ -673,7 +668,9 @@ class FusiformRelationGenerator:
             if "concentric" in volution_type:
                 new_volutions = self.get_concentric_fusiform_2(scale_factor, x_delta, 1)
             elif "swing" in volution_type:
-                new_volutions = self.get_concentric_fusiform_2(np.sqrt(scale_factor).tolist(), 0.5 * x_delta, 2)
+                new_volutions = self.get_concentric_fusiform_2(
+                    np.sqrt(scale_factor).tolist(), 0.5 * x_delta, 2
+                )
 
             for new_volution in new_volutions:
                 if new_volution.is_closed():
@@ -722,7 +719,13 @@ class FusiformRelationGenerator:
                 phi = np.pi
                 sin_params = [epsilon, omega, phi]
                 volution_0 = Fusiform_2(
-                    focal_length, x_offset, y_offset, power, x_symmetric_axis, sin_params, special_info="volution 0"
+                    focal_length,
+                    x_offset,
+                    y_offset,
+                    power,
+                    x_symmetric_axis,
+                    sin_params,
+                    special_info="volution 0",
                 )
 
         return volution_0
@@ -761,9 +764,15 @@ class CustomedShapeGenerator:
                     )
                     # Scale the translated point
                     if i == 0 or i == 3:  # for start and end point, no randomize
-                        scaled_point = (translated_point[0] * scale_factor, translated_point[1] * scale_factor)
+                        scaled_point = (
+                            translated_point[0] * scale_factor,
+                            translated_point[1] * scale_factor,
+                        )
                     else:
-                        scaled_point = (translated_point[0] * new_scale_factor, translated_point[1] * new_scale_factor)
+                        scaled_point = (
+                            translated_point[0] * new_scale_factor,
+                            translated_point[1] * new_scale_factor,
+                        )
                     # Translate the scaled point back to the original coordinate system
                     final_point = (
                         scaled_point[0] + self.customed_shape.center[0],
@@ -818,7 +827,9 @@ class CustomedShapeGenerator:
 
                 new_vertices = []
                 for vertice in volution.vertices:
-                    new_vertice = np.array(vertice) + swing_vector if i % 2 == 0 else np.array(vertice) - swing_vector
+                    new_vertice = (
+                        np.array(vertice) + swing_vector if i % 2 == 0 else np.array(vertice) - swing_vector
+                    )
                     new_vertices.append(new_vertice.tolist())
                 volution.vertices = new_vertices
 
@@ -909,14 +920,8 @@ class SeptaGenerator:
             next_volution = volutions[i + step]
             tunnel_angle = (tunnel_angles[i // step] / 180) * np.pi
 
-            thetas_upper = [
-                mid_angle + 0.5 * tunnel_angle,
-                mid_angle - 0.5 * tunnel_angle,
-            ]
-            thetas_lower = [
-                mid_angle + np.pi + 0.5 * tunnel_angle,
-                mid_angle + np.pi - 0.5 * tunnel_angle,
-            ]
+            thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
+            thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
             # chomata_type = np.random.choice(["ellipse", "polygon"])
             chomata_type = "ellipse"
             size = "small"
@@ -1012,7 +1017,10 @@ class SeptaGenerator:
                 # Check if theta in angle range of axial filling (main)
                 in_axial_main_angle = False
                 for angle_range in axial_main_angles:
-                    if angle_range[0] < theta < angle_range[1] or angle_range[0] < theta - 2 * np.pi < angle_range[1]:
+                    if (
+                        angle_range[0] < theta < angle_range[1]
+                        or angle_range[0] < theta - 2 * np.pi < angle_range[1]
+                    ):
                         in_axial_main_angle = True
                 if in_axial_main_angle:  # No septa for axial filling (main)
                     continue
@@ -1020,7 +1028,10 @@ class SeptaGenerator:
                 # Check if theta in angle range of poles septa folds
                 in_poles_folds_angle = False
                 for angle_range in poles_folds_angles:
-                    if angle_range[0] < theta < angle_range[1] or angle_range[0] < theta - 2 * np.pi < angle_range[1]:
+                    if (
+                        angle_range[0] < theta < angle_range[1]
+                        or angle_range[0] < theta - 2 * np.pi < angle_range[1]
+                    ):
                         in_poles_folds_angle = True
 
                 # Ignore areas in poles septa folds
@@ -1197,7 +1208,8 @@ class SeptaGenerator:
             end_idx = int(quarter_size * (quarter_idx + 1))
 
             distances = [
-                distance_point_to_line(point, normal_line) for point in next_volution.curve_points[start_idx:end_idx]
+                distance_point_to_line(point, normal_line)
+                for point in next_volution.curve_points[start_idx:end_idx]
             ]
             min_distance_idx = np.argmin(distances)
 

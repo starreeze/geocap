@@ -77,7 +77,9 @@ def line_given2points(points: list[tuple[float, float]]) -> tuple[float, float]:
     return (slope, intercept)
 
 
-def another_2points_on_line(line: tuple[float, float], point: tuple[float, float]) -> list[tuple[float, float]]:
+def another_2points_on_line(
+    line: tuple[float, float], point: tuple[float, float]
+) -> list[tuple[float, float]]:
     """
     Given a line and a point on the line, return another 2 points on the line.
     """

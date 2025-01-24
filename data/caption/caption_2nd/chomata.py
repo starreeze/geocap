@@ -15,7 +15,9 @@ class Chomata(BaseFeature):
         return self.standardRangeFilter(chomata_size_classes, total / len(self.chomata_shapes))
 
     def genChomataDevelopment(self) -> str:
-        return self.standardRangeFilter(chomata_development_classes, len(self.chomata_shapes) / self.volution_num)
+        return self.standardRangeFilter(
+            chomata_development_classes, len(self.chomata_shapes) / self.volution_num
+        )
 
     def genUserInput(self):
         txt = "Chomata {block}. ".format(

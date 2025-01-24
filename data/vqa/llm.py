@@ -38,7 +38,9 @@ class LLMQAGenerator(GeneratorBase):
                 {"role": "system", "content": self.sys_prompt},
                 {
                     "role": "user",
-                    "content": task_prompt.replace("{caption}", caption).replace("{rules}", json.dumps(rules)),
+                    "content": task_prompt.replace("{caption}", caption).replace(
+                        "{rules}", json.dumps(rules)
+                    ),
                 },
             ]
             for caption, rules in zip(self.captions, self.data)
