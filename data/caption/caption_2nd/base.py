@@ -12,6 +12,13 @@ class BaseFeature:
                 return k
         return ""
 
+    def overridedLambdaFilter(self, classes, data):
+        clazz = ""
+        for k in classes.keys():
+            if classes[k](data):
+                clazz = k
+        return clazz
+
     def combineFeatures(self, feat_list):
         txt = ""
         feat_list_filtered = [feat for feat in feat_list if feat != ""]

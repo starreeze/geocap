@@ -34,6 +34,15 @@ deposit_development_classes = {
     "absence": [1, 999],
 }
 
+septa_shape_classes = {
+    "slightly fluted": lambda x: True,
+    "straight": lambda x: x[0] >= 0.7,
+    "undulant": lambda x: x[1] >= 0.7,
+    "fluted": lambda x: x[1] + x[2] >= 0.7 and x[2] >= 0.35,
+    "strongly fluted": lambda x: x[2] >= 0.7,
+    "irregularly fluted": lambda x: x[2] >= 0.9,
+}
+
 ordinal_numbers = [
     "first",
     "second",

@@ -13,6 +13,7 @@ from data.caption.caption_2nd.tunnel import Tunnel
 from data.caption.caption_2nd.proloculus import Proloculus
 from data.caption.caption_2nd.chomata import Chomata
 from data.caption.caption_2nd.deposit import Deposit
+from data.caption.caption_2nd.septa import Septa
 from data.caption.prompt import *
 import re
 from tqdm import tqdm
@@ -107,6 +108,7 @@ def gen_user_input_txt_2nd(rule):
     )
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"]))
     obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
+    obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
     for part in obj_parts:
         txt += part.genUserInput() + ""
