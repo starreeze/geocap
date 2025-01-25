@@ -161,11 +161,7 @@ class GenerateModel(GenerateModelBase):
         self.path = os.path.join("models", vqa_args.eval_model)
         self.device = device
         device_map = split_model(model_spec)
-        if not (
-            os.path.exists(self.path)
-            and os.path.isdir(self.path)
-            and len(os.listdir(self.path)) > 0
-        ):
+        if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
             raise ValueError(f"The model spec {model_spec} is not supported!")
         self.model = AutoModel.from_pretrained(
             self.path,
@@ -175,13 +171,9 @@ class GenerateModel(GenerateModelBase):
             trust_remote_code=True,
             device_map=device_map,
         ).eval()
-        self.model = torch.nn.DataParallel(
-            self.model, device_ids=[0, 1, 2, 3][: torch.cuda.device_count()]
-        )
+        self.model = torch.nn.DataParallel(self.model, device_ids=[0, 1, 2, 3][: torch.cuda.device_count()])
         # self.model.to(self.device)
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.path, trust_remote_code=True, use_fast=False
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(self.path, trust_remote_code=True, use_fast=False)
 
     def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
         pixel_values = tuple(

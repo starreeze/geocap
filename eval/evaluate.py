@@ -78,9 +78,7 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, f"{perspective}.jsonl"), "w") as f:
             answers = batched_inference(model, data, f)
-        logger.info(
-            f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.jsonl"
-        )
+        logger.info(f"Evaluation results for {perspective} saved in {output_dir}/{perspective}.jsonl")
 
         # calculate the accuracy
         correct = sum(1 for pred, label in zip(answers, truths) if ord(pred) - ord("A") == label)
@@ -91,9 +89,7 @@ def main():
     with open(os.path.join(output_dir, f"scores.csv"), "w") as f:
         f.write(",".join(vqa_args.perspectives) + "\n")
         f.write(",".join(map(str, round_floats(scores, precision=1))) + "\n")
-    logger.info(
-        f"Evaluation results on model {vqa_args.eval_model} saved in {output_dir}/scores.csv"
-    )
+    logger.info(f"Evaluation results on model {vqa_args.eval_model} saved in {output_dir}/scores.csv")
 
 
 if __name__ == "__main__":
