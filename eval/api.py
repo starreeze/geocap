@@ -23,9 +23,7 @@ class GenerateModel(GenerateModelBase):
         """
         responses = []
         for image_path, prompt in zip(image_paths, prompts):
-            response = self.generator.get_one_response(
-                [("image", image_path), ("text", prompt)]
-            )
+            response = self.generator.get_one_response([("image", image_path), ("text", prompt)])
             responses.append(response)
         return responses
 
