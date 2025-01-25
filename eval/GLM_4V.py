@@ -34,18 +34,33 @@ class GenerateModel(GenerateModelBase):
         device = "cuda"
         self.path = os.path.join("models", vqa_args.eval_model)
         self.device = device
-        if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
+        if not (
+            os.path.exists(self.path)
+            and os.path.isdir(self.path)
+            and len(os.listdir(self.path)) > 0
+        ):
             raise ValueError(f"The model spec {model_spec} is not supported!")
         self.model = AutoModelForCausalLM.from_pretrained(
-            self.path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, trust_remote_code=True
+            self.path,
+            torch_dtype=torch.bfloat16,
+            low_cpu_mem_usage=True,
+            trust_remote_code=True,
         ).eval()
         self.model.to(device)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.path, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.path, trust_remote_code=True
+        )
 
     def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
         batch_inputs = self.tokenizer.apply_chat_template(
             [
-                [{"role": "user", "image": Image.open(image_path).convert("RGB"), "content": prompt}]
+                [
+                    {
+                        "role": "user",
+                        "image": Image.open(image_path).convert("RGB"),
+                        "content": prompt,
+                    }
+                ]
                 for image_path, prompt in zip(image_paths, prompts)
             ],
             add_generation_prompt=True,
@@ -56,7 +71,14 @@ class GenerateModel(GenerateModelBase):
             padding_side="left",
         )
         batch_inputs = {_k: _v.to(self.device) for _k, _v in batch_inputs.items()}
-        generation_kwargs = {"max_new_tokens": 32, "do_sample": False, "temperature": 0.0, "top_k": 1}
+        generation_kwargs = {
+            "max_new_tokens": 32,
+            "do_sample": False,
+            "temperature": 0.0,
+            "top_k": 1,
+        }
         with torch.no_grad():
-            outputs = self.model.generate(**batch_inputs, **generation_kwargs)[:, batch_inputs["input_ids"].shape[1] :]
+            outputs = self.model.generate(**batch_inputs, **generation_kwargs)[
+                :, batch_inputs["input_ids"].shape[1] :
+            ]
             return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
