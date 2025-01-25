@@ -34,7 +34,11 @@ class GenerateModel(GenerateModelBase):
         device = "cuda"
         self.path = os.path.join("models", vqa_args.eval_model)
         self.device = device
-        if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
+        if not (
+            os.path.exists(self.path)
+            and os.path.isdir(self.path)
+            and len(os.listdir(self.path)) > 0
+        ):
             raise ValueError(f"The model spec {model_spec} is not supported!")
         self.model = AutoModelForCausalLM.from_pretrained(
             self.path,
@@ -72,5 +76,7 @@ class GenerateModel(GenerateModelBase):
             "top_k": 1,
         }
         with torch.no_grad():
-            outputs = self.model.generate(**batch_inputs, **generation_kwargs)[:, batch_inputs["input_ids"].shape[1] :]
+            outputs = self.model.generate(**batch_inputs, **generation_kwargs)[
+                :, batch_inputs["input_ids"].shape[1] :
+            ]
             return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)

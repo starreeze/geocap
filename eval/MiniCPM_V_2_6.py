@@ -34,7 +34,11 @@ class GenerateModel(GenerateModelBase):
         device = "cuda"
         self.path = os.path.join("models", vqa_args.eval_model)
         self.device = device
-        if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
+        if not (
+            os.path.exists(self.path)
+            and os.path.isdir(self.path)
+            and len(os.listdir(self.path)) > 0
+        ):
             raise ValueError(f"The model spec {model_spec} is not supported!")
         if importlib.util.find_spec("flash_attn") is not None and enable_flash_attn:
             attn_impl = "flash_attention_2"

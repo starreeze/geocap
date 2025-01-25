@@ -116,7 +116,9 @@ def dynamic_preprocess(image, min_num=1, max_num=12, image_size=448, use_thumbna
     target_ratios = sorted(target_ratios, key=lambda x: x[0] * x[1])
 
     # find the closest aspect ratio to the target
-    target_aspect_ratio = find_closest_aspect_ratio(aspect_ratio, target_ratios, orig_width, orig_height, image_size)
+    target_aspect_ratio = find_closest_aspect_ratio(
+        aspect_ratio, target_ratios, orig_width, orig_height, image_size
+    )
 
     # calculate the target width and height
     target_width = image_size * target_aspect_ratio[0]
@@ -159,7 +161,11 @@ class GenerateModel(GenerateModelBase):
         self.path = os.path.join("models", vqa_args.eval_model)
         self.device = device
         device_map = split_model(model_spec)
-        if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
+        if not (
+            os.path.exists(self.path)
+            and os.path.isdir(self.path)
+            and len(os.listdir(self.path)) > 0
+        ):
             raise ValueError(f"The model spec {model_spec} is not supported!")
         self.model = AutoModel.from_pretrained(
             self.path,
@@ -169,12 +175,18 @@ class GenerateModel(GenerateModelBase):
             trust_remote_code=True,
             device_map=device_map,
         ).eval()
-        self.model = torch.nn.DataParallel(self.model, device_ids=[0, 1, 2, 3][: torch.cuda.device_count()])
+        self.model = torch.nn.DataParallel(
+            self.model, device_ids=[0, 1, 2, 3][: torch.cuda.device_count()]
+        )
         # self.model.to(self.device)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.path, trust_remote_code=True, use_fast=False)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.path, trust_remote_code=True, use_fast=False
+        )
 
     def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
-        pixel_values = tuple(load_image(image_path).to(torch.bfloat16).to(self.device) for image_path in image_paths)
+        pixel_values = tuple(
+            load_image(image_path).to(torch.bfloat16).to(self.device) for image_path in image_paths
+        )
         num_patches_list = [pixel_value.size(0) for pixel_value in pixel_values]
         pixel_values = torch.cat(pixel_values, dim=0)
         questions = ["<image>\n" + prompt for prompt in prompts]
