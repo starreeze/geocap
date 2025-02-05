@@ -17,6 +17,7 @@ from minigpt4.runners import *
 from minigpt4.tasks import *
 from typing import List
 
+
 class GenerateModel(GenerateModelBase):
     def __init__(self):
         args = argparse.Namespace(cfg_path="/MiniGPT/eval_configs/minigptv2_eval.yaml", gpu_id=0, options=[])

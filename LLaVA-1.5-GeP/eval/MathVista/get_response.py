@@ -40,7 +40,7 @@ class GenerateModel:
             prompt = conv.get_prompt()
             input_ids = (
                 tokenizer_image_token(prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
-                .unsqueeze(0) # type: ignore
+                .unsqueeze(0)  # type: ignore
                 .to(self.model.device)
             )
 

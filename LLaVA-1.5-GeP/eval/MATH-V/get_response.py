@@ -37,7 +37,7 @@ class GenerateModel:
             input_ids = tokenizer_image_token(
                 prompt_text, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
             )
-            input_ids = input_ids.unsqueeze(0).to(self.model.device) # type: ignore
+            input_ids = input_ids.unsqueeze(0).to(self.model.device)  # type: ignore
 
             with torch.inference_mode():
                 output_ids = self.model.generate(
