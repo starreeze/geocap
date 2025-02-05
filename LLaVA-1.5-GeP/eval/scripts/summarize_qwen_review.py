@@ -8,7 +8,7 @@ import argparse
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="ChatGPT-based QA evaluation.")
+    parser = argparse.ArgumentParser(description="Qwen-based QA evaluation.")
     parser.add_argument("-d", "--dir", default=None)
     parser.add_argument("-v", "--version", default=None)
     parser.add_argument("-s", "--select", nargs="*", default=None)

@@ -50,7 +50,7 @@ class GenerateModel(GenerateModelBase):
                         )
             else:
                 image_tensor = (
-                    self.image_processor.preprocess(images, return_tensors="pt")["pixel_values"][0]
+                    self.image_processor.preprocess(images, return_tensors="pt")["pixel_values"][0] # type: ignore
                     .cuda()
                     .to(dtype=torch.bfloat16)
                 )
@@ -61,7 +61,7 @@ class GenerateModel(GenerateModelBase):
             prompt = conv.get_prompt()
             input_ids = (
                 tokenizer_image_token(prompt, self.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
-                .unsqueeze(0)
+                .unsqueeze(0) # type: ignore
                 .to(self.device)
             )
             with torch.inference_mode():

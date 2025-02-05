@@ -4,7 +4,6 @@ import os
 import os
 import argparse
 import json
-from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -99,7 +98,6 @@ if __name__ == "__main__":
             f'[{role} 2]\n{ans2["text"]}\n\n[End of {role} 2]\n\n'
             f"[System]\n{prompt}\n\n"
         )
-        length += len(content)
         cur_js = {
             "id": idx + 1,
             "question_id": ques["question_id"],
@@ -119,5 +117,4 @@ if __name__ == "__main__":
             print(f"Skipping {idx} as we already have it.")
         idx += 1
         print(idx)
-    print(f"length is {length}")
     review_file.close()

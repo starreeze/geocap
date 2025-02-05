@@ -15,7 +15,7 @@ from minigpt4.models import *
 from minigpt4.processors import *
 from minigpt4.runners import *
 from minigpt4.tasks import *
-
+from typing import List
 
 class GenerateModel(GenerateModelBase):
     def __init__(self):
@@ -32,7 +32,7 @@ class GenerateModel(GenerateModelBase):
         )
         self.model.eval()
 
-    def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:
+    def generate(self, image_paths: List[str], prompts: List[str]) -> List[str]:
         assert len(image_paths) == len(prompts)
         res = []
         for image_path, prompt in zip(image_paths, prompts):

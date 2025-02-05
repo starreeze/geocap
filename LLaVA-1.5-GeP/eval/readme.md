@@ -7,7 +7,7 @@ In GePBench, we evaluate LLaVA-1.5-7b and LLaVA-1.5-GeP-7b on 11 benchmarks from
 For LLaVA offical benchmark,you can refer to the official evaluation instructions in [Evaluation.md](https://github.com/haotian-liu/LLaVA/blob/main/docs/Evaluation.md?plain=1).
 
 ### LLaVA-Bench-in-the-Wild
-As stated in our paper, we use Qwen-2.5-14B-Instruct instead of GPT-4 as the evaluation model. Therefore, please copy `./LLaVA-1.5-GeP/eval/scripts/eval_qwen_review_bench.py` to `./llava/eval`
+As stated in our paper, we use Qwen-2.5-14B-Instruct instead of GPT-4 as the evaluation model. Therefore, please copy `./LLaVA-1.5-GeP/eval/scripts/eval_qwen_review_bench.py` and `./LLaVA-1.5-GeP/eval/scripts/summarize_qwen_review.py` to `./llava/eval`
 
 
 ## Scripts for Math and Chart  benchmark
