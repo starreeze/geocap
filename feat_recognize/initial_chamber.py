@@ -13,7 +13,7 @@ def detect_initial_chamber(
     minDist: float = 100,
     param1: float = 150,
     param2: float = 0.5,
-):
+) -> list[int] | None:
     """
     Detect the initial chamber in an image using Hough Circle Transform.
 
