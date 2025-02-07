@@ -1,4 +1,26 @@
-Feature recognition for specific part of a fossil image.
+## Stage 3 Dataset Generation
+
+Generate fossil caption data for stage 3 training.
+
+```shell
+python run.py --module feat_recognize.generate_dataset \
+    --save_data_path dataset/ \
+    --desc_prompt_dir feat_recognize/prompt_icl.txt \
+    --desc_llm qwen25-14 \
+    --desc_batchsize 1 \
+    --paraphrase_prompt_dir data/caption/paraphrase_stage3.txt \
+    --caption_llm api-deepseek-chat \
+    --caption_batchsize 1
+```
+
+The generation process contains 3 parts:
+1. Recognize visual features of the fossil images. The results are in `{save_data_path}/instructions.jsonl`.
+2. Replace numerical information in original fossil description. The results are in `{save_data_path}/stage3.jsonl`
+3. Paraphrase the description to enhance diversity of description. The results are in `{save_data_path}/stage3_paraphrase.jsonl`
+
+`--desc_prompt_dir` is the prompt text file for numerical information replacement. `--desc_llm` specify the llm for replacement. Similarly, `--caption_prompt_dir` and `--caption_llm` specify the prompt text file and LLM for generating diverse paraphrased descriptions.
+
+## Feature recognition for specific part of a fossil image.
 
 ### Initial Chamber
 

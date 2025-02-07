@@ -130,6 +130,8 @@ class CaptionArgs:
     numeric_ratio: float = field(default=0)
     debug_option: str = field(default="")
 
+    paraphrase_prompt_dir: str = field(default="data/caption/paraphrase_stage2.txt")
+
 
 @dataclass
 class VQAArgs:
@@ -260,6 +262,7 @@ class FeatureRecognizeArgs:
     fossil_data_path: str = field(default="dataset/common")
     desc_llm: str = field(default="qwen25-14")
     desc_prompt_dir: str = field(default="feat_recognize/prompt.txt")
+    desc_batchsize: int = field(default=4)
     save_data_path: str = field(default="dataset/")
 
 

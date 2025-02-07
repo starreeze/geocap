@@ -108,3 +108,39 @@ def resize_img(img, short_edge_len=448):
     img = cv2.resize(img, (new_width, new_height))
 
     return img
+
+
+def calculate_angle(vertex: tuple, point1: tuple, point2: tuple) -> float | None:
+    """
+    Calculate the angle between three points with vertex as the center point.
+
+    Parameters:
+    vertex (tuple): The vertex point (x, y)
+    point1 (tuple): First point (x, y)
+    point2 (tuple): Second point (x, y)
+
+    Returns:
+    float: The angle in degrees between 0 and 180
+    """
+    # Check if any two points are the same
+    if vertex == point1 or vertex == point2 or point1 == point2:
+        return None
+    # Convert points to numpy arrays
+    v = np.array(vertex)
+    p1 = np.array(point1)
+    p2 = np.array(point2)
+
+    # Calculate vectors from vertex to points
+    vec1 = p1 - v
+    vec2 = p2 - v
+
+    # Calculate dot product and magnitudes
+    dot_product = np.dot(vec1, vec2)
+    norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
+
+    # Calculate angle in radians and convert to degrees
+    angle_rad = np.arccos(np.clip(dot_product / norm_product, -1.0, 1.0))
+    angle_deg = np.degrees(angle_rad)
+
+    # Ensure angle is between 0 and 180
+    return min(angle_deg, 180 - angle_deg)
