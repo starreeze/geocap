@@ -673,7 +673,7 @@ class Curve:
         self.curve_points = self._compute_curve_points(p0, p1, p2, p3)
 
     def to_dict(self):
-        return {"type": "curves", "control_points": [self.control_points]}
+        return {"type": "curves"} | asdict(self)
 
     def _compute_curve_points(self, p0, p1, p2, p3):
         """Computes points along the cubic Bézier curve"""

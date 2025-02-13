@@ -1,0 +1,27 @@
+Task:
+The following is a description of a fossil image, please filter the description to extract only the statements related to the specified set of features.
+
+Set of features:
+1. test/shell
+    - size and shape
+    - length, width(diameter), form ratio
+    - equator, median part
+    - lateral slope
+    - poles(ends)
+2. volution/whorl
+    - number of volutions
+    - height/spire
+    - coil tightness
+3. proloculus(initial chamber)
+    - size and shape
+4. axis
+5. axial filling/deposit
+6. spirotheca
+7. septa folding
+8. chomata
+9. tunnel
+
+Input text:
+{text}
+
+Filtered text:

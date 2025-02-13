@@ -1,0 +1,12 @@
+Task:
+The following is a description of a fossil image, please paraphrase the description while maintaining the scientific tone and numerical values.
+
+Requirements:
+1. The description of fossil images has a strong academic style that differs from everyday conversational descriptions, often containing many subject-predicate phrases rather than complete sentences. Please preserve this distinctive academic style
+2. If the input text is not in English, first translate it to English
+3. Your response should contain only the paraphrased description, without any additional statements or explanations
+
+Input text:
+{text}
+
+Paraphrased text:

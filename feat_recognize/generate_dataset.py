@@ -7,8 +7,9 @@ import numpy as np
 from typing import Any
 from tqdm import tqdm
 
-from common.args import feat_recog_args, logger
+from common.args import run_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
+from data.caption.filter_desc import DescFilter
 from data.caption.paraphrase import Paraphraser
 from feat_recognize.recognize import recognize_feature
 
@@ -18,12 +19,12 @@ instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions.j
 stage3_data_path = os.path.join(feat_recog_args.save_data_path, "stage3.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "stage3_paraphrase.jsonl")
 llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
+internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
 
 
 class DataGenerator:
     def __init__(self) -> None:
         self.image_path_root = os.path.join(feat_recog_args.fossil_data_path, "filtered_images")
-        # self.image_path_root = os.path.join(feat_recog_args.fossil_data_path, "images")
         self.all_images = os.listdir(self.image_path_root)
         self.loaded_llm = False
 
@@ -32,7 +33,10 @@ class DataGenerator:
         # Initialize llm
         model_name, model_id = feat_recog_args.desc_llm.split("-", 1)
         model_path = model_path_mapping[model_name].format(model_id)
-        self.llm_generator = generator_mapping[model_name](model_path, max_tokens=2048)
+        if "api" in model_name:
+            self.llm_generator = generator_mapping[model_name](model_path, max_tokens=4096, temperature=1.0)
+        else:
+            self.llm_generator = generator_mapping[model_name](model_path, temperature=1.0)
         self.loaded_llm = True
 
         # Initialize prompt
@@ -219,7 +223,7 @@ class DataGenerator:
         return dataset
 
 
-def generate_dataset():
+def generate_dataset(start_pos, end_pos):
     data_path = os.path.join(feat_recog_args.fossil_data_path, "filtered_data.json")
     with open(data_path, "r") as f:
         data_dict = json.load(f)
@@ -227,32 +231,33 @@ def generate_dataset():
     dataset = []
     data_generator = DataGenerator()
 
+    # Recognize features and generate instructions
     if not os.path.exists(instructions_path):
-
         instructions = data_generator.generate_instructions(data_dict)
         with open(instructions_path, "w") as f:
             for instruction in instructions:
                 f.write(json.dumps(instruction) + "\n")
-    else:
-        with open(instructions_path, "r") as f:
-            instructions = [json.loads(line) for line in f]
 
-    dataset = data_generator.generate_outputs(instructions)
+    # Replace numerical infos in outputs
+    with open(instructions_path, "r") as f:
+        instructions = [json.loads(line) for line in f]
+
+    dataset = data_generator.generate_outputs(instructions[start_pos:end_pos])
 
     # Save dataset as jsonl file
-    output_path = stage3_data_path
+    output_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
     with open(output_path, "w") as f:
         for data in dataset:
             f.write(json.dumps(data) + "\n")
-
     # Release GPU memory occupied by llm_generator
     torch.cuda.empty_cache()
 
 
-def paraphrase():
+def paraphrase(start_pos, end_pos):
     paraphraser = Paraphraser()
     # Read original captions
-    with open(stage3_data_path, "r") as f:
+    data_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
+    with open(data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
     # Extract and paraphrase outputs
@@ -263,7 +268,9 @@ def paraphrase():
     for caption, paraphrased_output in zip(captions, paraphrased_outputs):
         caption["output"] = paraphrased_output
 
-    output_path = stage3_paraphrase_path
+    output_path = os.path.join(
+        feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+    )
     with open(output_path, "w") as f:
         for caption in captions:
             f.write(json.dumps(caption) + "\n")
@@ -271,8 +278,7 @@ def paraphrase():
 
 
 def format_to_llava():
-    path = os.path.join(feat_recog_args.save_data_path, "stage3.jsonl")
-    data: list[str] = open(path, "r").readlines()
+    data: list[str] = open(stage3_paraphrase_path, "r").readlines()
     target_data = []
     for i, d in enumerate(data):
         d = json.loads(d.strip())
@@ -289,10 +295,28 @@ def format_to_llava():
     json.dump(target_data, open(llava_data_path, "w"), indent=2)
 
 
+def format_to_internvl():
+    data: list[str] = open(stage3_paraphrase_path, "r").readlines()
+    with open(internvl_data_path, "w") as f:
+        for i, d in enumerate(data):
+            d = json.loads(d.strip())
+            target_data = {
+                "id": i,
+                "image": d["image"],
+                "conversations": [
+                    {"from": "human", "value": "<image>\n" + d["input"]},
+                    {"from": "gpt", "value": d["output"]},
+                ],
+            }
+            f.write(json.dumps(target_data) + "\n")
+
+
 def main():
-    generate_dataset()
-    paraphrase()
+    # generate_dataset(run_args.start_pos, run_args.end_pos)
+    paraphrase(run_args.start_pos, run_args.end_pos)
+
     format_to_llava()
+    format_to_internvl()
 
 
 if __name__ == "__main__":

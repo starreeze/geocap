@@ -46,7 +46,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
 
         volutions = volution_generator.generate_volutions(initial_chamber, volution_type)
 
-        num_volutions = len(volutions) - 1 if "concentric" in volution_type else len(volutions) / 2 - 1
+        num_volutions = len(volutions) - 1 if "concentric" in volution_type else int(len(volutions) / 2 - 1)
         numerical_info["num_volutions"] = float(num_volutions)
 
         fossil_bbox = volutions[-1].get_bbox()
@@ -56,21 +56,22 @@ def generate_fossil_rules() -> list[dict[str, list]]:
         # shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
-        tunnel_angle = normal(18, 2)  # initialize
+        tunnel_angle = normal(16, 4)  # initialize
         tunnel_angles = []
         for _ in range(int(num_volutions)):
-            scale_factor = normal(1.1, 0.1)
+            scale_factor = normal(1.1, 0.05)
             tunnel_angle *= scale_factor
             tunnel_angles.append(tunnel_angle)
 
-        tunnel_start_idx = randint(0, 4)
-        numerical_info["tunnel_start_idx"] = tunnel_start_idx
-        numerical_info["tunnel_angles"] = tunnel_angles[tunnel_start_idx:]
+        num_visible_chomata = randint(num_volutions // 3, num_volutions)
+        visible_chomata_idx = sorted(choice(num_volutions, num_visible_chomata, replace=False))
+        numerical_info["visible_chomata_idx"] = [int(idx) for idx in visible_chomata_idx]
+        numerical_info["tunnel_angles"] = np.array(tunnel_angles)[visible_chomata_idx].tolist()
 
         # Generate chomata
         septa_generator = SeptaGenerator(rule_args)
         chomata_list = septa_generator.generate_chomata(
-            volutions, tunnel_angles, tunnel_start_idx, volution_type, int(num_volutions)
+            volutions, tunnel_angles, visible_chomata_idx, volution_type, int(num_volutions)
         )
         shapes.extend(chomata_list)
 
