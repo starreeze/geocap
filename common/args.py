@@ -130,7 +130,8 @@ class CaptionArgs:
     numeric_ratio: float = field(default=0)
     debug_option: str = field(default="")
 
-    paraphrase_prompt_dir: str = field(default="data/caption/paraphrase_stage2.txt")
+    desc_filter_prompt_dir: str = field(default="data/caption/prompts/filter_desc_icl.txt")
+    paraphrase_prompt_dir: str = field(default="data/caption/prompts/paraphrase_stage2.txt")
 
 
 @dataclass
