@@ -15,41 +15,18 @@ python run.py --module data.rule.generate --num_basic_geo_samples 10  # default 
 python run.py --module data.format --action to_llava  # you can also specify the entry function (--action)
 ```
 
-### Generating rules for geometric shapes / synthetic fossil samples
+## GePBench
+
+GePBench is a large-scale, highly customizable multimodal benchmark on geometric perception, targeting at core visual perception capabilities such as spatial awareness and fine-grained visual perception. The benchmark is in VQA format, covering 6 aspects and categorized into easy and hard split. An example of each category is provided below:
+
+To construct the benchmark from scratch, follow the three phases described below.
+
+### Structured textual description
 
 Running the following command can generate rules for geometric shapes in `dataset/rules.json`:
 
 ```shell
-python run.py --module data.rule.generate --stage 1 --num_workers 2
-```
-
-or generate rules for synthetic fossil samples:
-
-```shell
-python run.py --module data.rule.generate --stage 2 --num_fossil_samples 10
-```
-
-Each data sample contains two parts:
-
-- **shapes**: parameters and special information of each geometric shape.
-- **relations**: relationship between two shapes in form of `[head_shape_idx, tail_shape_idx, relation_type]`
-
-#### Example data sample
-
-```json
-{
-  "shapes": [
-    {
-      "type": "line"
-      //...
-    },
-    {
-      "type": "ellipse"
-      //...
-    }
-  ],
-  "relations": [[0, 1, "tangent line"]]
-}
+scripts/data/rule-{easy/hard}.sh
 ```
 
 You can control the generation process with the following arguments:
@@ -80,17 +57,48 @@ and there are arguments for controling the proportion of different shapes and re
 
 Each 'level' argument is an integer (with a default value) representing the relative level within its shape/relation block. For more details, please refer to `RuleArgs` in `common/args.py`. All 'level' arguments will be transformed into probabilities using L1 normalization (sum normalization).
 
-If more ellipse is expected, you can set a higher level for ellipse_shape_level:
+For example, if more ellipse is expected, you can set a higher level for ellipse_shape_level:
 
 ```shell
 python run.py --module data.rule.generate --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
 ```
 
-### Running Module 'draw'
+For the output, each data sample contains two parts:
 
-Two python files, `pil_backend.py` and `plt_backend.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `plt_backend.py` is recommended to use and `draw.py` will automatically use this version. You can change the preferred version by setting argument `backend` to `plt` or `pil`.
+- **shapes**: parameters and special information of each geometric shape.
+- **relations**: relationship between two shapes in form of `[head_shape_idx, tail_shape_idx, relation_type]`
 
-To use `plt_backend.py`, the following arguments are expected:
+Example output format:
+
+```json
+{
+  "shapes": [
+    {
+      "type": "line"
+      //...
+    },
+    {
+      "type": "ellipse"
+      //...
+    }
+  ],
+  "relations": [[0, 1, "tangent line"]]
+}
+```
+
+### Figure Rendering
+
+To simply generate figures with default settings, use the following command:
+
+```shell
+scripts/data/draw-{easy/hard}.sh
+```
+
+<!-- Two python files, `pil_backend.py` and `plt_backend.py` is provided, in which the former one is written in pillow, providing continuous change of shape, and a relatively less noisy image; the latter, in comparison, provides hand-drawing line style and more natural noise. `plt_backend.py` is recommended to use and `draw.py` will automatically use this version. You can change the preferred version by setting argument `backend` to `plt` or `pil`. -->
+
+<!-- To use `plt_backend.py`, the following arguments are expected: -->
+
+Or you may want to look at the following arguments:
 
 - rules: "list[dict[str, Any]]". Mandatory. The rules you would like to draw.
 - random_seed: int|None. The default value is None. Control the random seed.
@@ -115,13 +123,45 @@ To use `plt_backend.py`, the following arguments are expected:
 - stylish_alpha: float. The default value is 3.1416 / 4. Control the alpha of the sharpening.
 - inline_noise: bool. The default value is True. Setting to true will apply noise to the line/ray/segment. It may not very obvious in default setting in which Perlin_power is relatively low and the line color is close to black.
 
-To simply generate a picture with default settings, use the following command:
+### QA Generation
 
 ```shell
-python run.py --module data.draw.draw --backend plt
+scripts/data/vqa.sh {easy/hard}
 ```
 
-### Running caption
+The questions will be generated (by default) in `data/vqa`.
+
+### Evaluating VQA questions
+
+Our officially supported models can be found in `./eval`. You should download the corresponding checkpoints from huggingface and save them in `./models` with the same directory name as the python module (extension excluded). You can download them via
+
+```shell
+huggingface-cli download org_name/model_name --local-dir models/model_name
+```
+
+After obtaining all the checkpoints, start evaluation with
+
+```shell
+scripts/eval/bench.sh --eval_model {model_name}_{model_size} --eval_batchsize {batchsize}
+```
+
+The evaluation results will be saved in `eval/results/{model_name}_{model_size}`.
+
+## Fossil image caption
+
+### rules generation (structured textual description)
+
+For stage 1, refer to the guidance in [gepbench](#structured-textual-description). For stage 2, just add argument `--stage 2`.
+
+```shell
+python run.py --module data.rule.generate --stage 2 --num_fossil_samples 100000
+```
+
+### Figure Rendering
+
+Just the same as [gepbench](#figure-rendering).
+
+### Image caption generation
 
 ```shell
 python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
@@ -129,7 +169,7 @@ python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ]
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
 
-### Feature Recognition (stage 3)
+### Feature Recognition
 
 For specific fossil feature recognition, the following arguments are provided:
 
@@ -137,52 +177,6 @@ For specific fossil feature recognition, the following arguments are provided:
 - volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
 
 For more description about feature recognition, please check out [readme.md](feat_recognize/readme.md) in `feat_recognize`.
-
-### Generating VQA questions
-
-```shell
-python run.py --module data.vqa.question --numeric_ratio 1
-```
-
-The questions will be generated (by default) in `data/vqa`.
-
-### Evaluating VQA questions
-
-```shell
-python run.py --module eval.evaluate --eval_model {model_name}_{model_size} --eval_batchsize {batchsize}
-```
-
-The evaluation results will be saved in `eval/results/{model_name}_{model_size}`.
-
-## Implementation detail
-
-### Rule
-
-generate random rules with conditions.
-
-write how you generate rules here...
-
-### Draw
-
-Draw shapes according to the rule.
-
-In the default backend (which means `plt_backend.py`), the python script will receive the `rules.json` in path `dataset/rules.json` and handle each rule by turn. After handling all the rules, a basic image will be generated. Then, the script will add noise to the image and generate a final image. The noise here contains Gaussian noise and Perlin noise.
-
-To run the script, use the following command:
-
-```shell
-python run.py --module data.draw.draw --backend plt --stage 1
-```
-
-More arguments are provided in `DrawArgs` in `common/args.py`. And you may also read readme file in the root directory for more details.
-
-Currently, the Stable Diffusion part is not merged into the project. The script `diffusion_backend_new.py` is not available.
-
-### Caption
-
-generate image captions according to the rule.
-
-write how you convert rules to intermediate format and generate captions...
 
 ## Contributing
 
