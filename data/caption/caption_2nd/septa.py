@@ -8,7 +8,7 @@ class Septa(BaseFeature):
         self.txt = ""
         self.txt2 = ""
         self.refineSeptaFolds()
-        self.genSeptaNum()
+        # self.genSeptaNum()
         self.genSeptaDescription()
 
     def refineSeptaFolds(self):
