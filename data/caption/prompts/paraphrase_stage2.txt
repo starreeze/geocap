@@ -1,0 +1,11 @@
+Task:
+The following is a description of a fossil image, please paraphrase the description.
+
+Requirements:
+1. Paraphrase the description while maintaining the scientific tone and numerical values
+2. Your response should contain only the paraphrased description, without any additional statements or explanations
+
+Input text:
+{text}
+
+Paraphrased text:
