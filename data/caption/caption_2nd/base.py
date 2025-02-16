@@ -76,7 +76,7 @@ class BaseFeature:
                 round(shape["center"][0], ndigits=n_digits),
                 round(shape["center"][1], ndigits=n_digits),
             ], calculate_spiral_C(shape["initial_radius"], shape["growth_rate"], shape["max_theta"], 360)
-        elif shape["type"] in ["ellipse"]:
+        elif shape["type"] in ["ellipse"] or "fusiform" in shape["type"]:
             return [
                 round(shape["center"][0], ndigits=n_digits),
                 round(shape["center"][1], ndigits=n_digits),

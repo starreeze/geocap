@@ -6,6 +6,8 @@ class Shell(BaseFeature):
     def __init__(self, type, ratio, length, width, curves, vertices, center):
         self.type = type
         self.ratio = round(ratio, 1)
+        self.w = length
+        self.h = width
         self.length = "{:.2f}".format(round(length, 2))
         self.width = "{:.2f}".format(round(width, 2))
         self.length_width_ratio = "{:.2f}".format(round(length / width, 2))
@@ -17,16 +19,18 @@ class Shell(BaseFeature):
         type = self.type
         ratio = self.ratio
         txt = ""
+        txt += self.standardRangeFilter(shell_size_classes, self.w * self.h)
+        txt += " "
         if "fusiform" in type:
-            txt = self.standardRangeFilter(fusiform_classes, ratio)
+            txt += self.standardRangeFilter(fusiform_classes, ratio)
         elif "ellipse" in type:
-            txt = self.standardRangeFilter(ellipse_classes, ratio)
+            txt += self.standardRangeFilter(ellipse_classes, ratio)
         elif "curves" in type:
-            txt = self.standardRangeFilter(ellipse_classes, ratio)
+            txt += self.standardRangeFilter(ellipse_classes, ratio)
         equ = self.getEquator()
         if equ != "":
             txt = equ + " " + txt  # type: ignore
-        return txt
+        return txt.strip()
 
     def getEquator(self):
         if "curves" in self.type:
@@ -53,7 +57,7 @@ class Shell(BaseFeature):
 
     def getSlope(self):
         if "curves" in self.type:
-            return self.standardRangeFilter(shell_pole_classes, 0.4)
+            return self.standardRangeFilter(shell_slope_classes, 0.4)
         elif "ellipse" in self.type:
             return self.standardRangeFilter(shell_slope_classes, 0.4)
         elif "fusiform" in self.type:

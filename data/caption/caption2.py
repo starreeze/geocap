@@ -106,7 +106,7 @@ def gen_user_input_txt_2nd(rule):
     obj_parts.append(
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
     )
-    obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"]))
+    obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
     obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
     obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
