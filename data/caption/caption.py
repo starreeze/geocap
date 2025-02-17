@@ -112,9 +112,10 @@ def get_center_and_weight(shapez, n_digits=4):
         shape = list(shapez["concentric"].values())[-1]
     if shape["type"] in ["segment", "polygon"]:
         p_center = points_center(shape["points"])
-        return [round(p_center[0], ndigits=n_digits), round(p_center[1], ndigits=n_digits)], calculate_polygon_C(
-            shape["points"]
-        )
+        return [
+            round(p_center[0], ndigits=n_digits),
+            round(p_center[1], ndigits=n_digits),
+        ], calculate_polygon_C(shape["points"])
     elif shape["type"] in ["spiral"]:
         return [
             round(shape["center"][0], ndigits=n_digits),
@@ -231,7 +232,11 @@ def refine_relation(shapes, relation):
         else:
             src, dst = dst, src
     elif "tangent line" in relation[-1]:
-        if ("line" in shapes[src]["name"]) or ("ray" in shapes[src]["name"]) or ("segment" in shapes[src]["name"]):
+        if (
+            ("line" in shapes[src]["name"])
+            or ("ray" in shapes[src]["name"])
+            or ("segment" in shapes[src]["name"])
+        ):
             pass
         else:
             src, dst = dst, src
@@ -446,8 +451,12 @@ def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase, depth):
                 sub_part[pos] = []
             sub_part[pos].append(shape_remain)
         for k in sub_part.keys():
-            new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(k, x1, x2, y1, y2, xbase, ybase)
-            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1)
+            new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(
+                k, x1, x2, y1, y2, xbase, ybase
+            )
+            sub_part[k] = disambiguation(
+                sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1
+            )
         return sub_part
     elif len(same_shape_groups) > 0:  # 有同名形状
         center_positions, weights, grid_posz = gen_grid(canvas_part, x1, x2, y1, y2)
@@ -461,8 +470,12 @@ def disambiguation(canvas_part, x1, x2, y1, y2, xbase, ybase, depth):
                 sub_part[pos] = []
             sub_part[pos].append(canvas_part[j])
         for k in sub_part.keys():
-            new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(k, x1, x2, y1, y2, xbase, ybase)
-            sub_part[k] = disambiguation(sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1)
+            new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase = choose_grid(
+                k, x1, x2, y1, y2, xbase, ybase
+            )
+            sub_part[k] = disambiguation(
+                sub_part[k], new_x1, new_x2, new_y1, new_y2, new_xbase, new_ybase, depth + 1
+            )
         return sub_part
     elif depth == 0:
         center_positions, weights, grid_posz = gen_grid(canvas_part, x1, x2, y1, y2)
@@ -633,7 +646,6 @@ def group_by_position(positions):
 
 
 def gen_data_input(skeleton):
-
     single_1_param_format = "The {attr} of {shape} is {value}. "
     single_2_param_format = "The {attr1} and {attr2} of {shape} are {value1} and {value2}, respectively. "
 
@@ -664,7 +676,11 @@ def gen_data_input(skeleton):
                     results.append(info_str)
                 elif len(param_n) == 2:
                     info_str = single_2_param_format.format(
-                        attr1=param_n[0], attr2=param_n[1], shape=path_str, value1=param_v[0], value2=param_v[1]
+                        attr1=param_n[0],
+                        attr2=param_n[1],
+                        shape=path_str,
+                        value1=param_v[0],
+                        value2=param_v[1],
                     )
                     results.append(info_str)
             else:
@@ -692,7 +708,9 @@ def gen_data_input(skeleton):
                 rnd_part1 = random.randint(0, len(head_with_param_part1_pool) - 1)
                 rnd_end = random.randint(0, len(head_end_pool) - 1)
                 head_str = (
-                    head_start_no_param_pool[rnd_start] + head_with_param_part1_pool[rnd_part1] + head_end_pool[rnd_end]
+                    head_start_no_param_pool[rnd_start]
+                    + head_with_param_part1_pool[rnd_part1]
+                    + head_end_pool[rnd_end]
                 )
             else:
                 rnd_start_part1 = random.randint(0, len(head_start_with_param_part1_pool) - 1)

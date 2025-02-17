@@ -33,6 +33,8 @@ class VolutionCounter:
         self.max_adsorption_time = max_adsorption_time
         self.use_initial_chamber = use_initial_chamber
 
+        self.finish = False  # tag for scanning process
+
     def process_img(self, img_path: str):
         img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
         img_rgb = img[:, :, :3]
@@ -49,9 +51,11 @@ class VolutionCounter:
         assert img_gray.ndim == 2, "grayscale image required."
 
         # Detect initial chamber (with a high confidence level)
-        initial_chamber = detect_initial_chamber(img_gray, param2=self.feat_recog_args.houghcircle_params["param2"])
+        initial_chamber = detect_initial_chamber(
+            img_gray, param2=self.feat_recog_args.houghcircle_params["param2"]
+        )
         if self.use_initial_chamber and initial_chamber is not None:
-            self.center = initial_chamber[:-1].tolist()
+            self.center = initial_chamber[:-1]
             self.success_initial_chamber = True
         else:
             min_row, max_row, min_col, max_col = get_bbox(img_gray)
@@ -138,11 +142,11 @@ class VolutionCounter:
             adsorption_rate = sum(check_adsorption_mask) / len(check_adsorption_mask)
             return adsorption_rate > self.volution_thres
         else:
+            self.finish = True
             return False
 
-    def move(self, points: list[tuple[int, int]]) -> tuple[bool, bool]:
+    def move(self, points: list[tuple[int, int]]) -> bool:
         """Move the points towards the center of the volution."""
-        finish = False
         for i in range(len(points)):
             x, y = points[i]
             target_x, target_y = self.center
@@ -151,7 +155,7 @@ class VolutionCounter:
             direction_y = target_y - y
 
             if direction_y * self.direction <= 0:
-                finish = True
+                self.finish = True
                 break
 
             # Normalize the direction vector
@@ -164,19 +168,21 @@ class VolutionCounter:
             points[i] = (int(x + direction_x * step_size), int(y + direction_y * step_size))
 
         adsorption_mask = self.is_adsorption(points)
-        return adsorption_mask, finish
+        return adsorption_mask
 
     def catch_frontier(
-        self, line_segments: list[list[tuple[int, int]]], step_forward: list[int], i: int, mask: bool, finish: bool
+        self, line_segments: list[list[tuple[int, int]]], step_forward: list[int], i: int, mask: bool
     ):
         max_step = max(step_forward)
         num_step = max_step - step_forward[i] - 1
         for _ in range(num_step):
-            mask, finish = self.move(line_segments[i])
+            mask = self.move(line_segments[i])
             step_forward[i] += 1
-        return mask, finish
+        return mask
 
-    def filter_segments(self, line_segments: list[list[tuple[int, int]]], step_forward: Optional[list] = None):
+    def filter_segments(
+        self, line_segments: list[list[tuple[int, int]]], step_forward: Optional[list] = None
+    ):
         y_means = np.array([np.mean([point[1] for point in segment]) for segment in line_segments])
         ref_y = np.median(y_means)
         filter_max_y = self.filter_max_y_ratio * self.img_gray.shape[1]
@@ -223,7 +229,9 @@ class VolutionCounter:
 
         return points, len(points)
 
-    def get_expand_points(self, vertex: tuple[int, int], theta_ref: float, theta_margin: float, max_expand_len: int):
+    def get_expand_points(
+        self, vertex: tuple[int, int], theta_ref: float, theta_margin: float, max_expand_len: int
+    ):
         expand_points = []
         max_score = -1
         theta_range = np.arange(theta_ref - theta_margin, theta_ref + theta_margin, 0.01)
@@ -332,14 +340,13 @@ class VolutionCounter:
     def scan_in_volution(self, line_segments: list[list[tuple[int, int]]]):
         check_adsorption_mask = [self.is_adsorption(segment) for segment in line_segments]
 
-        finish = False
         step_forward = [0 for _ in range(len(line_segments))]
 
         # Move line_segments until all segments leave current volution
-        while any(check_adsorption_mask) and not finish:
+        while any(check_adsorption_mask) and not self.finish:
             for i, adsorption in enumerate(check_adsorption_mask):
                 if adsorption:
-                    check_adsorption_mask[i], finish = self.move(line_segments[i])
+                    check_adsorption_mask[i] = self.move(line_segments[i])
                     step_forward[i] += 1
             if self.reach_step_limit(step_forward):
                 break
@@ -351,39 +358,38 @@ class VolutionCounter:
         thickness = np.mean(step_forward) * self.step
 
         for i in range(len(line_segments)):
-            _, finish = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i], finish)
+            _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])
 
-        return line_segments, thickness, finish
+        return line_segments, thickness
 
     def scan_between_volutions(self, line_segments: list[list[tuple[int, int]]]):
-        finish = False
         check_adsorption_mask = [self.is_adsorption(segment) for segment in line_segments]
         step_forward = [0 for _ in range(len(line_segments))]
         cur_adsorption_time = [0 for _ in range(len(line_segments))]
 
-        while not self.is_volution(check_adsorption_mask) and not finish:
+        while not self.is_volution(check_adsorption_mask) and not self.finish:
             for i, adsorption in enumerate(check_adsorption_mask):
                 if adsorption:
                     cur_adsorption_time[i] += 1
                     if cur_adsorption_time[i] == self.max_adsorption_time:
                         # end adsorption and catch frontier segment
-                        check_adsorption_mask[i], finish = self.catch_frontier(
-                            line_segments, step_forward, i, check_adsorption_mask[i], finish
+                        check_adsorption_mask[i] = self.catch_frontier(
+                            line_segments, step_forward, i, check_adsorption_mask[i]
                         )
                         cur_adsorption_time[i] = 0
                 else:
-                    check_adsorption_mask[i], finish = self.move(line_segments[i])
+                    check_adsorption_mask[i] = self.move(line_segments[i])
                     step_forward[i] += 1
 
-        if not finish:
+        if not self.finish:
             for i in range(len(line_segments)):
-                check_adsorption_mask[i], finish = self.catch_frontier(
-                    line_segments, step_forward, i, check_adsorption_mask[i], finish
+                check_adsorption_mask[i] = self.catch_frontier(
+                    line_segments, step_forward, i, check_adsorption_mask[i]
                 )
 
         line_segments, _ = self.filter_segments(line_segments, step_forward)
 
-        return line_segments, finish
+        return line_segments
 
     def count_volutions(self, img_path: str) -> tuple[dict[int, list], dict[int, float], bool]:
         """
@@ -414,41 +420,36 @@ class VolutionCounter:
 
         for i, line in enumerate([self.line_upper, self.line_lower]):
             self.set_scan_direction(line)
-            finish = False
+            self.finish = False
             line_segments = split_into_segments(line, self.num_segments)
             line_segments, _ = self.filter_segments(line_segments)
             line_segments = self.update_line_segments(line_segments)
 
-            while not finish:
+            while not self.finish:
                 detected_volution = [segment[0] for segment in line_segments]
-                # Remove points with duplicate x values
-                unique_x_points = {}
-                for point in detected_volution:
-                    x = point[0]
-                    if x not in unique_x_points:
-                        unique_x_points[x] = point
-                detected_volution = list(unique_x_points.values())
-                volutions[i].append(detected_volution)
-
-                line_segments, thickness, finish = self.scan_in_volution(line_segments)
-
-                thickness_per_vol[i].append(thickness)
-                if finish:
+                if len(detected_volution) > 3:
+                    volutions[i].append(detected_volution)
+                else:
                     break
 
-                line_segments, finish = self.scan_between_volutions(line_segments)
-                if finish:
+                line_segments, thickness = self.scan_in_volution(line_segments)
+
+                thickness_per_vol[i].append(thickness)
+                if self.finish:
+                    break
+
+                line_segments = self.scan_between_volutions(line_segments)
+                if self.finish:
                     break
 
                 line_segments = [segment for segment in line_segments if self.is_adsorption(segment)]
 
-                line_segments = self.update_line_segments(line_segments)
+                if not line_segments:
+                    break
 
+                line_segments = self.update_line_segments(line_segments)
                 line_segments = self.expand_line_segments(line_segments, len(volutions[i]))
                 line_segments = self.update_line_segments(line_segments)
-
-                if not line_segments:
-                    finish = True
 
         # Return relative values
         h, w = self.img_gray.shape
@@ -468,7 +469,9 @@ class VolutionCounter:
             vols = volutions[i]
             thicks = thickness_per_vol[i]
             for j in range(len(vols)):
-                vol_idx = (len(vols) - j) * (-1) ** i  # positive value for upper voluitons, negative for lower
+                vol_idx = (len(vols) - j) * (
+                    -1
+                ) ** i  # positive value for upper voluitons, negative for lower
                 volutions_dict[vol_idx] = vols[j]
                 thickness_dict[vol_idx] = thicks[j]
 

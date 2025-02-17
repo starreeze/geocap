@@ -13,6 +13,7 @@ from data.caption.caption_2nd.tunnel import Tunnel
 from data.caption.caption_2nd.proloculus import Proloculus
 from data.caption.caption_2nd.chomata import Chomata
 from data.caption.caption_2nd.deposit import Deposit
+from data.caption.caption_2nd.septa import Septa
 from data.caption.prompt import *
 import re
 from tqdm import tqdm
@@ -32,12 +33,7 @@ def caption(rules: list[dict[str, Any]], generator, output_path: str):
     idx = 0
     for rule in tqdm(rules):
         input_str, rule_str = gen_user_input_txt_2nd(rule)
-        rule_strs.append(
-            {
-                "input": input_str,
-                "output": rule_str,
-            }
-        )
+        rule_strs.append({"input": input_str, "output": rule_str})
         idx += 1
 
     with open(output_path, "w") as f:
@@ -97,16 +93,22 @@ def gen_user_input_txt_2nd(rule):
     obj_parts.append(
         Volution(
             rule["numerical_info"]["num_volutions"],
-            [["{:.1f} mm".format(random.random()), i] for i in range(int(rule["numerical_info"]["num_volutions"]))],
+            [
+                ["{:.1f} mm".format(random.random()), i]
+                for i in range(int(rule["numerical_info"]["num_volutions"]))
+            ],
             volutions,
         )
     )
-    obj_parts.append(Tunnel(rule["numerical_info"]["tunnel_start_idx"], rule["numerical_info"]["tunnel_angles"]))
+    obj_parts.append(
+        Tunnel(rule["numerical_info"]["tunnel_start_idx"], rule["numerical_info"]["tunnel_angles"])
+    )
     obj_parts.append(
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
     )
-    obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"]))
+    obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
     obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
+    obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
     for part in obj_parts:
         txt += part.genUserInput() + ""

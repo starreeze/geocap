@@ -98,9 +98,7 @@ head_end_pool = [
 ]
 # 1st end
 # 2nd start
-head_start_no_param_2nd = (
-    "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image."
-)
+head_start_no_param_2nd = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image."
 head_start_2nd = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. Here is some information about the fossil that must be included in the description:"
 # 2nd end
 ordinal_numbers = [

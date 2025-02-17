@@ -7,7 +7,9 @@ ellipse_classes = {
     "sub-cylindrical": [6.1, 99],
 }
 
-shell_equator_classes = {"inflated": [100, 9999], "": [0, 100]}
+shell_size_classes = {"small": [0, 1 / 3], "medium": [1 / 3, 2 / 3], "large": [2 / 3, 999]}
+
+shell_equator_classes = {"inflated": [90, 9999], "": [0, 90]}
 
 shell_slope_classes = {"convex": [0, 0.5], "concave": [0.5, 1]}
 
@@ -15,7 +17,7 @@ shell_pole_classes = {"bluntly rounded": [100, 999], "bluntly pointed": [80, 100
 
 shell_fusiform_pole_classes = {"bluntly rounded": [0, 6], "elongated": [6.1, 99]}
 
-shell_axis_classes = {"straight": [170, 180], "other": [0, 170]}
+shell_axis_classes = {"straight": [178, 180], "other": [0, 178]}
 
 proloculus_size_classes = {"small": [0, 0.33], "medium": [0.33, 0.67], "large": [0.67, 1]}
 
@@ -23,11 +25,30 @@ proloculus_shape_classes = {"spherical": [0, 0.33], "": [0.33, 0.67], "kidney-sh
 
 tunnel_angle_classes = {"narrow": [0, 20], "": [21, 30], "broad": [31, 99]}
 
-chomata_size_classes = {"small": [0, 1], "": [1, 2], "massive": [2, 9999]}
+chomata_size_classes = {"small": [0, 0.5], "": [0.5, 0.7], "massive": [0.7, 9999]}
 
-chomata_development_classes = {"absence": [0, 1], "": [1, 2], "well developed": [2, 999]}
+chomata_development_classes = {
+    "absence": [0, 1],
+    "weakly developed": [1, 2],
+    "present only in some volutions": [2, 3],
+    "well developed": [3, 999],
+}
 
-deposit_development_classes = {"absence": [0, 0.1], "": [0.1, 0.6], "well developed": [0.6, 1], "absence": [1, 999]}
+deposit_development_classes = {
+    "absence": [0, 0.2],
+    "": [0.2, 0.5],
+    "well developed": [0.5, 1],
+    "absence": [1, 999],
+}
+
+septa_shape_classes = {
+    "slightly fluted": lambda x: True,
+    "straight": lambda x: x[0] >= 0.7,
+    "undulant": lambda x: x[1] >= 0.7,
+    "fluted": lambda x: x[1] + x[2] >= 0.7 and x[2] >= 0.35,
+    "strongly fluted": lambda x: x[2] >= 0.7,
+    "irregularly fluted": lambda x: x[2] >= 0.9,
+}
 
 ordinal_numbers = [
     "first",

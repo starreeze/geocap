@@ -85,11 +85,18 @@ class APIGenerator(LLMGenerator):
                     with open(data, "rb") as f:
                         data = base64.b64encode(f.read()).decode("utf-8")
                 content.append(
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{data}"}, "detail": "low"}
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{data}"},
+                        "detail": "low",
+                    }
                 )
         return {
             "model": self.model,
-            "messages": [{"role": "system", "content": self.sys_prompt}, {"role": "user", "content": content}],
+            "messages": [
+                {"role": "system", "content": self.sys_prompt},
+                {"role": "user", "content": content},
+            ],
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
         }

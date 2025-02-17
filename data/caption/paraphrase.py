@@ -17,25 +17,25 @@ class Paraphraser:
         # Initialize llm
         model_name, model_id = caption_args.caption_llm.split("-", 1)
         model_path = model_path_mapping[model_name].format(model_id)
-        self.llm_generator = generator_mapping[model_name](model_path)
+        self.llm_generator = generator_mapping[model_name](model_path, max_tokens=4096, temperature=1.3)
+        self.model_name = model_name
         self.loaded_llm = True
 
         # Initialize prompt
         self.sys_prompt = "You are a helpful assistant skilled in text paraphrasing."
-        with open("data/caption/paraphrase_prompt.txt", "r") as f:
+        with open(caption_args.paraphrase_prompt_dir, "r") as f:
             self.user_prompt = f.read()
 
     def _generate_paraphrase_prompt(self, texts: list[str]) -> list[list[dict[str, str]]]:
         """Generate the prompt for paraphrasing"""
         user_prompts = [f"{self.user_prompt.replace('{text}', text)}" for text in texts]
-
-        messages = [
-            [
-                {"role": "system", "content": self.sys_prompt},
-                {"role": "user", "content": user_prompt},
+        if "api" not in self.model_name:
+            messages = [
+                [{"role": "system", "content": self.sys_prompt}, {"role": "user", "content": user_prompt}]
+                for user_prompt in user_prompts
             ]
-            for user_prompt in user_prompts
-        ]
+        else:
+            messages = [[{"role": "user", "content": user_prompt}] for user_prompt in user_prompts]
         return messages
 
     def __call__(self, texts: list[str]) -> list[str]:
@@ -43,7 +43,6 @@ class Paraphraser:
         if not self.loaded_llm:
             self.load_llm_generator()
 
-        output = []
         messages = self._generate_paraphrase_prompt(texts)
         responses = self.llm_generator(messages, batch_size=min(len(texts), caption_args.caption_batchsize))
 
@@ -52,7 +51,7 @@ class Paraphraser:
         for batch in tqdm(responses, total=total_batches, desc="Paraphrasing"):
             outputs.extend(batch)
 
-        return output
+        return outputs
 
 
 def main():

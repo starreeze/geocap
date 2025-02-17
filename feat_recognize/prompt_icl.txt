@@ -1,0 +1,28 @@
+Task:
+You are provided with a description of a fossil image. For numerical values appearing in the numerical information, replace the corresponding values in the description with those from the numerical information.
+
+Requirements:
+1. Replace any approximate values in the description with the exact values provided
+2. Replace any ranges with the exact numerical value provided and do not use word like 'varies from'
+3. Keep the original descriptive language intact where no numerical values are involved
+4. Maintain the scientific tone and accuracy of the description
+5. For tunnel angles, strictly replace any values in the description with those from numerical information, even if they differ from the original description; if tunnel is not included in the original description, do not add any information about tunnel angles in the processed description
+6. Your response should contain only a modified description, without any additional analysis or using any brackets for additional explanations.
+
+Example:
+Description:
+Shell small, subcylindrical, with rather sharply pointed poles. Mature specimens have 6.5 to 7.5 volutions, first 3 or 4 of which are more tightly coiled than later ones. Such individuals measure 4.60 to 4.80 mm. in length, and 1.60 to 1.70 mm. in diameter. Form ratio varies from 2.71 to 2.94. "Spirotheca composed of tectum and moderately coarse keriotheca with thickness in 6th volution measuring about 67u03bc. Septa only slightly fluted in inner whorls, becoming strongly folded in outer ones. They number 8 to 9 in 1st volution, 13 in 2nd, 14 to 19 in 3rd, 18 to 20 in 4th, and 19 to 23 in 5th. Septal folds high, usually reaching tops of chambers. Heavy deposit of secondary material nearly fills chambers in zone along axis. \nProloculus small, its outside diameter varying from 141 to 208u03bc. Tunnel low and rather narrow, tunnel angle measuring about 27 degrees in 7th volution. Narrow chomata present only in first 3 or 4 whorls.
+
+Numerical infomation:
+length: 4.675 mm. , width(diameter): 1.507 mm. ratio: 3.102\nnumber of volutions(whorls): 5.5\ninitial chamber(proloculus): 132\u03bc\ntunnel angles: 6 in the 4th volution, 7 in the 5th volution.\n
+
+Processed description:
+Shell small, subcylindrical, with rather sharply pointed poles. Mature specimens have 5.5 volutions, the first 3 or 4 of which are more tightly coiled than later ones. Such individuals measure 4.675 mm in length and 1.507 mm in diameter. Form ratio is 3.102. Spirotheca composed of tectum and moderately coarse keriotheca with thickness in 6th volution measuring about 67\u03bc. Septa only slightly fluted in inner whorls, becoming strongly folded in outer ones. They number 8 to 9 in the 1st volution, 13 in the 2nd, 14 to 19 in the 3rd, 18 to 20 in the 4th, and 19 to 23 in the 5th. Septal folds high, usually reaching tops of chambers. Heavy deposit of secondary material nearly fills chambers in zone along axis.\nProloculus small, its outside diameter varying from 132\u03bc. Tunnel low and rather narrow, tunnel angle measuring 6 degrees in the 4th volution and 7 degrees in the 5th volution. Narrow chomata present only in the first 3 or 4 whorls.
+
+Description:
+{desc}
+
+Numerical information:
+{numerical_info}
+
+Processed description:
