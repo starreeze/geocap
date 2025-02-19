@@ -900,7 +900,7 @@ class SeptaGenerator:
         self,
         volutions: list[Ellipse] | list[Fusiform] | list[Fusiform_2] | list[CustomedShape],
         tunnel_angles: list[float],
-        tunnel_start_idx: int,
+        visible_chomata_idx: list[int],
         volution_type: Literal["concentric", "swing"],
         num_volutions: int,
     ) -> list[Ellipse | Polygon]:
@@ -911,7 +911,7 @@ class SeptaGenerator:
         # Add chomatas by volutions
         step = 1 if "concentric" in volution_type else 2
         for i, volution in enumerate(volutions[:-step]):
-            if i / step < tunnel_start_idx:
+            if i // step not in visible_chomata_idx:
                 continue
             elif i // step >= num_volutions:
                 break
@@ -924,7 +924,7 @@ class SeptaGenerator:
             thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
             # chomata_type = np.random.choice(["ellipse", "polygon"])
             chomata_type = "ellipse"
-            size = "small"
+            size = np.random.choice(["small", "big"])
 
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower
@@ -1080,10 +1080,10 @@ class SeptaGenerator:
         fill_mode: Literal["no", "white", "black"] = "no",
     ) -> Ellipse:
         if size == "big":
-            major_axis = uniform(0.6 * interval, 0.8 * interval)
+            major_axis = uniform(0.7 * interval, 0.8 * interval)
             minor_axis = uniform(0.6 * major_axis, major_axis)
         elif size == "small":
-            major_axis = uniform(0.4 * interval, 0.5 * interval)
+            major_axis = uniform(0.3 * interval, 0.5 * interval)
             minor_axis = uniform(0.6 * major_axis, major_axis)
         rotation = theta * normal(1, 0.1)
 
