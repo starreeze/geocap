@@ -23,7 +23,12 @@ shell_fusiform_pole_classes = {"bluntly rounded": [0, 6], "elongated": [6.1, 99]
 
 shell_axis_classes = {"straight": [178, 180], "other": [0, 178]}
 
-proloculus_size_classes = {"small": [0, 0.33], "medium": [0.33, 0.67], "large": [0.67, 1]}
+proloculus_size_classes = {
+    "very small": [0, 0.1],
+    "small": [0.1, 0.2],
+    "medium": [0.2, 0.3],
+    "large": [0.3, 100],
+}
 
 proloculus_shape_classes = {"spherical": [0, 0.33], "": [0.33, 0.67], "kidney-shaped": [0.67, 1]}
 
