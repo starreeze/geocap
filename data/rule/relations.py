@@ -907,13 +907,13 @@ class SeptaGenerator:
         fossil_center = volutions[0].center
         chomata_list = []
 
-        self.tunnel_angles_by_volution = [[0.0, 0.0, 0.0, 0.0] for _ in range(num_volutions)]
+        self.tunnel_angles_by_volution = [[0.0, 0.0, 0.0, 0.0] for _ in range(num_volutions - 1)]
         # Add chomatas by volutions
         step = 1 if "concentric" in volution_type else 2
         for i, volution in enumerate(volutions[:-step]):
             if i // step not in visible_chomata_idx:
                 continue
-            elif i // step >= num_volutions:
+            elif i // step >= num_volutions - 1:  # no chomata on last volution
                 break
 
             mid_angle = normal(0.5 * np.pi, 0.1)
@@ -975,9 +975,9 @@ class SeptaGenerator:
 
         # Add septa between volutions
         step = 1 if "concentric" in volution_type else 2
-        num_septa = [0 for _ in range(num_volutions)]
+        num_septa = [0 for _ in range(num_volutions - 1)]
         for i, volution in enumerate(volutions[:-step]):
-            if i // step >= num_volutions:
+            if i // step >= num_volutions - 1:  # no septa folds on last volution
                 break
             if i == 0:  # skip first volution
                 continue
