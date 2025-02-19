@@ -7,7 +7,11 @@ ellipse_classes = {
     "sub-cylindrical": [6.1, 99],
 }
 
-shell_size_classes = {"small": [0, 1 / 3], "medium": [1 / 3, 2 / 3], "large": [2 / 3, 999]}
+shell_world_pixel = 1280
+
+shell_pixel_div_mm = 136
+
+shell_size_classes = {"small": [0, 10], "medium": [10, 20], "large": [20, 999]}
 
 shell_equator_classes = {"inflated": [90, 9999], "": [0, 90]}
 

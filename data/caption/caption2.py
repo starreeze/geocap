@@ -101,7 +101,7 @@ def gen_user_input_txt_2nd(rule):
         )
     )
     obj_parts.append(
-        Tunnel(rule["numerical_info"]["tunnel_start_idx"], rule["numerical_info"]["tunnel_angles"])
+        Tunnel(rule["numerical_info"]["visible_chomata_idx"], rule["numerical_info"]["tunnel_angles"])
     )
     obj_parts.append(
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
