@@ -3,10 +3,10 @@ from data.caption.caption_2nd.base import BaseFeature
 
 
 class Tunnel(BaseFeature):
-    def __init__(self, tunnel_start_idx, tunnel_angles=[]):
+    def __init__(self, visible_chomata_idx, tunnel_angles=[]):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
-        self.tunnel_start_idx = tunnel_start_idx
+        self.visible_chomata_idx = visible_chomata_idx
 
     def genTunnelFeatures(self):
         feat = ""
@@ -32,10 +32,14 @@ class Tunnel(BaseFeature):
         return feat
 
     def genTunnelAngleDescription(self):
-        txt = "Tunnel angles of {start} to {end} volutions measure ".format(
-            start=ordinal_numbers[self.tunnel_start_idx],
-            end=ordinal_numbers[len(self.tunnel_angles) - 1 + self.tunnel_start_idx],
-        )
+        tunnel_map = ""
+        for i in range(len(self.visible_chomata_idx)):
+            if i != len(self.visible_chomata_idx) - 1:
+                tunnel_map += ordinal_numbers[self.visible_chomata_idx[i]]
+                tunnel_map += ", "
+            else:
+                tunnel_map += "and {th}".format(th=ordinal_numbers[self.visible_chomata_idx[i]])
+        txt = "Tunnel angles of {ths} volutions measure ".format(ths=tunnel_map)
         for i in range(len(self.tunnel_angles)):
             if i != len(self.tunnel_angles) - 1:
                 txt += "{:.0f}".format(self.tunnel_angles[i])
@@ -53,15 +57,15 @@ class Tunnel(BaseFeature):
     def genInput(self):
         txt = "tunnel angles: "
         for i in range(len(self.tunnel_angles)):
-            if self.tunnel_start_idx + i == 0:
+            if self.visible_chomata_idx[i] == 0:
                 txt += "{angle} in the 1st volution".format(angle=self.tunnel_angles[i])
-            elif self.tunnel_start_idx + i == 1:
+            elif self.visible_chomata_idx[i] + i == 1:
                 txt += "{angle} in the 2nd volution".format(angle=self.tunnel_angles[i])
-            elif self.tunnel_start_idx + i == 2:
+            elif self.visible_chomata_idx[i] + i == 2:
                 txt += "{angle} in the 3rd volution".format(angle=self.tunnel_angles[i])
             else:
                 txt += "{angle} in the {idx}th volution".format(
-                    angle=self.tunnel_angles[i], idx=self.tunnel_start_idx + i + 1
+                    angle=self.tunnel_angles[i], idx=self.visible_chomata_idx[i] + 1
                 )
             if i != len(self.tunnel_angles) - 1:
                 txt += ", "
