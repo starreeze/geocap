@@ -8,8 +8,8 @@ class Shell(BaseFeature):
         self.ratio = round(ratio, 1)
         self.w = length
         self.h = width
-        self.length = "{:.2f}".format(round(length, 2))
-        self.width = "{:.2f}".format(round(width, 2))
+        self.length = "{:.2f}".format(round(length * shell_world_pixel / shell_pixel_div_mm, 2))
+        self.width = "{:.2f}".format(round(width * shell_world_pixel / shell_pixel_div_mm, 2))
         self.length_width_ratio = "{:.2f}".format(round(length / width, 2))
         self.curves = curves
         self.vertices = vertices
@@ -19,7 +19,11 @@ class Shell(BaseFeature):
         type = self.type
         ratio = self.ratio
         txt = ""
-        txt += self.standardRangeFilter(shell_size_classes, self.w * self.h)
+        txt += self.standardRangeFilter(
+            shell_size_classes,
+            (self.w * shell_world_pixel / shell_pixel_div_mm)
+            * (self.h * shell_world_pixel / shell_pixel_div_mm),
+        )
         txt += " "
         if "fusiform" in type:
             txt += self.standardRangeFilter(fusiform_classes, ratio)
@@ -29,7 +33,7 @@ class Shell(BaseFeature):
             txt += self.standardRangeFilter(ellipse_classes, ratio)
         equ = self.getEquator()
         if equ != "":
-            txt = equ + " " + txt  # type: ignore
+            txt = equ + " in the median part, " + txt  # type: ignore
         return txt.strip()
 
     def getEquator(self):
@@ -47,9 +51,9 @@ class Shell(BaseFeature):
             if equator1 == equator2:
                 return equator1
             elif equator1 == "inflated":
-                return "top inflated,"
+                return "top inflated"
             elif equator2 == "inflated":
-                return "bottom inflated,"
+                return "bottom inflated"
         elif "ellipse" in self.type:
             return self.standardRangeFilter(shell_equator_classes, self.ratio * 20)
         elif "fusiform" in self.type:
