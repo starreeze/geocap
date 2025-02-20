@@ -44,7 +44,9 @@ class Volution(BaseFeature):
                             self.volutions_table[i]["vertices"][1][1]
                             - self.volutions_table[i]["vertices"][3][1]
                         )
-                        / 2,
+                        / 2
+                        * shell_world_pixel
+                        / shell_pixel_div_mm,
                         3,
                     ),
                     0.001,
@@ -57,7 +59,7 @@ class Volution(BaseFeature):
             if i != len(self.volutions_table) - 1:
                 txt1 += ", "
             else:
-                txt1 += ". "
+                txt1 += " mm. "
         if txt == "skip":
             return ""
         txt += txt1
