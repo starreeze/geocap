@@ -274,8 +274,8 @@ class Eval_stage3Args:
     manual_fix_index: int = field(default=-1)
     manual_fix_content: str = field(default="")
 
-    eval_result_dir: str = field(default="eval_stage3/eval_result")
-    eval_origin_file: str = field(default="eval_stage3/batch_test_s3.json")
+    eval_result_dir: str = field(default="dataset/eval_result")
+    eval_origin_file: str = field(default="dataset/batch_test_s3.json")
 
 
 (

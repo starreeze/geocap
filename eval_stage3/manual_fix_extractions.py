@@ -17,7 +17,7 @@ def main():
     except Exception as e:
         print(e)
         return
-    data.insert(index, patch)
+    data[index] = patch
     with open(f"extracted_{mode}_info.json", "w") as f:
         json.dump(data, f)
 

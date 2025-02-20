@@ -52,7 +52,8 @@ class Evaluater:
             except Exception as e:
                 record_err(messages[idx], batch[0], e, idx, mode)
                 fail_flag = True
-            else:
+                process_json_batch = [{}]
+            finally:
                 outputs.extend(process_json_batch)
         return outputs, fail_flag
 
