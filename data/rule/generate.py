@@ -56,7 +56,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
         # shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
-        tunnel_angle = normal(16, 4)  # initialize
+        tunnel_angle = normal(18, 4)  # initialize
         tunnel_angles = []
         for _ in range(num_volutions - 1):
             scale_factor = normal(1.1, 0.05)
