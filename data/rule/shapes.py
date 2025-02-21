@@ -951,7 +951,11 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.002), 0.5 + normal(0, 0.002))
-        major_axis = max(0.03, normal(0.03, 6e-3))
+        size = np.random.choice(["small", "large"], p=[0.6, 0.4])
+        if size == "small":
+            major_axis = normal(0.009, 0.001)
+        elif size == "large":
+            major_axis = normal(0.028, 0.003)
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber"
@@ -964,7 +968,7 @@ class ShapeGenerator:
             start_volution = randint(0, max(1, num_volutions // 4))
 
             if rule_args.overlap_axial_and_poles_folds:
-                end_volution = num_volutions
+                end_volution = num_volutions - 1
             else:
                 end_volution = randint(num_volutions // 2, num_volutions)
 
@@ -987,7 +991,7 @@ class ShapeGenerator:
                 "start_angle": start_angle_main - max_extend_angle1 * normal(0.6, 0.1),
                 "end_angle": start_angle_main,
                 "start_volution": 0,
-                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions - 1), num_volutions),
             }
             max_extend_angle2 = ((0.5 - i) * np.pi - end_angle_main) % (2 * np.pi)
             axial_filling_extend2 = {
@@ -995,7 +999,7 @@ class ShapeGenerator:
                 "start_angle": end_angle_main,
                 "end_angle": end_angle_main + max_extend_angle2 * normal(0.6, 0.1),
                 "start_volution": 0,
-                "end_volution": randint(min(end_volution + 1, num_volutions), num_volutions + 1),
+                "end_volution": randint(min(end_volution + 1, num_volutions - 1), num_volutions),
             }
             axial_filling.append(axial_filling_extend1)
             axial_filling.append(axial_filling_extend2)
@@ -1008,8 +1012,8 @@ class ShapeGenerator:
             if not rule_args.overlap_axial_and_poles_folds and axial_filling:
                 start_volution = axial_filling[3 * i]["end_volution"]
             else:
-                start_volution = randint(num_volutions // 2, num_volutions)
-            end_volution = num_volutions
+                start_volution = randint(num_volutions // 2, num_volutions - 1)
+            end_volution = num_volutions - 1
             start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
             end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
             poles_folds.append(

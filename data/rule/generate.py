@@ -46,7 +46,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
 
         volutions = volution_generator.generate_volutions(initial_chamber, volution_type)
 
-        num_volutions = len(volutions) - 1 if "concentric" in volution_type else int(len(volutions) / 2 - 1)
+        num_volutions = len(volutions) if "concentric" in volution_type else len(volutions) // 2
         numerical_info["num_volutions"] = float(num_volutions)
 
         fossil_bbox = volutions[-1].get_bbox()
@@ -56,33 +56,33 @@ def generate_fossil_rules() -> list[dict[str, list]]:
         # shapes.reverse()  # reverse for overlap in 'swing' volution_type
 
         # Set tunnel angles for each volution
-        tunnel_angle = normal(16, 4)  # initialize
+        tunnel_angle = normal(18, 4)  # initialize
         tunnel_angles = []
-        for _ in range(int(num_volutions)):
+        for _ in range(num_volutions - 1):
             scale_factor = normal(1.1, 0.05)
             tunnel_angle *= scale_factor
             tunnel_angles.append(tunnel_angle)
 
-        num_visible_chomata = randint(num_volutions // 3, num_volutions)
-        visible_chomata_idx = sorted(choice(num_volutions, num_visible_chomata, replace=False))
+        num_visible_chomata = randint(0, num_volutions)
+        visible_chomata_idx = sorted(choice(num_volutions - 1, num_visible_chomata, replace=False))
         numerical_info["visible_chomata_idx"] = [int(idx) for idx in visible_chomata_idx]
         numerical_info["tunnel_angles"] = np.array(tunnel_angles)[visible_chomata_idx].tolist()
 
         # Generate chomata
         septa_generator = SeptaGenerator(rule_args)
         chomata_list = septa_generator.generate_chomata(
-            volutions, tunnel_angles, visible_chomata_idx, volution_type, int(num_volutions)
+            volutions, tunnel_angles, visible_chomata_idx, volution_type, num_volutions
         )
         shapes.extend(chomata_list)
 
         # Generate axial filling
         if np.random.rand() < rule_args.prob_has_axial_filling:
-            axial_filling = shape_generator.generate_axial_filling(int(num_volutions), rule_args)
+            axial_filling = shape_generator.generate_axial_filling(num_volutions, rule_args)
         else:
             axial_filling = []
 
         # Generate septa folds at poles
-        poles_folds = shape_generator.generate_poles_folds(int(num_volutions), axial_filling, rule_args)
+        poles_folds = shape_generator.generate_poles_folds(num_volutions, axial_filling, rule_args)
 
         # Generate other septa folds
         have_septa_folds = choice([True, False])
