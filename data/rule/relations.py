@@ -613,7 +613,7 @@ class FusiformRelationGenerator:
             volutions = [volution_0, volution_0_swing]
 
         scale_factor = [normal(0.75, 0.03), uniform(1.05, 1.03)]
-        delta_y = max(0.025, normal(0.025, 0.01))
+        delta_y = max(0.04, normal(0.04, 0.01))
 
         max_num_volutions = randint(5, 13)
         for i in range(max_num_volutions):
@@ -802,7 +802,7 @@ class CustomedShapeGenerator:
         _stop = False
         for i in range(max_num_volutions):
             self.customed_shape = volutions[-1]
-            scale_factor = 1.3 * (0.99**i)
+            scale_factor = 1.5 * (0.99**i)
             # scale_factor = normal(1.5, 0.1) * (0.98**i)
 
             if "concentric" in volution_type:
@@ -847,8 +847,8 @@ class CustomedShapeGenerator:
     def get_random_customed_shape(self, initial_chamber: Ellipse) -> CustomedShape:
         center = (initial_chamber.center[0] + normal(0, 1e-3), initial_chamber.center[1] + normal(0, 1e-3))
         x0, y0 = center
-        major_r = initial_chamber.major_axis * normal(1.6, 0.1)
-        minor_r = initial_chamber.minor_axis * normal(0.8, 0.05)
+        major_r = initial_chamber.major_axis * normal(2.50, 0.2)
+        minor_r = initial_chamber.major_axis * normal(1.25, 0.1)
 
         # add random translation on left and right vertices
         y_trans_1 = normal(0, 0.2) * minor_r
