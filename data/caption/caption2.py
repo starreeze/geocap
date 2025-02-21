@@ -100,14 +100,17 @@ def gen_user_input_txt_2nd(rule):
             volutions,
         )
     )
-    obj_parts.append(
-        Tunnel(rule["numerical_info"]["visible_chomata_idx"], rule["numerical_info"]["tunnel_angles"])
-    )
+    if "tunnel_angles" in rule["numerical_info"] and len(rule["numerical_info"]["tunnel_angles"]) > 0:
+        obj_parts.append(
+            Tunnel(rule["numerical_info"]["visible_chomata_idx"], rule["numerical_info"]["tunnel_angles"])
+        )
     obj_parts.append(
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
     )
-    obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
-    obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
+    if len(chomata_shapes) > 0:
+        obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
+    if "axial_filling" in rule["axial_filling"] and len(rule["axial_filling"]) > 0:
+        obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
     obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
     for part in obj_parts:
