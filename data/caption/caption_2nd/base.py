@@ -105,7 +105,7 @@ class BaseFeature:
         cos_b = (x1 * x2 + y1 * y2 + z1 * z2) / (
             math.sqrt(x1**2 + y1**2 + z1**2) * (math.sqrt(x2**2 + y2**2 + z2**2))
         )
-        B = math.degrees(math.acos(cos_b))
+        B = math.degrees(math.acos(round(cos_b, 8)))
         return B
 
     def convex_or_concave(self, top, a, b):

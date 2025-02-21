@@ -11,6 +11,8 @@ class Chomata(BaseFeature):
         self.genVolutionHeights()
 
     def genChomataSize(self) -> str:
+        if len(self.chomata_shapes) <= 0:
+            return ""
         total = 0
         chomata_sizes_by_volution = {}
         for c in self.chomata_shapes:
