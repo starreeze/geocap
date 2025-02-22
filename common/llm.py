@@ -162,7 +162,7 @@ model_path_mapping = {
 
 def main():
     messages = [[{"role": "user", "content": "Write a story beginning with 'Once upon a time'."}]]
-    print(next(iter(APIGenerator("api-gpt-4o")(messages))))
+    print(next(iter(APIGenerator("gpt-4o")(messages))))
 
 
 if __name__ == "__main__":
