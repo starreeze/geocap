@@ -17,7 +17,7 @@ class Paraphraser:
         # Initialize llm
         model_name, model_id = caption_args.caption_llm.split("-", 1)
         model_path = model_path_mapping[model_name].format(model_id)
-        self.llm_generator = generator_mapping[model_name](model_path, temperature=1.3)
+        self.llm_generator = generator_mapping[model_name](model_path, max_tokens=4096, temperature=1.3)
         self.model_name = model_name
         self.loaded_llm = True
 
@@ -58,7 +58,7 @@ def main():
     paraphraser = Paraphraser()
     # Read original captions
     with open(data_args.caption_path, "r") as f:
-        captions = json.load(f)
+        captions = [json.loads(line) for line in f]
 
     # Extract and paraphrase outputs
     original_outputs = [caption["output"] for caption in captions]
