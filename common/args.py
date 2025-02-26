@@ -42,7 +42,6 @@ class RunArgs:
     end_pos: int = field(default=sys.maxsize)
     api_key_file: str = field(default="api_key.yaml")
 
-
 @dataclass
 class RuleArgs:
     output_fp_precision: int = field(default=4)
@@ -270,6 +269,7 @@ class FeatureRecognizeArgs:
 @dataclass
 class Eval_stage3Args:
     read_extractions_from_file: bool = field(default=False)
+    eval_llm: str = field(default="qwen25-14")
     manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
     manual_fix_index: int = field(default=-1)
     manual_fix_content: str = field(default="")

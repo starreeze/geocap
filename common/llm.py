@@ -25,7 +25,10 @@ class LLMGenerator(ABC):
 
     @abstractmethod
     def __call__(
-        self, input_texts: list[list[dict[str, str]]], batch_size=1, output_path: str | None = None
+        self,
+        input_texts: list[list[dict[str, str]]],
+        batch_size=1,
+        output_path: str | None = None,
     ) -> Generator[list[str], Any, None]:
         pass
 
@@ -38,7 +41,12 @@ class LocalGenerator(LLMGenerator):
         )
         self.generator.tokenizer.padding_side = "left"  # type: ignore
 
-    def __call__(self, input_texts: list[list[dict[str, str]]], batch_size=1, output_path: str | None = None):
+    def __call__(
+        self,
+        input_texts: list[list[dict[str, str]]],
+        batch_size=1,
+        output_path: str | None = None,
+    ):
         out_file = open(output_path, "w") if output_path else None
         target_range = range((len(input_texts) + batch_size - 1) // batch_size)
         if output_path:
@@ -48,7 +56,9 @@ class LocalGenerator(LLMGenerator):
             batch = input_texts[i * batch_size : (i + 1) * batch_size]
             outputs = self.generator(batch, batch_size=batch_size)
             for input_text, output in zip(batch, outputs):  # type: ignore
-                generated_text = output[0]["generated_text"][len(input_text)]["content"].strip()
+                generated_text = output[0]["generated_text"][len(input_text)][
+                    "content"
+                ].strip()
                 results.append(generated_text)
                 if out_file:
                     out_file.write(generated_text + "\n")
@@ -67,10 +77,16 @@ class APIGenerator(LLMGenerator):
     def __init__(self, model: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.model = model
-        key_info: dict[str, str] = yaml.safe_load(open(run_args.api_key_file))
+        key_info: dict[str, str] = yaml.safe_load(open(run_args.api_key_file, "r"))
         url = key_info["base_url"] + "/chat/completions"
-        self.url = url[:8] + url[8:].replace("//", "/")  # skip the first 8 characters containing "https://"
-        self.headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key_info['api_key']}"}
+        self.url = url[:8] + url[8:].replace(
+            "//", "/"
+        )  # skip the first 8 characters containing "https://"
+        print(key_info)
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key_info['api_key']}",
+        }
         self.temperature = kwargs.get("temperature", 0.2)
         self.max_tokens = kwargs.get("max_tokens", 512)
         self.sys_prompt = kwargs.get("sys_prompt", "You are a helpful assistant.")
@@ -102,12 +118,16 @@ class APIGenerator(LLMGenerator):
         }
 
     @retry_dec(retry=10, wait=10)
-    def get_one_response(self, inputs: list[dict[str, Any]] | list[tuple[str, str]]) -> str:
+    def get_one_response(
+        self, inputs: list[dict[str, Any]] | list[tuple[str, str]]
+    ) -> str:
         if isinstance(inputs[0], tuple):
             payload = self.construct_payload(inputs)  # type: ignore
         elif isinstance(inputs[0], dict):
             if len(inputs) > 1 or inputs[0].get("role", "") != "user":
-                raise NotImplementedError("Only single user message is supported for API generator")
+                raise NotImplementedError(
+                    "Only single user message is supported for API generator"
+                )
             payload = self.construct_payload([("text", inputs[0]["content"])])
         else:
             raise ValueError(f"Invalid input type: {type(inputs[0])}")
@@ -134,7 +154,9 @@ class APIGenerator(LLMGenerator):
         output_path: str | None = None,
     ):
         if batch_size != 1:
-            logger.warning("Batch size > 1 is not supported for API generator; setting batch_size to 1")
+            logger.warning(
+                "Batch size > 1 is not supported for API generator; setting batch_size to 1"
+            )
         out_file = open(output_path, "w") if output_path else None
         target_range = range(len(inputs))
         if output_path:
@@ -161,8 +183,15 @@ model_path_mapping = {
 
 
 def main():
-    messages = [[{"role": "user", "content": "Write a story beginning with 'Once upon a time'."}]]
-    print(next(iter(APIGenerator("api-gpt-4o")(messages))))
+    messages = [
+        [
+            {
+                "role": "user",
+                "content": "Write a story beginning with 'Once upon a time'.",
+            }
+        ]
+    ]
+    print(next(iter(APIGenerator("gpt-4o")(messages))))
 
 
 if __name__ == "__main__":
