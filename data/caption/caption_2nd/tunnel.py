@@ -1,11 +1,13 @@
 from data.caption.caption_2nd.params import *
 from data.caption.caption_2nd.base import BaseFeature
+import json
 
 
 class Tunnel(BaseFeature):
-    def __init__(self, visible_chomata_idx, tunnel_angles=[]):
+    def __init__(self, rule000, visible_chomata_idx, tunnel_angles=[]):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
+        self.rule = rule000
         self.visible_chomata_idx = visible_chomata_idx
 
     def genTunnelFeatures(self):
@@ -14,11 +16,15 @@ class Tunnel(BaseFeature):
         for i in range(len(self.tunnel_angles)):
             for k in tunnel_angle_classes.keys():
                 if (
-                    self.tunnel_angles[i] >= tunnel_angle_classes[k][0]
-                    and self.tunnel_angles[i] <= tunnel_angle_classes[k][1]
+                    abs(self.tunnel_angles[i]) >= tunnel_angle_classes[k][0]
+                    and abs(self.tunnel_angles[i]) <= tunnel_angle_classes[k][1]
                 ):
                     angles_classes.append(k)
                     break
+        if len(angles_classes) == 0:
+            with open("dataset/error2.json", "w") as f:
+                json.dump(self.rule, f, indent=4)
+            exit()
         if angles_classes[0] == "narrow" and angles_classes[-1] == "narrow":
             feat = "Tunnels low, narrow. "
         elif angles_classes[0] == "narrow" and angles_classes[-1] == "broad":
