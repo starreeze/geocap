@@ -42,6 +42,7 @@ class RunArgs:
     end_pos: int = field(default=sys.maxsize)
     api_key_file: str = field(default="api_key.yaml")
 
+
 @dataclass
 class RuleArgs:
     output_fp_precision: int = field(default=4)

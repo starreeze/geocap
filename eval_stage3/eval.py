@@ -26,9 +26,7 @@ class Evaluater:
         model_path = model_path_mapping[model_name].format(model_id)
         self.llm_generator = generator_mapping[model_name](model_path)
         self.loaded_llm = True
-        self.sys_prompt = (
-            "You are a helpful assistant that always responds in JSON format."
-        )
+        self.sys_prompt = "You are a helpful assistant that always responds in JSON format."
         # Initialize prompt
         with open("eval_stage3/extract_system_prompt.txt", "r") as system_prompt_file:
             self.prompt = system_prompt_file.read()
@@ -53,9 +51,7 @@ class Evaluater:
         messages = self.__make_prompt(testee)
         responses = self.llm_generator(messages)
         outputs = []
-        for idx, batch in tqdm(
-            enumerate(responses), total=len(messages), desc=f"Eval: Extracting {mode}"
-        ):
+        for idx, batch in tqdm(enumerate(responses), total=len(messages), desc=f"Eval: Extracting {mode}"):
             try:
                 process_json_batch = [json.loads(batch_ele) for batch_ele in batch]
             except Exception as e:
@@ -98,7 +94,7 @@ class Evaluater:
                             A_content = ""
                     else:
                         A_content = ""
-                        
+
                 try:
                     B_content = eval_pair[1][char]
                 except:
@@ -115,15 +111,11 @@ class Evaluater:
 
         assert len(outputs) == len(references)
         fail_flag = False
-        prompts = [
-            make_eval_prompt(eval_pair) for eval_pair in zip(outputs, references)
-        ]
+        prompts = [make_eval_prompt(eval_pair) for eval_pair in zip(outputs, references)]
         prompts = self.__make_prompt(prompts)
         responses = self.llm_generator(prompts, batch_size=1)
         detailed_scores = []
-        for idx, batch in tqdm(
-            enumerate(responses), total=len(prompts), desc=f"Eval: Evaluating"
-        ):
+        for idx, batch in tqdm(enumerate(responses), total=len(prompts), desc=f"Eval: Evaluating"):
             try:
                 score_list: list[dict] = [json.loads(batch_ele) for batch_ele in batch]
             except Exception as e:
@@ -142,29 +134,19 @@ def main():
     if not os.path.exists(eval_stage3_args.eval_result_dir):
         os.makedirs(eval_stage3_args.eval_result_dir, exist_ok=True)
     if eval_stage3_args.read_extractions_from_file:
-        with open(
-            f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "r"
-        ) as f:
+        with open(f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "r") as f:
             ex_o = json.load(f)
-        with open(
-            f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "r"
-        ) as f:
+        with open(f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "r") as f:
             ex_r = json.load(f)
     else:
         ex_o, fail = evaluater.extract(caption_batch, mode="output")
-        with open(
-            f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "w"
-        ) as f:
+        with open(f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "w") as f:
             json.dump(ex_o, f)
         if fail:
-            print(
-                "Fail Detected, check log file; carry on to independent reference extraction"
-            )
+            print("Fail Detected, check log file; carry on to independent reference extraction")
             return
         ex_r, fail = evaluater.extract(caption_batch, mode="reference")
-        with open(
-            f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "w"
-        ) as f:
+        with open(f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "w") as f:
             json.dump(ex_r, f)
         if fail:
             print(
@@ -173,9 +155,7 @@ def main():
             return
     evaluater.reload_eval_mode()
     assert (
-        len(ex_r) == len(ex_o)
-        and len(ex_r) == len(caption_batch)
-        and len(ex_o) == len(caption_batch)
+        len(ex_r) == len(ex_o) and len(ex_r) == len(caption_batch) and len(ex_o) == len(caption_batch)
     ), f"Failed extraction valid test, some extractions are not at correct length: ex_o:{len(ex_o)}, ex_r:{len(ex_r)}"
     detailed, fail = evaluater.evaluate(ex_o, ex_r)
     with open(f"{eval_stage3_args.eval_result_dir}/detailed_score_list.txt", "w") as f:
