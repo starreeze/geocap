@@ -267,8 +267,29 @@ class FeatureRecognizeArgs:
     save_data_path: str = field(default="dataset/")
 
 
-(data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args) = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
+@dataclass
+class Eval_stage3Args:
+    read_extractions_from_file: bool = field(default=False)
+    eval_llm: str = field(default="qwen25-14")
+    manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
+    manual_fix_index: int = field(default=-1)
+    manual_fix_content: str = field(default="")
+
+    eval_result_dir: str = field(default="dataset/eval_result")
+    eval_origin_file: str = field(default="dataset/batch_test_s3.json")
+
+
+(
+    data_args,
+    run_args,
+    rule_args,
+    draw_args,
+    caption_args,
+    vqa_args,
+    feat_recog_args,
+    eval_stage3_args,
+) = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, Eval_stage3Args]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -278,6 +299,7 @@ draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
 feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
+eval_stage3_args = cast(Eval_stage3Args, eval_stage3_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix
