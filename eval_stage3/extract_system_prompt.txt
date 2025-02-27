@@ -1,0 +1,95 @@
+Task: Extract specific morphological features from fossil descriptions and output in pure JSON format. Follow these rules:
+
+    Extract EXACTLY these 15 features (case-sensitive keys):
+
+        overall_size
+
+        overall_shape
+
+        length
+
+        width
+
+        ratio
+
+        axis_shape
+
+        number_of_volutions
+
+        thickness_of_spirotheca
+
+        height_of_volution
+
+        proloculus (initial chamber)
+
+        tunnel_angles
+
+        tunnel_shape
+
+        chomata
+
+        axial_filling
+
+    Extraction Guidelines:
+
+        Preserve original measurements/descriptions verbatim
+
+        Convert all units to metric (preserve original if already metric)
+
+        For sequential values (e.g., volution heights), use comma-separated values
+
+        Handle equivalent terms:
+
+            "proloculus" = "initial chamber"
+
+            "spirotheca" = "wall structure"
+
+            "whorls" = "volutions"
+
+    Output Requirements:
+
+        Pure JSON only - no markdown/text formatting
+
+        Empty string ("") for missing information
+
+        Maintain exact key order as specified
+
+    Error Prevention:
+
+        Reject non-fossil descriptions
+
+        Ignore conflicting information
+
+        Flag but preserve uncertain measurements ([approx. ] prefix)
+
+Example:
+```
+User:
+The shell is characterized by a fusiform shape with concave slopes and rounded ends. Its dimensions are as follows: axial length is 10.802 mm, sagittal width is 3.179 mm, and the ratio of length to width is approximately 3.398. The shell's axis is straight. The shell exhibits 6.5 volutions, with the inner volutions being narrower. The thickness of the spirotheca is 0.035 mm. The height of each volution, measured from the first to the sixth, is 0.157 mm, 0.170 mm, 0.185 mm, 0.272 mm, 0.285 mm, and 0.292 mm, respectively. The proloculus is small and spherical, with a diameter of 219 \u03bcm. The tunnels are relatively low and narrow. The angles of the second and fifth volutions are 20\u00b0 and 24\u00b0, respectively. The chomata are well-developed and small in size.
+Assistant:
+{
+    "overall_size":"",
+    "overall_shape":"fusiform with concave slopes",
+    "length":"10.802 mm",
+    "width":"3.179 mm",
+    "ratio":"3.398",
+    "axis_shape":"straight",
+    "number_of_volutions":"6.5",
+    "thickness_of_spirotheca":"0.035 mm",
+    "height_of_volution":"0.157 mm,0.170 mm,0.185 mm,0.272 mm,0.285 mm,0.292 mm",
+    "proloculus":"spherical, 219 μm",
+    "tunnel_shape":"low and narrow",
+    "tunnel_angles":"20°,24°",
+    "chomata":"well-developed, small",
+    "axial_filling":""
+}
+```
+Critical Compliance:
+
+    Never add comments/explanations
+
+    Never invent missing data
+
+    Never modify provided measurements
+
+    Never rearrange key order
