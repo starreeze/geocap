@@ -1,14 +1,16 @@
-from common.args import eval_stage3_args
-from common.llm import generator_mapping, model_path_mapping
 import json
-from tqdm import tqdm
 import os
+
+from tqdm import tqdm
+
+from common.args import fossil_eval_args
+from common.llm import generator_mapping, model_path_mapping
 
 
 def record_err(input, output, error, idx, mode):
     import time
 
-    with open(f"{eval_stage3_args.eval_result_dir}/Error_log.log", "a") as log:
+    with open(f"{fossil_eval_args.eval_result_dir}/Error_log.log", "a") as log:
         log.write(
             f"\n{time.ctime()} - {error} @ entry[{idx}] with mode {mode}, examine:\nInput:{input}\nOutput:{output}\n"
         )
@@ -22,7 +24,7 @@ class Evaluater:
         """Initialize the LLM generator"""
         assert not self.loaded_llm
         # Initialize llm
-        model_name, model_id = eval_stage3_args.eval_llm.split("-", 1)  # qwen25-14b
+        model_name, model_id = fossil_eval_args.eval_llm.split("-", 1)  # qwen25-14b
         model_path = model_path_mapping[model_name].format(model_id)
         self.llm_generator = generator_mapping[model_name](model_path)
         self.loaded_llm = True
@@ -129,24 +131,24 @@ class Evaluater:
 def main():
     evaluater = Evaluater()
     evaluater.load_llm_generator()
-    with open(eval_stage3_args.eval_origin_file, "r") as f:  # load to verify the data
+    with open(fossil_eval_args.eval_origin_file, "r") as f:  # load to verify the data
         caption_batch = json.load(f)
-    if not os.path.exists(eval_stage3_args.eval_result_dir):
-        os.makedirs(eval_stage3_args.eval_result_dir, exist_ok=True)
-    if eval_stage3_args.read_extractions_from_file:
-        with open(f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "r") as f:
+    if not os.path.exists(fossil_eval_args.eval_result_dir):
+        os.makedirs(fossil_eval_args.eval_result_dir, exist_ok=True)
+    if fossil_eval_args.read_extractions_from_file:
+        with open(f"{fossil_eval_args.eval_result_dir}/extracted_output_info.json", "r") as f:
             ex_o = json.load(f)
-        with open(f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "r") as f:
+        with open(f"{fossil_eval_args.eval_result_dir}/extracted_reference_info.json", "r") as f:
             ex_r = json.load(f)
     else:
         ex_o, fail = evaluater.extract(caption_batch, mode="output")
-        with open(f"{eval_stage3_args.eval_result_dir}/extracted_output_info.json", "w") as f:
+        with open(f"{fossil_eval_args.eval_result_dir}/extracted_output_info.json", "w") as f:
             json.dump(ex_o, f)
         if fail:
             print("Fail Detected, check log file; carry on to independent reference extraction")
             return
         ex_r, fail = evaluater.extract(caption_batch, mode="reference")
-        with open(f"{eval_stage3_args.eval_result_dir}/extracted_reference_info.json", "w") as f:
+        with open(f"{fossil_eval_args.eval_result_dir}/extracted_reference_info.json", "w") as f:
             json.dump(ex_r, f)
         if fail:
             print(
@@ -158,7 +160,7 @@ def main():
         len(ex_r) == len(ex_o) and len(ex_r) == len(caption_batch) and len(ex_o) == len(caption_batch)
     ), f"Failed extraction valid test, some extractions are not at correct length: ex_o:{len(ex_o)}, ex_r:{len(ex_r)}"
     detailed, fail = evaluater.evaluate(ex_o, ex_r)
-    with open(f"{eval_stage3_args.eval_result_dir}/detailed_score_list.txt", "w") as f:
+    with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.txt", "w") as f:
         json.dump(detailed, f)
     if fail:
         print("Fail Detected, check log file; program aborted")

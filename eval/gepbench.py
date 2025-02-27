@@ -12,10 +12,10 @@ from typing import Any, TextIO
 from tqdm import tqdm
 
 from common.args import data_args, logger, run_args, vqa_args
+from common.vllm.base import GenerateModelBase
 from data.rule.utils import round_floats
-from eval.base import GenerateModelBase
 
-Model = importlib.import_module(f"eval.{vqa_args.eval_model.split('-')[0]}").GenerateModel
+Model = importlib.import_module(f"common.vllm.{vqa_args.eval_model.split('-')[0]}").GenerateModel
 
 
 def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: TextIO) -> list[str]:
@@ -63,7 +63,7 @@ def main():
             f"Evaluating only on {run_args.start_pos} - {run_args.end_pos} images; answers may not be aligned with the questions"
         )
 
-    model: GenerateModelBase = Model()
+    model: GenerateModelBase = Model(max_new_tokens=10)
     scores: list[float] = []
 
     for perspective in vqa_args.perspectives:

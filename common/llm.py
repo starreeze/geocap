@@ -12,10 +12,10 @@ from typing import Any, Generator
 import requests
 import torch
 import yaml
+from iterwrap import IterateWrapper, retry_dec
 from transformers import pipeline
 
 from common.args import logger, run_args
-from iterwrap import IterateWrapper, retry_dec
 
 
 class LLMGenerator(ABC):

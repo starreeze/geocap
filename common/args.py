@@ -268,7 +268,7 @@ class FeatureRecognizeArgs:
 
 
 @dataclass
-class Eval_stage3Args:
+class FossilEvalArgs:
     read_extractions_from_file: bool = field(default=False)
     eval_llm: str = field(default="qwen25-14")
     manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
@@ -287,9 +287,9 @@ class Eval_stage3Args:
     caption_args,
     vqa_args,
     feat_recog_args,
-    eval_stage3_args,
+    fossil_eval_args,
 ) = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, Eval_stage3Args]  # type: ignore
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -299,7 +299,7 @@ draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
 feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
-eval_stage3_args = cast(Eval_stage3Args, eval_stage3_args)
+fossil_eval_args = cast(FossilEvalArgs, fossil_eval_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix
