@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-# @Date    : 2024-12-10 09:34:27
+# @Date    : 2025-02-27 14:53:27
 # @Author  : Shangyu.Xing (starreeze@foxmail.com)
-"protocol definition for the generation model"
 
 from abc import ABC, abstractmethod
 
 
 class GenerateModelBase(ABC):
     @abstractmethod
-    def __init__(self):
-        pass
+    def __init__(self, model: str, **kwargs):
+        self.kwargs = kwargs
+        kwargs["temperature"] = kwargs.get("temperature", 0.0)
+        kwargs["top_p"] = kwargs.get("top_p", 1.0)
+        kwargs["top_k"] = kwargs.get("top_k", 0)
+        kwargs["do_sample"] = kwargs.get("do_sample", False)
 
     @abstractmethod
     def generate(self, image_paths: list[str], prompts: list[str]) -> list[str]:

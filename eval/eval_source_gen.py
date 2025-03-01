@@ -1,10 +1,12 @@
-from common.args import eval_stage3_args
+import base64
+import json
+
+from tqdm import tqdm
+
+from common.args import fossil_eval_args
 
 # from common.llm import generator_mapping, model_path_mapping
 from common.llm import APIGenerator  # sry but now we do this
-import json
-from tqdm import tqdm
-import base64
 
 
 class Generator:
@@ -50,7 +52,7 @@ def main():
             questions.append(data["input"])
             references.append(data["output"])
     data = generator.generate(pics, questions, references)
-    with open(eval_stage3_args.eval_origin_file, "w") as f:
+    with open(fossil_eval_args.eval_origin_file, "w") as f:
         json.dump(data, f)
 
 

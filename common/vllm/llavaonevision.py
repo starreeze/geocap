@@ -2,31 +2,33 @@
 # @Date    : 2024-12-13 11:15:38
 # @Author  : Zhangtai.Wu (wzt_1824769368@163.com)
 
-from llava.model.builder import load_pretrained_model
-from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
-from llava.constants import (
-    IMAGE_TOKEN_INDEX,
-    DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IM_END_TOKEN,
-    IGNORE_INDEX,
-)
-from llava.conversation import conv_templates, SeparatorStyle
-from PIL import Image
-import requests
 import copy
-import torch
 import sys
 import warnings
-from common.args import vqa_args
-from eval.base import GenerateModelBase
-from PIL import Image
+
+import requests
 import torch
+from PIL import Image
+
+from common.args import vqa_args
+from llava.constants import (
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+    IGNORE_INDEX,
+    IMAGE_TOKEN_INDEX,
+)
+from llava.conversation import SeparatorStyle, conv_templates
+from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
+from llava.model.builder import load_pretrained_model
+
+from .base import GenerateModelBase
 
 
 class GenerateModel(GenerateModelBase):
-    def __init__(self):
-        model_path = f"model/{vqa_args.eval_model}"
+    def __init__(self, model: str, **kwargs):
+        super().__init__(model, **kwargs)
+        model_path = f"models/{model}"
         model_name = "llava_qwen"
         llava_model_args = {"multimodal": True, "attn_implementation": "sdpa"}
         self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
@@ -75,12 +77,7 @@ class GenerateModel(GenerateModelBase):
             )
             with torch.inference_mode():
                 output_ids = self.model.generate(
-                    input_ids,
-                    images=images_tensor[i : i + 1],
-                    do_sample=False,
-                    temperature=0,
-                    max_new_tokens=512,
-                    use_cache=True,
+                    input_ids, images=images_tensor[i : i + 1], use_cache=True, **self.kwargs
                 )
             output_text = self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             responses.append(output_text[0])

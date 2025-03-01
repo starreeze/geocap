@@ -2,22 +2,23 @@
 # @Date    : 2024-12-13 11:15:38
 # @Author  : Zhangtai.Wu (wzt_1824769368@163.com)
 
-from llava.conversation import conv_templates
-from llava.model.builder import load_pretrained_model
-from llava.mm_utils import tokenizer_image_token, get_model_name_from_path
-from PIL import Image
 import torch
-from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
+from PIL import Image
+
 from common.args import vqa_args
-from eval.base import GenerateModelBase
-from PIL import Image
-import torch
+from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
+from llava.conversation import conv_templates
+from llava.mm_utils import get_model_name_from_path, tokenizer_image_token
+from llava.model.builder import load_pretrained_model
+
+from .base import GenerateModelBase
 
 
 class GenerateModel(GenerateModelBase):
-    def __init__(self):
+    def __init__(self, model: str, **kwargs):
+        super().__init__(model, **kwargs)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        model_path = f"model/{vqa_args.eval_model}"
+        model_path = f"models/{model}"
         model_name = get_model_name_from_path(model_path)
         print(f"Loading model: {model_name}")
         self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
@@ -66,7 +67,7 @@ class GenerateModel(GenerateModelBase):
             )
             with torch.inference_mode():
                 output_ids = self.model.generate(
-                    input_ids, images=image_tensor, do_sample=False, max_new_tokens=512, use_cache=True
+                    input_ids, images=image_tensor, use_cache=True, **self.kwargs
                 )
             output_text = self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             responses.append(output_text[0])

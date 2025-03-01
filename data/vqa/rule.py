@@ -161,6 +161,7 @@ class RuleBasedQAGenerator(GeneratorBase):
 
                 choices = [str(round(v, vqa_args.vqa_digits)) for v in valid_choices]
                 answer = choices[position]
+                random.shuffle(choices)
                 qa_pairs.append({"question": question, "choices": choices, "answer": answer})
         return qa_pairs
 
