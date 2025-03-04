@@ -130,25 +130,14 @@ class CaptionArgs:
     numeric_ratio: float = field(default=0)
     debug_option: str = field(default="")
 
-    desc_filter_prompt_dir: str = field(
-        default="data/caption/prompts/filter_desc_icl.txt"
-    )
-    paraphrase_prompt_dir: str = field(
-        default="data/caption/prompts/paraphrase_stage2.txt"
-    )
+    desc_filter_prompt_dir: str = field(default="data/caption/prompts/filter_desc_icl.txt")
+    paraphrase_prompt_dir: str = field(default="data/caption/prompts/paraphrase_stage2.txt")
 
 
 @dataclass
 class VQAArgs:
     perspectives: list[str] = field(
-        default_factory=lambda: [
-            "existence",
-            "counting",
-            "size",
-            "location",
-            "reference",
-            "relation",
-        ]
+        default_factory=lambda: ["existence", "counting", "size", "location", "reference", "relation"]
     )
     # llm generator
     vqa_batchsize: int = field(default=4)
@@ -156,15 +145,10 @@ class VQAArgs:
     vqa_prompts_dir: str = field(default="data/vqa/prompts")
     # rule generator
     max_q_ip: int = field(
-        default=3,
-        metadata={"help": "maximum number of questions per image per perspective"},
+        default=3, metadata={"help": "maximum number of questions per image per perspective"}
     )
-    vqa_digits: int = field(
-        default=2, metadata={"help": "number of digits for the answer"}
-    )
-    nrel_q_prob: float = field(
-        default=0.3, metadata={"help": "probability of no-relation questions"}
-    )
+    vqa_digits: int = field(default=2, metadata={"help": "number of digits for the answer"})
+    nrel_q_prob: float = field(default=0.3, metadata={"help": "probability of no-relation questions"})
     gt_choice_w: list[float] = field(
         default_factory=lambda: [0.05, 0.15, 0.25, 0.55],
         metadata={
@@ -180,39 +164,27 @@ class VQAArgs:
         },
     )
     area_type_t: float = field(
-        default=0.02,
-        metadata={"help": "tolerate threshold for area difference to be considered"},
+        default=0.02, metadata={"help": "tolerate threshold for area difference to be considered"}
     )
     location_type_t: float = field(
-        default=0.03,
-        metadata={
-            "help": "tolerate threshold for location difference to be considered"
-        },
+        default=0.03, metadata={"help": "tolerate threshold for location difference to be considered"}
     )
     # evaluation
     eval_model: str = field(
         default="llava-7b",
-        metadata={
-            "help": "model name for evaluation. Naming convention: {model_name}-{model_size}"
-        },
+        metadata={"help": "model name for evaluation. Naming convention: {model_name}-{model_size}"},
     )
     eval_batchsize: int = field(default=4)
-    eval_inst: str = field(
-        default="Please directly answer A, B, C or D and nothing else."
-    )
+    eval_inst: str = field(default="Please directly answer A, B, C or D and nothing else.")
 
     distinguish_threshold_of_relative_direction: float = field(default=0.04)
     deviation_threshold_of_relative_direction: float = field(default=math.pi / 9)
-    exclusiv_deviation_threshold_of_relative_direction: float = field(
-        default=math.pi / 5
-    )
-    relative_direction_text_and_vector_dict: dict[str, tuple[float, float]] = field(
+    exclusiv_deviation_threshold_of_relative_direction: float = field(default=math.pi / 5)
+    relative_direction_text_and_vector_dict: dict[str, tuple[float, float]] = field(default_factory=dict)
+    distinguish_threshold_of_absolute_direction: float = field(default=0.1)
+    absolute_direction_text_and_box_dict: dict[str, tuple[tuple[float, float], tuple[float, float]]] = field(
         default_factory=dict
     )
-    distinguish_threshold_of_absolute_direction: float = field(default=0.1)
-    absolute_direction_text_and_box_dict: dict[
-        str, tuple[tuple[float, float], tuple[float, float]]
-    ] = field(default_factory=dict)
     inclusiv_overlapping_threshold_of_absolute_direction: float = field(default=0.8)
 
     def __post_init__(self):
@@ -283,19 +255,10 @@ class VQAArgs:
 @dataclass
 class FeatureRecognizeArgs:
     houghcircle_params: dict[str, float] = field(
-        default_factory=lambda: {
-            "dp": 1.5,
-            "minDist": 100,
-            "param1": 150,
-            "param2": 0.5,
-        },
-        metadata={
-            "help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"
-        },
+        default_factory=lambda: {"dp": 1.5, "minDist": 100, "param1": 150, "param2": 0.5},
+        metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
     )
-    volution_thres: float = field(
-        default=0.85, metadata={"help": "threshold for volution detection"}
-    )
+    volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
     fossil_data_path: str = field(default="dataset/common")
     desc_llm: str = field(default="qwen25-14")
@@ -309,9 +272,7 @@ class FossilEvalArgs:
     read_extractions_from_file: bool = field(default=False)
     extract_only: bool = field(default=False)
     eval_llm: str = field(default="qwen25-14")
-    manual_fix_mode: str = field(
-        default="reference"
-    )  # because it is more likely to trigger failsafe
+    manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
     manual_fix_index: int = field(default=-1)
     manual_fix_content: str = field(default="")
 
@@ -352,25 +313,18 @@ data_args.caption_path = (
     data_args.caption_path
     if data_args.caption_path
     else os.path.join(
-        data_args.caption_dir,
-        f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl",
+        data_args.caption_dir, f"n{caption_args.numeric_ratio}_{run_args.end_pos//1000:03d}k.jsonl"
     )
 )
 data_args.llava_data_path = (
     data_args.llava_data_path
     if data_args.llava_data_path
     else os.path.join(
-        data_args.llava_data_dir,
-        f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json",
+        data_args.llava_data_dir, f"{data_args.figure_prefix}_n{caption_args.numeric_ratio}.json"
     )
 )
 assert vqa_args.size_diff < 0.2, "size_diff should be less than 0.2"
 run_args.log_level = run_args.log_level.upper()
-logging.basicConfig(
-    level=run_args.log_level,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler()],
-)
+logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
 logger.setLevel(run_args.log_level)

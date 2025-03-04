@@ -7,7 +7,8 @@ from common.args import fossil_eval_args
 
 # from common.llm import generator_mapping, model_path_mapping
 # from common.llm import APIGenerator  # sry but now we do this
-from common.vllm.Qwen2_VL_Instruct import GenerateModel # modify `api` here to change the model
+from common.vllm.Qwen2_VL_Instruct import GenerateModel  # modify `api` here to change the model
+
 
 class Generator:
     def __init__(self) -> None:
@@ -26,11 +27,7 @@ class Generator:
             entry = {"img": p, "question": q, "output": "", "reference": r}  # later fill this
             data.append(entry)
         for idx, output in tqdm(
-            enumerate(
-                self.llm_generator.generate(
-                    pictures, questions
-                )
-            ),
+            enumerate(self.llm_generator.generate(pictures, questions)),
             total=len(pictures),
             desc="Generating Descriptions:",
         ):
