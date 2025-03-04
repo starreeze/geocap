@@ -270,6 +270,7 @@ class FeatureRecognizeArgs:
 @dataclass
 class FossilEvalArgs:
     read_extractions_from_file: bool = field(default=False)
+    extract_only: bool = field(default=False)
     eval_llm: str = field(default="qwen25-14")
     manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
     manual_fix_index: int = field(default=-1)
@@ -277,6 +278,8 @@ class FossilEvalArgs:
 
     eval_result_dir: str = field(default="dataset/eval_result")
     eval_origin_file: str = field(default="dataset/batch_test_s3.json")
+    eval_start_pos: int = field(default=0)
+    eval_end_pos: int = field(default=20000)
 
 
 (
