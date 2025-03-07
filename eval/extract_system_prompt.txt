@@ -1,0 +1,125 @@
+Task: Extract specific morphological features from fossil descriptions and output in pure JSON format. Follow these rules:
+
+    Extract EXACTLY these 15 features (case-sensitive keys):
+
+        overall_size
+
+        overall_shape
+
+        length
+
+        width
+
+        ratio
+
+        axis_shape
+
+        number_of_volutions
+
+        thickness_of_spirotheca
+
+        height_of_volution
+
+        proloculus (initial chamber)
+
+        tunnel_angles
+
+        tunnel_shape
+
+        chomata
+
+        axial_filling
+
+    Extraction Guidelines:
+
+        Don't extract one certain kind information more than once; also, one sentence should be extracted into only one specific feature.
+
+        For any contradictory information, ignore the one that describes a larger range and less accuracy.
+
+        Preserve original measurements/descriptions verbatim
+
+        Convert numerical information into numbers instead of string.
+
+        Convert all units to metric (preserve original if already metric), then omit these units.
+
+        Convert all data with range into a list shaping [range_start, start_end].
+
+        For sequential values (e.g., volution heights), use comma-separated values
+
+        Handle equivalent terms:
+
+            "proloculus" = "initial chamber"
+
+            "spirotheca" = "wall structure"
+
+            "whorls" = "volutions"
+
+    Output Requirements:
+
+        Pure JSON only - no markdown/text formatting
+
+        Empty string ("") for missing information
+
+        Maintain exact key order as specified
+
+    Error Prevention:
+
+        Reject non-fossil descriptions
+
+        Ignore conflicting information
+
+        Flag but preserve uncertain measurements ([approx. ] prefix)
+
+Example:
+```
+User:
+The shell is characterized by a fusiform shape with concave slopes and rounded ends. Its dimensions are as follows: axial length is 10.802 mm, sagittal width is 3.179 mm, and the ratio of length to width is approximately 3.398. The shell's axis is straight. The shell exhibits 6.5 volutions, with the inner volutions being narrower. The thickness of the spirotheca is 0.035 mm. The height of each volution, measured from the first to the sixth, is 0.157 mm, 0.170 mm, 0.185 mm, 0.272 mm, 0.285 mm, and 0.292 mm, respectively. The proloculus is small and spherical, with a diameter of 219 \u03bcm. The tunnels are relatively low and narrow. The angles of the second and fifth volutions are 20\u00b0 and 24\u00b0, respectively. The chomata are well-developed and small in size.
+Assistant:
+{
+    "overall_size":"",
+    "overall_shape":"fusiform with concave slopes",
+    "length":10.802,
+    "width":3.179,
+    "ratio":3.398,
+    "axis_shape":"straight",
+    "number_of_volutions":6.5,
+    "thickness_of_spirotheca":0.035,
+    "height_of_volution":[0.157,0.170,0.185,0.272,0.285,0.292],
+    "proloculus":"spherical, 219 μm",
+    "tunnel_shape":"low and narrow",
+    "tunnel_angles":[20,24],
+    "chomata":"well-developed, small",
+    "axial_filling":""
+}
+```
+Another Example:
+```
+User:
+Shell small for the genus, subcylindrical with the flat central part and with the straight axis of coiling; polar ends rounded from the first to the fourth volution, but bluntly pointed in the outer volutions. Mature shells, having commonly 6 to 7 volutions, are 2.706 to 4.100 mm. long and 1.279 to 1.886 mm. wide. The form ratio is 1.6 to 2.6. The first volution is subspherical; the second to the last volution subcylindrical. The general shell character is the same as that of megalospheric specimens. However, this specimen has a minute proloculus and 9 volutions, and the first two volutions are coiled at a large angle to the outer volutions.\\nThe proloculus is medium in size and spherical in shape. Its outside diameter is 114 to 197 microns. The thickness of the wall of the proloculus is 12 to 16 microns. The inner two to three volutions are tightly coiled, the following four to five volutions loosely. The height of the first to the seventh volution of the holotype are 33, 49, 66, 114, 148, 197, and 213 microns, respectively. The height of the chambers are essentially the same throughout the length of the shell.\\nThe spirotheca is thin, composed of an indistinct tectum, a relatively thick diaphanotheca, and poorly developed upper and lower tectoria. The diaphanotheca is clearly visible from the first to the last volution, but is often invisible in the first volution. The upper and the lower tectorium are thin and sometimes discontinuous; the former is thinner than the latter. The upper tectorium is hardly recognizable in all parts of first to the last volution except the basal part of the septa, and the lower tectorium is recognizable in the outer volutions, but is discontinuous. The thicknesses of spirotheca, including protheca and epitheca, on the base of the tunnel of the first to the seventh volution of the holotype are 8, 12, 16, 20, 33, 41, and 33 microns, respectively.\\nThe septa are thin. They are composed of the downward deflection of the tectum, the diaphanotheca of the spirotheca of the preceding chamber and the anterior clear layer which corresponds to the continuation of the diaphanotheca of the spirotheca of the following chamber and does not extend downward until the base of the septa. The posterior and anterior sides of the septa are hardly covered by the lower tectorium. Thickness of septa is the same from the top to the base.\\nThe septa are closely spaced, with high and narrowly irregular fluting throughout the length of the shell. The fluting in thin section makes a series of inverted U arranged on the surface of the preceding volution. The flutings extend nearly or entirely to the top of the chambers of the shell. The bases of the adjacent part of the fluted septa are in contact with each other on the surface of the preceding volution owing to the intense fluting, and furthermore, unclosed septal fluting exists between the adjacent chamberlets. Chamberlets are often filled by dense calcite. The heights of the chamberlets attain to more than two-thirds as high as chambers in the central parts.\\nThe tunnel gradually increases in width through growth, being indistinct at the last volution. Its path is irregular; its top fluted.\\nThe narrow and irregular chomata are wart-like in the inner volutions and finger-like in the outer volutions and are very poorly developed throughout the shell or even absent partly. These chomata seem to be sometimes substituted by one side of the wall of the chamberlet at the outside of the tunnel. The chomata are one-half or more than one-half as high as the chambers.\\nDark-colored axial fillings commonly fill the chamber in the extreme polar regions of the second to the fourth volution.
+Assistant:
+{
+    "overall_size":[2.706, 4.100],
+    "overall_shape":"subcylindrical with flat central part",
+    "length":[2.706, 4.100],
+    "width":[1.279, 1.886],
+    "ratio":[1.6, 2.6],
+    "axis_shape":"straight",
+    "number_of_volutions":9,
+    "thickness_of_spirotheca":[8,12,16,20,33,41,33]
+    "height_of_volution":[33,49,66,114,148,197,213],
+    "proloculus":"spherical, 114 to 197 microns",
+    "tunnel_shape":"gradually increases in width, indistinct at last volution",
+    "tunnel_angles":"",
+    "chomata":"narrow and irregular, wart-like in inner volutions, finger-like in outer volutions",
+    "axial_filling":"dark-colored, fill chamber in extreme polar regions of second to fourth volution"
+}
+```
+Critical Compliance:
+
+    Never add comments/explanations
+
+    Never invent missing data
+
+    Never modify provided measurements
+
+    Never rearrange key order

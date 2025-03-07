@@ -1,29 +1,27 @@
-import os
-import torch
-import random
-import numpy as np
-from datetime import datetime
-from tqdm import tqdm
-import importlib.util
-from typing import Any
-
-from common.args import vqa_args
-from eval.base import GenerateModelBase
-from transformers import (
-    AutoModel,
-    AutoTokenizer,
-    AutoProcessor,
-    AutoModelForCausalLM,
-    AutoModelForVision2Seq,
-    Qwen2VLForConditionalGeneration,
-    MllamaForConditionalGeneration,
-)
-from qwen_vl_utils import process_vision_info
-
 # from transformers.image_utils import load_image
 import gc
+import importlib.util
+import os
+import random
+from datetime import datetime
+from typing import Any
 
+import numpy as np
+import torch
 from PIL import Image
+from qwen_vl_utils import process_vision_info
+from tqdm import tqdm
+from transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
+    AutoModelForVision2Seq,
+    AutoProcessor,
+    AutoTokenizer,
+    MllamaForConditionalGeneration,
+    Qwen2VLForConditionalGeneration,
+)
+
+from .base import GenerateModelBase
 
 enable_flash_attn = True
 
@@ -35,8 +33,9 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 import math
+
 import torch
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoModel, AutoTokenizer
 
 
 def split_model(model_name):
@@ -155,14 +154,14 @@ def load_image(image_file, input_size=448, max_num=12):
 
 
 class GenerateModel(GenerateModelBase):
-    def __init__(self):
-        model_spec = vqa_args.eval_model
+    def __init__(self, model: str, **kwargs):
+        super().__init__(model, **kwargs)
         device = torch.device("cuda")
-        self.path = os.path.join("models", vqa_args.eval_model)
+        self.path = os.path.join("models", model)
         self.device = device
-        device_map = split_model(model_spec)
+        device_map = split_model(model)
         if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
-            raise ValueError(f"The model spec {model_spec} is not supported!")
+            raise ValueError(f"The model spec {model} is not supported!")
         self.model = AutoModel.from_pretrained(
             self.path,
             torch_dtype=torch.bfloat16,
@@ -182,12 +181,11 @@ class GenerateModel(GenerateModelBase):
         num_patches_list = [pixel_value.size(0) for pixel_value in pixel_values]
         pixel_values = torch.cat(pixel_values, dim=0)
         questions = ["<image>\n" + prompt for prompt in prompts]
-        generation_config = dict(max_new_tokens=32, do_sample=False)
         responses = self.model.module.batch_chat(
             self.tokenizer,
             pixel_values,
             num_patches_list=num_patches_list,
             questions=questions,
-            generation_config=generation_config,
+            generation_config=self.kwargs,
         )
         return responses

@@ -15,8 +15,8 @@ from feat_recognize.recognize import recognize_feature
 
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
-instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions.jsonl")
-stage3_data_path = os.path.join(feat_recog_args.save_data_path, "stage3.jsonl")
+instructions_path = os.path.join("dataset/instructions_naive/instructions.jsonl")
+stage3_data_path = os.path.join("dataset/num_replace/stage3.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "stage3_paraphrase.jsonl")
 llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
@@ -68,6 +68,9 @@ class DataGenerator:
         h, w = self.img.shape[:2]
 
         new_image_info = image_info
+        new_image_info["img_height"] = h
+        new_image_info["img_width"] = w
+
         # Overall shape
         img_countour = self.img[:, :, 3]
         contours, _ = cv2.findContours(img_countour, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -179,6 +182,18 @@ class DataGenerator:
 
         return instruction
 
+    def _generate_naive_instruction(self, image_info: dict):
+        instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
+
+        width_mm = image_info["img_width"] * image_info["pixel_mm"]
+        height_mm = image_info["img_height"] * image_info["pixel_mm"]
+        instruction += f"The resolution of the fossil image is {image_info['img_width']}\u00D7{image_info['img_height']}, "  # \u00D7 -> ×
+        instruction += (
+            f"and the width and height of the image are {width_mm} mm and {height_mm} mm, respectively."
+        )
+
+        return instruction
+
     def generate_instructions(self, data_dict: dict) -> list[dict[str, str]]:
         self.extract_valid_images(data_dict)
 
@@ -187,6 +202,7 @@ class DataGenerator:
         for image_info in tqdm(self.images):
             new_image_info = self.recognize_features(image_info)
             instruction = self._generate_instruction(new_image_info)
+            # instruction = self._generate_naive_instruction(new_image_info)
             sample = {"image": image_info["image"], "input": instruction, "output": image_info["desc"]}
             instructions.append(sample)
 
@@ -223,7 +239,7 @@ class DataGenerator:
         return dataset
 
 
-def generate_dataset(start_pos, end_pos):
+def generate_dataset(start_pos=None, end_pos=None):
     data_path = os.path.join(feat_recog_args.fossil_data_path, "filtered_data.json")
     with open(data_path, "r") as f:
         data_dict = json.load(f)
@@ -242,10 +258,16 @@ def generate_dataset(start_pos, end_pos):
     with open(instructions_path, "r") as f:
         instructions = [json.loads(line) for line in f]
 
+    if start_pos is None and end_pos is None:
+        output_path = stage3_data_path
+        start_pos = 0
+        end_pos = len(instructions)
+    else:
+        output_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
+
     dataset = data_generator.generate_outputs(instructions[start_pos:end_pos])
 
     # Save dataset as jsonl file
-    output_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
     with open(output_path, "w") as f:
         for data in dataset:
             f.write(json.dumps(data) + "\n")
@@ -253,11 +275,19 @@ def generate_dataset(start_pos, end_pos):
     torch.cuda.empty_cache()
 
 
-def paraphrase(start_pos, end_pos):
+def paraphrase(start_pos=None, end_pos=None):
     paraphraser = Paraphraser()
     # Read original captions
-    data_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
-    with open(data_path, "r") as f:
+    if start_pos is not None and end_pos is not None:
+        input_data_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
+        output_path = os.path.join(
+            feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+        )
+    else:
+        input_data_path = stage3_data_path
+        output_path = stage3_paraphrase_path
+
+    with open(input_data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
     # Extract and paraphrase outputs
@@ -268,9 +298,6 @@ def paraphrase(start_pos, end_pos):
     for caption, paraphrased_output in zip(captions, paraphrased_outputs):
         caption["output"] = paraphrased_output
 
-    output_path = os.path.join(
-        feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
-    )
     with open(output_path, "w") as f:
         for caption in captions:
             f.write(json.dumps(caption) + "\n")
@@ -312,8 +339,9 @@ def format_to_internvl():
 
 
 def main():
-    # generate_dataset(run_args.start_pos, run_args.end_pos)
-    paraphrase(run_args.start_pos, run_args.end_pos)
+    generate_dataset(run_args.start_pos, run_args.end_pos)
+    # paraphrase(run_args.start_pos, run_args.end_pos)
+    paraphrase()
 
     format_to_llava()
     format_to_internvl()

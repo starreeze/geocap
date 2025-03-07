@@ -4,7 +4,8 @@
 
 from common.args import vqa_args
 from common.llm import APIGenerator
-from eval.base import GenerateModelBase
+
+from .base import GenerateModelBase
 
 
 class GenerateModel(GenerateModelBase):

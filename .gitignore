@@ -7,3 +7,4 @@ dataset
 common/iterwrap.ckpt
 *.ckpt
 api_*.yaml
+eval_stage3/manual_fix_extractions.py

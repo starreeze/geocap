@@ -12,10 +12,10 @@ from typing import Any, Generator
 import requests
 import torch
 import yaml
+from iterwrap import IterateWrapper, retry_dec
 from transformers import pipeline
 
 from common.args import logger, run_args
-from iterwrap import IterateWrapper, retry_dec
 
 
 class LLMGenerator(ABC):
@@ -67,9 +67,10 @@ class APIGenerator(LLMGenerator):
     def __init__(self, model: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.model = model
-        key_info: dict[str, str] = yaml.safe_load(open(run_args.api_key_file))
+        key_info: dict[str, str] = yaml.safe_load(open(run_args.api_key_file, "r"))
         url = key_info["base_url"] + "/chat/completions"
         self.url = url[:8] + url[8:].replace("//", "/")  # skip the first 8 characters containing "https://"
+        print(key_info)
         self.headers = {"Content-Type": "application/json", "Authorization": f"Bearer {key_info['api_key']}"}
         self.temperature = kwargs.get("temperature", 0.2)
         self.max_tokens = kwargs.get("max_tokens", 512)
@@ -162,7 +163,7 @@ model_path_mapping = {
 
 def main():
     messages = [[{"role": "user", "content": "Write a story beginning with 'Once upon a time'."}]]
-    print(next(iter(APIGenerator("api-gpt-4o")(messages))))
+    print(next(iter(APIGenerator("gpt-4o")(messages))))
 
 
 if __name__ == "__main__":

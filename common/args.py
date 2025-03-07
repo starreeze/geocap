@@ -267,8 +267,32 @@ class FeatureRecognizeArgs:
     save_data_path: str = field(default="dataset/")
 
 
-(data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args) = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs]  # type: ignore
+@dataclass
+class FossilEvalArgs:
+    read_extractions_from_file: bool = field(default=False)
+    extract_only: bool = field(default=False)
+    eval_llm: str = field(default="qwen25-14")
+    manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
+    manual_fix_index: int = field(default=-1)
+    manual_fix_content: str = field(default="")
+
+    eval_result_dir: str = field(default="dataset/eval_result")
+    eval_origin_file: str = field(default="dataset/batch_test_s3.json")
+    eval_start_pos: int = field(default=0)
+    eval_end_pos: int = field(default=20000)
+
+
+(
+    data_args,
+    run_args,
+    rule_args,
+    draw_args,
+    caption_args,
+    vqa_args,
+    feat_recog_args,
+    fossil_eval_args,
+) = HfArgumentParser(
+    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs]  # type: ignore
 ).parse_args_into_dataclasses()
 
 data_args = cast(DataArgs, data_args)
@@ -278,6 +302,7 @@ draw_args = cast(DrawArgs, draw_args)
 caption_args = cast(CaptionArgs, caption_args)
 vqa_args = cast(VQAArgs, vqa_args)
 feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
+fossil_eval_args = cast(FossilEvalArgs, fossil_eval_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix

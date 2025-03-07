@@ -1,0 +1,90 @@
+You will receive an input structured as a list of categories, each containing two entries labeled "A" and "B". For each category, rate how closely content A aligns with the description in content B on a scale of 0 to 10, where:
+
+    10 = Content A perfectly matches the intent/description of content B.
+
+    0 = Content A is entirely unrelated or contradictory to content B.
+
+Instructions:
+
+    1.Analyze each category independently.
+
+    2.Assign a score (0–10, decimals allowed) based on how well A matches B's description.
+
+    3.Output only a valid JSON object with categories (exact names as provided) as keys and scores as values. 
+
+Response requirements:
+First elaborate your analysis and reasoning, then provide the final rating, an integer between 0 (worst) and 10 (best). You should put your analysis and reasoning in "reason" part whilst put your final rating into "rating" part, as the following format suggests:
+{
+    "category":{"reason": "This is your reasoning", "rating": 10},
+    ...
+}
+You should not provide user with extra content such as 'Here's the analysis and rating for each category:', etc.
+
+Special Requirements:
+- Maintain the consistency among different inputs;
+- When B's description gives a range and A's description falls in this range: rate A as 10. If A's description is not in B's range, rate A according to its error, the less accurate the value is, the lower the rate becomes, but no better than 8. 
+- If the data of A is close enough to B's data within 5% error: rate A as 10; in 5% to 10% error, rate as 8; in 10% to 15%, rate as 6; above 15%, rate them as 0.
+- If A has a description whilst B has no description: rate A as 10.
+- When A and B both provide no information: rate A as 10.
+
+Example:
+User:
+    -overall_size
+    A:
+    B:
+    -overall_shape
+    A:a fusiform shape with concave slopes and rounded ends
+    B:subglobular
+    -length
+    A:5.192 mm
+    B:5.191 mm
+    -width
+    A:4.345 mm
+    B:4.342 mm
+    -ratio
+    A:1.195
+    B:1.195
+    -axis_shape
+    A:straight
+    B:
+    -number_of_volutions
+    A:5.0
+    B:5.0
+    -thickness_of_spircotheca
+    A:0.059 mm
+    B:0.04mm to 0.063mm
+    -height_of_volution
+    A:0.123 mm, 0.633 mm, 0.595 mm, 0.434 mm
+    B:
+    -proloculus
+    A:small and spherical, with a diameter of 209 μm
+    B:minute, its outside diameter varying from 209 μm
+    -tunnel_shape
+    A:
+    B:low and rather narrow
+    -tunnel_angles
+    A:5° and 7°
+    B:5 degrees and 7 degrees
+    -chomata
+    A:well-developed and small in size
+    B:well-developed and elliptical, number 2 to 3 in 2nd whorl, 3 to 5 in 3rd, 5 to 7 in 4th, 8 to 9 in 5th
+    -axial_filling
+    A:
+    B:
+Assistant:
+    {
+        "overall_size": {"reason":"B did not give any value; A did not give any value; so they are the same.", "rating":10},
+        "overall_shape": {"reason": "B says it is subglobular, which means it is almost spherical; A says it is a fusiform with rounded ends, it looks like a shpere but not that same", "rating": 5},
+        "length": {"reason": "B says it is 5.192mm; A says it is 5.191mm; there are only small differences that could be ignored", "rating": 10},
+        "width": {"reason": "B says it is 4.342mm; A says it is 4.345mm; the slight difference could be ignored", "rating": 10},
+        "ratio": {"reason": "A and B both state 1.195; exact numerical match.", "rating": 10},
+        "axis_shape": {"reason": "A specifies 'straight', but B provides no description. A provided extra information", "rating": 10},
+        "number_of_volutions": {"reason": "Both A and B list 5.0; identical values.", "rating": 10},
+        "thickness_of_spircotheca": {"reason": "A states 0.059 mm, B states 0.04mm to 0.063mm. A's value falls in B's range.", "rating": 10},
+        "height_of_volution": {"reason": "A lists specific measurements, B provides no data. A gives extra information on height of volution; this could be 10.", "rating": 10},
+        "proloculus": {"reason": "A's diameter (209 μm) matches B's minimum (209 μ), but B implies variability. Close but not perfect.", "rating": 9},
+        "tunnel_shape": {"reason": "A has no description; B specifies 'low and narrow'. No alignment.", "rating": 0},
+        "tunnel_angles": {"reason": "A and B both state 5° and 7°; identical angles.", "rating": 10},
+        "chomata": {"reason": "Both note 'well-developed', but A lacks B's details on shape and quantity. Partial match.", "rating": 6},
+        "axial_filling": {"reason": "Both A and B are empty; no information to contradict.", "rating": 10}
+    }
