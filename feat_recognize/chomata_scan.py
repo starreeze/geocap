@@ -263,7 +263,7 @@ def chomatas_scan(
                 if ied < len(ed_peak):
                     if min_p is None or min_p[0] > ed_peak[ied]:
                         min_p = (ed_peak[ied], -1)
-                if min_p[1] < 0:
+                if min_p[1] < 0:  # type: ignore
                     ied += 1
                 else:
                     ist += 1
