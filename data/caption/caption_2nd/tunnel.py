@@ -40,14 +40,18 @@ class Tunnel(BaseFeature):
     def genTunnelAngleDescription(self):
         tunnel_map = ""
         for i in range(len(self.visible_chomata_idx)):
-            if i != len(self.visible_chomata_idx) - 1:
+            if len(self.visible_chomata_idx) == 1:
+                tunnel_map += ordinal_numbers[self.visible_chomata_idx[i]]
+            elif i != len(self.visible_chomata_idx) - 1:
                 tunnel_map += ordinal_numbers[self.visible_chomata_idx[i]]
                 tunnel_map += ", "
             else:
                 tunnel_map += "and {th}".format(th=ordinal_numbers[self.visible_chomata_idx[i]])
         txt = "Tunnel angles of {ths} volutions measure ".format(ths=tunnel_map)
         for i in range(len(self.tunnel_angles)):
-            if i != len(self.tunnel_angles) - 1:
+            if len(self.tunnel_angles) == 1:
+                txt += "{:.0f} degrees. ".format(self.tunnel_angles[i])
+            elif i != len(self.tunnel_angles) - 1:
                 txt += "{:.0f}".format(self.tunnel_angles[i])
                 txt += ", "
             else:
