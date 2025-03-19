@@ -254,6 +254,8 @@ class VQAArgs:
 
 @dataclass
 class FeatureRecognizeArgs:
+    inner_radius_ratio: float = field(default=0.8)
+
     houghcircle_params: dict[str, float] = field(
         default_factory=lambda: {"dp": 1.5, "minDist": 100, "param1": 150, "param2": 0.5},
         metadata={"help": "parameters for cv2.HoughCircles: dp, minDist, param1, param2"},
