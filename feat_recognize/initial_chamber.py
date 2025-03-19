@@ -1,77 +1,104 @@
-from typing import Optional
-
-import cv2
+import json
+import os
+import re
 import numpy as np
 
+import cv2
+from common.args import feat_recog_args
+from feat_recognize.utils import circle_weight_array
 
-def detect_initial_chamber(
-    img: np.ndarray,
-    sub_img: Optional[np.ndarray] = None,
-    sub_img_pos: Optional[tuple] = None,
-    block_num: int = 5,
-    dp: float = 1.5,
-    minDist: float = 100,
-    param1: float = 150,
-    param2: float = 0.5,
-) -> list[int] | None:
-    """
-    Detect the initial chamber in an image using Hough Circle Transform.
 
-    Parameters:
-    img (np.ndarray): The input image.
-    sub_img (Optional[np.ndarray]): A sub-image to detect the chamber in.
-    sub_img_pos (Optional[tuple]): The position of the sub-image in the main image.
-    block_num (int): Number of blocks to divide the image into.
-    dp (float): Inverse ratio of the accumulator resolution to the image resolution.
-    minDist (float): Minimum distance between the centers of the detected circles.
-    param1 (float): First method-specific parameter for HoughCircles.
-    param2 (float): Second method-specific parameter for HoughCircles.
+class ProloculusDetector:
+    def __init__(self, block_num: int = 3):
+        self.block_num = block_num
 
-    Returns:
-    initial chamber (list | None): The detected initial chamber coordinates and radius.
-    """
-    if sub_img is None:
-        if img.ndim == 3:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        assert img.ndim == 2, "grayscale img required."
-        height, width = img.shape
+    def find_center(self, size_proloculus: int, size_ratio: float = 1.0, threshold: float = 0.25):
+        # Find center of proloculus using sliding window
+        window_size = int(size_proloculus * size_ratio)
 
-        kernel = np.ones((3, 3), np.int8)
-        img_open = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        img_array = self.img_center_block
+        windows = np.lib.stride_tricks.sliding_window_view(img_array, (window_size, window_size))
+        windows = windows.reshape(-1, window_size, window_size)
 
-        block_height = height // block_num
-        block_width = width // block_num
-        x_start = (block_num // 2) * block_width
-        x_end = (block_num // 2 + 1) * block_width
-        y_start = (block_num // 2) * block_height
-        y_end = (block_num // 2 + 1) * block_height
-        center_block = img_open[y_start:y_end, x_start:x_end]
-        img_to_detect = center_block
-    else:
-        assert isinstance(sub_img, np.ndarray) and isinstance(sub_img_pos, tuple)
-        if sub_img.ndim == 3:
-            sub_img = cv2.cvtColor(sub_img, cv2.COLOR_BGR2GRAY)
-        assert sub_img.ndim == 2, "grayscale img required."  # type: ignore
+        pos_weight_array, neg_weight_array, total_positive_weight, total_negative_weight = (
+            circle_weight_array(window_size)
+        )
+        candidate_centers = []
+        for i, window in enumerate(windows):
+            # Calculate the score of the window
+            pos_score = np.sum(window / 255 * pos_weight_array) / total_positive_weight
+            neg_score = np.sum(window / 255 * neg_weight_array) / total_negative_weight
+            score = pos_score + neg_score
 
-        img_to_detect = sub_img
-        x_start, y_start = sub_img_pos
+            if score > threshold:
+                # Calculate the row and column indices from the flattened index
+                row_idx = i // (img_array.shape[1] - window_size + 1)
+                col_idx = i % (img_array.shape[1] - window_size + 1)
 
-    houghcircles = cv2.HoughCircles(
-        img_to_detect, cv2.HOUGH_GRADIENT_ALT, dp=dp, minDist=minDist, param1=param1, param2=param2
-    )
-    if houghcircles is None:
-        return None
+                # Calculate the center coordinates of the window
+                center_y = row_idx + window_size // 2
+                center_x = col_idx + window_size // 2
 
-    idx = 0
-    min_r = 10000
-    houghcircles = houghcircles.astype(np.int16)
-    for i, cir in enumerate(houghcircles[0]):
-        if cir[2] <= min_r:
-            min_r = cir[2]
-            idx = i
+                # Calculate the distance to the center of the image
+                distance = np.sqrt(
+                    (center_x - self.block_width / 2) ** 2 + (center_y - self.block_height / 2) ** 2
+                )
 
-    initial_chamber = houghcircles[0][idx]
-    initial_chamber[0] += x_start
-    initial_chamber[1] += y_start
+                # Add the center coordinates to candidate_centers
+                candidate_centers.append((center_x, center_y, score, distance / self.block_width))
 
-    return initial_chamber
+        candidate_centers = sorted(candidate_centers, key=lambda x: x[2] - x[3], reverse=True)
+
+        return candidate_centers
+
+    def detect_initial_chamber(self, image_path_to_detect: str, threshold: float = 0.25):
+        self.img = cv2.imread(image_path_to_detect)
+        self.width, self.height = self.img.shape[1], self.img.shape[0]
+        # Convert to grayscale and extract center block
+        self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        self.img_center_block = self.get_center_block()
+
+        # Calculate score with different window size
+        points_with_max_score = []
+        min_size, max_size = 6, 100
+        for size in range(min_size, min(self.block_height, max_size) + 1, 2):
+            candidate_centers = self.find_center(size_proloculus=size, threshold=threshold)
+            if len(candidate_centers) > 0:
+                points_with_max_score.append(
+                    {
+                        "size": size,
+                        "points": [candidate[:2] for candidate in candidate_centers[:]],
+                        "score": [candidate[2] for candidate in candidate_centers[:]],
+                        "distance": [candidate[3] for candidate in candidate_centers[:]],
+                    }
+                )
+
+        sizes = [
+            point_with_max_score["size"] * feat_recog_args.inner_radius_ratio
+            for point_with_max_score in points_with_max_score
+        ]
+        scores = [
+            point_with_max_score["score"][0] - point_with_max_score["distance"][0]
+            for point_with_max_score in points_with_max_score
+        ]
+
+        # Find the point with the highest score
+        max_score_index = scores.index(max(scores))
+        max_score_point = points_with_max_score[max_score_index]["points"][0]
+        diameter = sizes[max_score_index]
+
+        x = max_score_point[0] + self.block_width * (self.block_num // 2)
+        y = max_score_point[1] + self.block_height * (self.block_num // 2)
+        return [x, y, diameter]
+
+    def get_center_block(self):
+        self.block_height = self.height // self.block_num
+        self.block_width = self.width // self.block_num
+
+        x_start = (self.block_num // 2) * self.block_width
+        x_end = (self.block_num // 2 + 1) * self.block_width
+        y_start = (self.block_num // 2) * self.block_height
+        y_end = (self.block_num // 2 + 1) * self.block_height
+
+        center_block = self.img[y_start:y_end, x_start:x_end]
+        return center_block

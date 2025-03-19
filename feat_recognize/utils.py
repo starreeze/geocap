@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from common.args import feat_recog_args
 
 
 def bresenham(
@@ -144,3 +145,35 @@ def calculate_angle(vertex: tuple, point1: tuple, point2: tuple) -> float | None
 
     # Ensure angle is between 0 and 180
     return min(angle_deg, 180 - angle_deg)
+
+
+def circle_weight_array(window_size: int):
+    # 2-D array with reward values, positive inside the inscribed circle, negative outside
+    pos_weight_array = np.zeros((window_size, window_size))
+    neg_weight_array = np.zeros((window_size, window_size))
+
+    # Calculate the center and radius of the inscribed circle
+    center = (window_size - 1) / 2
+    outter_radius = window_size // 2
+    inner_radius = int(outter_radius * feat_recog_args.inner_radius_ratio)
+
+    total_positive_weight = 0
+    total_negative_weight = 0
+
+    # Fill the reward array based on distance from the center
+    for i in range(window_size):
+        for j in range(window_size):
+            # Calculate distance from center
+            distance = np.sqrt((i - center) ** 2 + (j - center) ** 2)
+
+            # Set reward value - positive inside circle, negative outside
+            if distance <= inner_radius:
+                # inner circle: exponential decreasing positive reward (1.0 at center, 0.5 at inner edge)
+                pos_weight_array[i, j] = 0.5 * (1 + np.exp(-distance))
+                total_positive_weight += pos_weight_array[i, j]
+            elif distance <= outter_radius:
+                # outter circle: exponential increaseing negative reward (-0.5 at inner edge, 0 at outer edge)
+                neg_weight_array[i, j] = -0.5 * (np.exp(-(distance - inner_radius)))
+                total_negative_weight += neg_weight_array[i, j]
+
+    return pos_weight_array, neg_weight_array, total_positive_weight, abs(total_negative_weight)
