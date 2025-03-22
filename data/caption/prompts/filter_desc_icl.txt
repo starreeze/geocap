@@ -1,36 +1,38 @@
 # Task:
 You are provided with a description of a fossil image. Filter the fossil image description to include only statements related to the specified features. If a feature is described as absent or not present, such statement should be preserved. Remove any statements that fall under the exclusion criteria.
 
-## Features to include:
-1. Test/shell
-    - Size and shape
-    - Dimensions (length, width/diameter, form ratio)
-    - Equator/median region
-    - Lateral slope
-    - Poles/ends
-2. Volution/whorl
-    - Number of volutions
-    - Height/spire
-    - Coil tightness
-3. Proloculus/initial chamber
-    - Size and shape
-4. Coiling axis
-5. Axial filling and deposits
-6. Spirotheca/wall (thickness, composition)
-7. Supplementary/secondary deposits
-8. Septal folding/fluting/twisting
-9. Chomata
-10. Tunnel
-
-## Statements to exclude:
-1. Septal counts
-2. Axial septulum/septula
-3. Aperture
-4. Cuniculi
-5. Descriptions across multiple specimens
-6. Sagittal section and tangential section observations
-7. Specimen names
-8. Figure references/notes
+# Requirements:
+1. Only the following statements should be preserved:
+    - Test/shell
+        - Size and shape
+        - Dimensions (length, width/diameter, form ratio)
+        - Equator/median region
+        - Lateral slope
+        - Poles/ends
+    - Volution/whorl
+        - Number of volutions
+        - Height/spire
+        - Coil tightness
+    - Proloculus/initial chamber
+        - Size and shape
+    - Coiling axis
+    - Axial filling and deposits
+    - Spirotheca/wall (thickness, composition)
+    - Supplementary/secondary deposits
+    - Septal folding/fluting/twisting
+    - Chomata
+    - Tunnel
+2. Ensure the following features are removed (Note: these are not all the features that need to be removed; you only need to preserve the features in Requirement 1)
+    - Septal counts
+    - Axial septulum/septula
+    - Aperture
+    - Cuniculi
+    - Descriptions across multiple specimens
+    - Comparative statements about other species
+    - Measurements of length, width and form ratio whorl by whorl
+    - Sagittal section and tangential section observations
+    - Specimen names
+    - Figure references/notes
 
 ## Examples:
 ### Input description:
@@ -40,10 +42,10 @@ Shell small, attaining lengths around 4 mm. and widths around 2 mm. in about 6 v
 Shell small, attaining lengths around 4 mm. and widths around 2 mm. in about 6 volutions. The shape is fusiform with irregular to concave lateral slopes and bluntly pointed poles. The coiling is relatively loose and the chambers relatively open with little secondary filling and small chomata.\nThe pattern for the increase in height of volution it is seen that the increase is quite regular throughout most of the growth.\nThe length increases logarithmically in relation to the diameter. The spread is narrow throughout, indicating a close homogeneity in specimens from the seven samples. \nThe form ratio increases rapidly in the early stages of growth and then remains almost constant. The shape is fusiform throughout, with a tendency to develop concave lateral slopes even in some of the early volutions. \nThe proloculus ranges in outer diameter from about 50 to 130 microns.\nThe wall thickness increases regularly. The maximum thickness recorded was 32 microns. All measurements were taken from the equatorial area and, although the wall appears to thin gradually toward the poles no measurements were taken in that area. The wall has a tectum and well-defined diaphanotheca and thin, irregular tectoria, mostly in the vicinity of the septa.\nThe septa tend to be plane or slightly fluted and are spaced rather regularly throughout most of the shell. The septal spacing increases arithmetically with increasing radius. The septa are thickened to wedges or bulbs by secondary deposits in the vicinity of the tunnel and chomata. \nThe tunnel is well defined by the chomata. It is generally low, extending less than half the height of the chambers. It tends to be straight or only slightly irregular and increases rapidly in width. The bounding chomata are small and tend to be symmetrical. Where the plane of the septa coincides or nearly coincides with the plane at the section, the chomata appear to be more massive and asymmetrical because of the extensions of secondary deposits along the septa.
 
 ### Input description:
-The shell of Pseudoschwagerina needhami is of medium side and inflated fusiform, with straight axis of coiling, sharply pointed poles, and broadly convex lateral slopes. Mature specimens contain six to seven volutions and are 5.3 to 6.9 mm. long and 2.1 to 3.0 mm. wide. The form ratio of mature specimens is 2.0 to 2.8, averaging 2.3 for six specimens. The first volution is ellipsoidal, but beyond the second volution the poles become pointed rather slender through the fifth volution. Beyond this volution the chambers are high and the shell is more robust. Average form ratios of the first to seventh volution in six specimens are 1.6, 1.9, 2.3, 2.6, 2.6, 2.4, and 2.1, respectively.\n\"The proloculus is minute, with outside diameter of 115 to 165 microns, averaging 140 microns in six specimens.The shell expands slowly during the first four volutions, but beyond this the chambers increase in height rapidly. Average height of chambers in the first to seventh volution in six specimens is 50, 75, 120, 180, 320, 411, and 444 microns, respectively.The height of given chamber is about the same from the tunnel to the poles.\n\"The spirotheca is thin in the first volution, measuring 10 to 17 microns. However, it increases in thickness gradually, being 78 to 102 microns in the sixth volution.The average thickness of the spirotheca in the first to seventh volution in six specimens is 15, 26, 42, 66, 76, 87, and 85 microns, respectively. Although the spirotheca contains coarse alveoli, its detailed structure cannot be determined in many of my specimens.\n\"The septa are thin and contain abundant septal pores. They are closely spaced in the inner three or four volutions but more widely spaced in outer ones. However, the length of chambers in outer volutions is not so great in comparison to shell size as that of most forms referred to this genus.Septal fluting is well defined in the polar areas and extends to the tops of chambers of outermost volutions. However, in tunnel areas, the fluting is confined mainly to the lower parts of chambers.Cuniculi were observed in only one specimen assigned to this species (pl. 8, fig. 8). The septal counts of the first to fifth volution of the illustrated sagittal section (fig. 17) are 13, 19, 23, 28, and 26, respectively.\nBuccal aperture well defined in the inner whorls but not clear in the outer ones. It is slit-like, low and narrow, being nearly 1/20 the length of the whorl.\n\"The tunnel is narrow in the inner four volutions, increasing in width rapidly beyond the fifth volution.Average tunnel angles in the first to seventh volution of four specimens are 16, 19, 22, 22, 34, 50, and 42 degrees, respectively. The chomata are broad and high in the inner four volutions, and they are narrow and low in the fifth, sixth, and seventh volutions. 
+The shell of Pseudoschwagerina needhami is of medium side and inflated fusiform, with straight axis of coiling, sharply pointed poles, and broadly convex lateral slopes. Mature specimens contain six to seven volutions and are 5.3 to 6.9 mm. long and 2.1 to 3.0 mm. wide. The form ratio of mature specimens is 2.0 to 2.8, averaging 2.3 for six specimens. The first volution is ellipsoidal, but beyond the second volution the poles become pointed rather slender through the fifth volution. Beyond this volution the chambers are high and the shell is more robust. Average form ratios of the first to seventh volution in six specimens are 1.6, 1.9, 2.3, 2.6, 2.6, 2.4, and 2.1, respectively.\n\"The proloculus is minute, with outside diameter of 115 to 165 microns, averaging 140 microns in six specimens.The shell expands slowly during the first four volutions, but beyond this the chambers increase in height rapidly. Diameter variations by whorl (in mm): initial chamber 0.14; second whorl 0.49; third 0.75; fourth 1.01; fifth 1.30; sixth 1.86; seventh 2.51.\n\"Average height of chambers in the first to seventh volution in six specimens is 50, 75, 120, 180, 320, 411, and 444 microns, respectively.The height of given chamber is about the same from the tunnel to the poles.\n\"The spirotheca is thin in the first volution, measuring 10 to 17 microns. However, it increases in thickness gradually, being 78 to 102 microns in the sixth volution.The average thickness of the spirotheca in the first to seventh volution in six specimens is 15, 26, 42, 66, 76, 87, and 85 microns, respectively. Although the spirotheca contains coarse alveoli, its detailed structure cannot be determined in many of my specimens.\n\"The septa are thin and contain abundant septal pores. They are closely spaced in the inner three or four volutions but more widely spaced in outer ones. However, the length of chambers in outer volutions is not so great in comparison to shell size as that of most forms referred to this genus.Septal fluting is well defined in the polar areas and extends to the tops of chambers of outermost volutions. However, in tunnel areas, the fluting is confined mainly to the lower parts of chambers.Cuniculi were observed in only one specimen assigned to this species (pl. 8, fig. 8). The septal counts of the first to fifth volution of the illustrated sagittal section (fig. 17) are 13, 19, 23, 28, and 26, respectively.\nBuccal aperture well defined in the inner whorls but not clear in the outer ones. It is slit-like, low and narrow, being nearly 1/20 the length of the whorl.\n\"The tunnel is narrow in the inner four volutions, increasing in width rapidly beyond the fifth volution.Average tunnel angles in the first to seventh volution of four specimens are 16, 19, 22, 22, 34, 50, and 42 degrees, respectively. The chomata are broad and high in the inner four volutions, and they are narrow and low in the fifth, sixth, and seventh volutions. 
 
 ### Filtered description:
-The shell is of medium side and inflated fusiform, with straight axis of coiling, sharply pointed poles, and broadly convex lateral slopes. Mature specimens contain six to seven volutions and are 5.3 to 6.9 mm. long and 2.1 to 3.0 mm. wide. The form ratio of mature specimens is 2.0 to 2.8, averaging 2.3 for six specimens. The first volution is ellipsoidal, but beyond the second volution the poles become pointed rather slender through the fifth volution. Beyond this volution the chambers are high and the shell is more robust. Form ratios of the first to seventh volution are 1.6, 1.9, 2.3, 2.6, 2.6, 2.4, and 2.1, respectively.\n\"The proloculus is minute, with outside diameter of 115 to 165 microns.The shell expands slowly during the first four volutions, but beyond this the chambers increase in height rapidly. Height of chambers in the first to seventh volution is 50, 75, 120, 180, 320, 411, and 444 microns, respectively.\n\"The spirotheca is thin in the first volution, measuring 10 to 17 microns. However, it increases in thickness gradually, being 78 to 102 microns in the sixth volution.The thickness of the spirotheca in the first to seventh volution is 15, 26, 42, 66, 76, 87, and 85 microns, respectively. Although the spirotheca contains coarse alveoli, its detailed structure cannot be determined in many of my specimens.\nSeptal fluting is well defined in the polar areas and extends to the tops of chambers of outermost volutions. However, in tunnel areas, the fluting is confined mainly to the lower parts of chambers.\n\"The tunnel is narrow in the inner four volutions, increasing in width rapidly beyond the fifth volution.Tunnel angles in the first to seventh volution are 16, 19, 22, 22, 34, 50, and 42 degrees, respectively.The chomata are broad and high in the inner four volutions, and they are narrow and low in the fifth, sixth, and seventh volutions.
+The shell is of medium side and inflated fusiform, with straight axis of coiling, sharply pointed poles, and broadly convex lateral slopes. Mature specimens contain six to seven volutions and are 5.3 to 6.9 mm. long and 2.1 to 3.0 mm. wide. The form ratio of mature specimens is 2.0 to 2.8, averaging 2.3. The first volution is ellipsoidal, but beyond the second volution the poles become pointed rather slender through the fifth volution. Beyond this volution the chambers are high and the shell is more robust.\n\"The proloculus is minute, with outside diameter of 115 to 165 microns.The shell expands slowly during the first four volutions, but beyond this the chambers increase in height rapidly. Height of chambers in the first to seventh volution is 50, 75, 120, 180, 320, 411, and 444 microns, respectively.\n\"The spirotheca is thin in the first volution, measuring 10 to 17 microns. However, it increases in thickness gradually, being 78 to 102 microns in the sixth volution.The thickness of the spirotheca in the first to seventh volution is 15, 26, 42, 66, 76, 87, and 85 microns, respectively.\nSeptal fluting is well defined in the polar areas and extends to the tops of chambers of outermost volutions. However, in tunnel areas, the fluting is confined mainly to the lower parts of chambers.\n\"The tunnel is narrow in the inner four volutions, increasing in width rapidly beyond the fifth volution.Tunnel angles in the first to seventh volution are 16, 19, 22, 22, 34, 50, and 42 degrees, respectively.The chomata are broad and high in the inner four volutions, and they are narrow and low in the fifth, sixth, and seventh volutions.
 
 ### Input description:
 {text}

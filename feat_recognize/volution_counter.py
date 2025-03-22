@@ -4,8 +4,8 @@ from typing import Optional
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from feat_recognize.initial_chamber import detect_initial_chamber
-from feat_recognize.utils import bresenham, fit_line, get_bbox, split_into_segments, resize_img
+
+from feat_recognize.utils import bresenham, fit_line, get_bbox, resize_img, split_into_segments
 
 
 class VolutionCounter:
@@ -36,31 +36,21 @@ class VolutionCounter:
         self.finish = False  # tag for scanning process
 
     def process_img(self, img_path: str):
-        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-        img_rgb = img[:, :, :3]
+        img_rgb = cv2.imread(img_path)
+        orig_h, orig_w = img_rgb.shape[:2]
 
         # Opening preprocess and resize
         kernel = np.ones((3, 3), np.int8)
         img_rgb = cv2.morphologyEx(img_rgb, cv2.MORPH_OPEN, kernel)
-        # img_rgb = cv2.resize(img_rgb, (896, 448))
-        # img = cv2.resize(img, (896, 448))
+
         img_rgb = resize_img(img_rgb)
-        img = resize_img(img)
+        h, w = img_rgb.shape[:2]
+
+        resized_center = (self.center[0] * w // orig_w, self.center[1] * h // orig_h)
+        self.center = resized_center
 
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         assert img_gray.ndim == 2, "grayscale image required."
-
-        # Detect initial chamber (with a high confidence level)
-        initial_chamber = detect_initial_chamber(
-            img_gray, param2=self.feat_recog_args.houghcircle_params["param2"]
-        )
-        if self.use_initial_chamber and initial_chamber is not None:
-            self.center = initial_chamber[:-1]
-            self.success_initial_chamber = True
-        else:
-            min_row, max_row, min_col, max_col = get_bbox(img_gray)
-            self.center = [(min_col + max_col) // 2, (min_row + max_row) // 2]
-            self.success_initial_chamber = False
 
         # Binarization
         img_gray = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, 2)
@@ -69,35 +59,10 @@ class VolutionCounter:
         kernel = np.ones((5, 5), np.int8)
         self.img_gray = cv2.morphologyEx(img_gray, cv2.MORPH_OPEN, kernel)
 
-        # self.get_outer_volution(img)
         self.get_outer_volution()
 
     def set_scan_direction(self, line: list[tuple[int, int]]):
         self.direction = np.sign(self.center[1] - line[0][1])
-
-    # def get_outer_volution(self, img: np.ndarray):
-    #     assert img.shape[-1] == 4
-    #     # Process countour info
-    #     img_countour = img[:, :, 3]
-    #     contours, _ = cv2.findContours(img_countour, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    #     contour = max(contours, key=cv2.contourArea)
-
-    #     # Get initial line for volution detection
-    #     line_upper = []
-    #     line_lower = []
-    #     x_mid, y_mid = self.center
-    #     mid_img_width = int(self.width_ratio * 0.5 * img.shape[1])
-    #     x_range = [x_mid - mid_img_width, x_mid + mid_img_width]
-    #     for point in contour:
-    #         x, y = point[0]
-    #         if x_range[0] <= x <= x_range[1]:
-    #             if y > y_mid:
-    #                 line_lower.append((x, y))
-    #             elif y < y_mid:
-    #                 line_upper.append((x, y))
-
-    #     self.line_upper = sorted(line_upper, key=lambda point: point[0])
-    #     self.line_lower = sorted(line_lower, key=lambda point: point[0])
 
     def get_outer_volution(self):
         img_gray = self.img_gray
@@ -391,13 +356,16 @@ class VolutionCounter:
 
         return line_segments
 
-    def count_volutions(self, img_path: str) -> tuple[dict[int, list], dict[int, float], bool]:
+    def count_volutions(
+        self, img_path: str, center: tuple[int, int]
+    ) -> tuple[dict[int, list], dict[int, float]]:
         """
         Detect the volutions and measure the thickness of each volution in the image.
         Try to detect the initial chamber with a high confidence level.
 
         Parameters:
         img_path (string): The path of input image.
+        center (tuple): Center of the initial chamber.
 
         Returns:
         volutions_dict (dict): Dictionary of detected volutions where:
@@ -410,9 +378,8 @@ class VolutionCounter:
         thickness_dict (dict): Dictionary of volution thickness measurements where:
             * Key (int): Volution index number (matches keys in volutions_dict)
             * Value (float): Normalized thickness of the volution (0.0 to 1.0)
-
-        success_initial_chamber (bool): Whether the initial chamber is detected successfully (with a high confidence level).
         """
+        self.center = center
         self.process_img(img_path)
 
         volutions = [[], []]  # upper and lower
@@ -475,4 +442,4 @@ class VolutionCounter:
                 volutions_dict[vol_idx] = vols[j]
                 thickness_dict[vol_idx] = thicks[j]
 
-        return volutions_dict, thickness_dict, self.success_initial_chamber
+        return volutions_dict, thickness_dict

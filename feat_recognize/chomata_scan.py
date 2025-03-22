@@ -22,7 +22,7 @@ def chomatas_scan(
     area_sequence_sensitivity=0.4,
     area_sensitivity=0.2,
     initial_chamber=None,
-    debug=False,
+    debug=False
 ):
     """
     # 旋脊识别chomatas_scan
