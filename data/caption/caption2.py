@@ -111,8 +111,10 @@ def gen_user_input_txt_2nd(rule):
     )
     # if len(chomata_shapes) > 0:
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
-    if "axial_filling" in rule["axial_filling"] and len(rule["axial_filling"]) > 0:
+    if "axial_filling" in rule and len(rule["axial_filling"]) > 0:
         obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
+    else:
+        obj_parts.append(Deposit([], rule["numerical_info"]["num_volutions"]))
     obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
     for part in obj_parts:

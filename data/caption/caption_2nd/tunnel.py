@@ -31,10 +31,10 @@ class Tunnel(BaseFeature):
             feat = "Tunnels low and narrow in inner volutions, and broad in outer volutions. "
         elif angles_classes[0] == "broad" and angles_classes[-1] == "broad":
             feat = "Tunnels low, broad. "
-        elif angles_classes[0] == "" and angles_classes[-1] == "broad":
-            feat = "Tunnels broad in outer volutions. "
-        elif angles_classes[0] == "narrow" and angles_classes[-1] == "":
-            feat = "Tunnels narrow in inner volutions. "
+        elif angles_classes[0] == "moderate" and angles_classes[-1] == "broad":
+            feat = "Tunnels broad in outer volutions and moderate in inner volutions. "
+        elif angles_classes[0] == "narrow" and angles_classes[-1] == "moderate":
+            feat = "Tunnels narrow in inner volutions and moderate in outer volutions. "
         return feat
 
     def genTunnelAngleDescription(self):

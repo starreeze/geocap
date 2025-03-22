@@ -16,13 +16,15 @@ class Deposit(BaseFeature):
                     max_end_volution = c["end_volution"]
                 if c["start_volution"] < min_start_volution:
                     min_start_volution = c["start_volution"]
+        if len(self.axial_filling) == 0:
+            min_start_volution = 0
         return self.standardRangeFilter(
             deposit_development_classes, (max_end_volution - min_start_volution) / self.volution_num
         )
 
     def genUserInput(self):
         dev = self.getDepositDevelopment()
-        if dev == "":
-            return ""
+        # if dev == "":
+        #     return ""
         txt = "Axial filling {block}. ".format(block=dev)
         return txt

@@ -28,6 +28,18 @@ class BaseFeature:
             txt += feat
         return txt
 
+    def combineFeaturesPlus(self, feat_dict):
+        txt = ""
+        feat_dict_filtered = {}
+        for k in feat_dict:
+            if feat_dict[k] != "":
+                feat_dict_filtered[k] = feat_dict[k]
+        for feat in feat_dict_filtered:
+            if txt != "":
+                txt += ", "
+            txt += (feat + " " + feat_dict_filtered[feat]).strip()
+        return txt
+
     def getCenterAndWeight(self, shapez, n_digits=4):
         def euc_dist(p1, p2):
             return math.sqrt(abs((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2))
