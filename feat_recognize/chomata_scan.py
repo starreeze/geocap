@@ -16,9 +16,13 @@ def chomatas_scan(
     peak_bin_num: int = 10,
     peak_height_ratio=0.5,
     default_slice_total_height=20,
-    merge_threshold=0.1,
+    merge_threshold=0.6,
     find_platforms_threshold=0.1,
-    chomata_sensitivity=5.0,
+    chomata_sensitivity=0.2,
+    area_sequence_sensitivity=0.4,
+    area_sensitivity=0.2,
+    initial_chamber=None,
+    debug=False,
 ):
     """
     # 旋脊识别chomatas_scan
@@ -37,6 +41,8 @@ def chomatas_scan(
     * peak_height_ratio: 已弃用
 
     * default_slice_total_height: 最外圈识别时所扫描的宽度
+
+    * initial_chamber: 初房位置坐标，opencv
 
     ## 返回值
 
@@ -80,6 +86,7 @@ def chomatas_scan(
                 "end_points": [],
                 "pixel_avg": [],
                 "pixel_total": [],
+                "pixel_black_total": [],
             }
             for i in range(line_n):
                 T = step * (i + 1)
@@ -100,6 +107,7 @@ def chomatas_scan(
                     slice0["end_points"].append(end_point)
                     slice0["pixel_avg"].append(pixel_average)
                     slice0["pixel_total"].append(pixel_total)
+                    slice0["pixel_black_total"].append(255 * len(masked_pixels))
             return slice0
 
         def getOneSlice_up(path: Path, iy):
@@ -110,6 +118,7 @@ def chomatas_scan(
                 "end_points": [],
                 "pixel_avg": [],
                 "pixel_total": [],
+                "pixel_black_total": [],
             }
             for i in range(line_n):
                 T = step * (i + 1)
@@ -129,6 +138,7 @@ def chomatas_scan(
                     slice0["end_points"].append(end_point)
                     slice0["pixel_avg"].append(pixel_average)
                     slice0["pixel_total"].append(pixel_total)
+                    slice0["pixel_black_total"].append(255 * len(masked_pixels))
             return slice0
 
         if controller > 0:
@@ -156,6 +166,7 @@ def chomatas_scan(
         frame_areas = []
         frame_areas_gradient = []
         frame_areas_gradient2 = []
+        slices = []
         img_bg = np.ones((y_step * y_total + 1, line_n), np.uint8) * 255
 
         def bresenham_line(p1, p2):
@@ -187,6 +198,7 @@ def chomatas_scan(
         for y in range(y_total):
             y_idx = y + 1
             slice0 = getOneSlice(path, y_idx)
+            slices.append(slice0)
             frame = 255 - np.array(slice0["pixel_avg"])
             frame2 = np.array(slice0["pixel_total"])
             frame_area = []
@@ -302,11 +314,13 @@ def chomatas_scan(
                     total_area += (normalization(area))[idx0]
                 return total_area / len(areas)
 
+            gradient1 = normalization(sum(frame_areas_gradient) / len(frame_areas_gradient))
+
             while ip < len(p_pairs_merged):
                 if temp == []:
                     temp = [p_pairs_merged[ip], p_pairs_merged[ip + 1]]
                 else:
-                    if abs(cal_area(p_pairs_merged[ip][0]) - cal_area(temp[1][0])) < merge_threshold:
+                    if abs(gradient1[int((p_pairs_merged[ip][0] + temp[1][0]) / 2)]) > merge_threshold:
                         temp[1] = p_pairs_merged[ip + 1]
                         if grad2_[p_pairs_merged[ip][0]] > grad2_[temp[0][0]]:
                             temp[0] = p_pairs_merged[ip]
@@ -315,31 +329,33 @@ def chomatas_scan(
                         temp = [p_pairs_merged[ip], p_pairs_merged[ip + 1]]
                 ip += 2
             p_pairs_final_merged.extend(temp)
-            return p_pairs_merged
+            return p_pairs_final_merged
 
         peaks_plat = find_platforms(
             standardization(sum(frame_areas_gradient2) / len(frame_areas_gradient2)), frame_areas
         )
-        plt.figure(dpi=100)
-        plt.imshow(img_bg, origin="lower")
+        if debug:
+            plt.figure(dpi=100)
+            plt.imshow(img_bg, origin="lower")
         std_grad2 = (
             standardization(sum(frame_areas_gradient2) / len(frame_areas_gradient2)) * y_step * y_total
         )
-        plt.plot(list(range(len(frame_areas_gradient2[0]))), std_grad2)
-        plt.plot(
-            list(range(len(frame_areas_gradient[0]))),
-            standardization(sum(frame_areas_gradient) / len(frame_areas_gradient)) * y_step * y_total,
-        )
-        for p in peaks_plat:
-            plt.plot(p[0], std_grad2[p[0]], marker="o", color="red" if p[1] > 0 else "green")
-        for a in frame_areas:
-            plt.plot(list(range(len(a))), normalization(a) * y_step * y_total)
+        if debug:
+            plt.plot(list(range(len(frame_areas_gradient2[0]))), std_grad2)
+            plt.plot(
+                list(range(len(frame_areas_gradient[0]))),
+                standardization(sum(frame_areas_gradient) / len(frame_areas_gradient)) * y_step * y_total,
+            )
+            for p in peaks_plat:
+                plt.plot(p[0], std_grad2[p[0]], marker="o", color="red" if p[1] > 0 else "green")
+            for a in frame_areas:
+                plt.plot(list(range(len(a))), normalization(a) * y_step * y_total)
             # plt.plot(list(range(len(a))),a)
-        ax = plt.gca()
-        ratio = 0.3
-        x_left, x_right = ax.get_xlim()
-        y_low, y_high = ax.get_ylim()
-        ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+            ax = plt.gca()
+            ratio = 0.3
+            x_left, x_right = ax.get_xlim()
+            y_low, y_high = ax.get_ylim()
+            ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
         # for bin in peak_bins:
         #     bin["chosen_point"] = points_max(bin["end_points"], bin["pixel_avg"])
         ip = 0
@@ -352,27 +368,110 @@ def chomatas_scan(
             while ip___ < len(peaks_plat):
                 widths.append(peaks_plat[ip___ + 1][0] - peaks_plat[ip___][0])
                 ip___ += 2
-            return standardization(np.array(widths, dtype=np.float64))
+            return np.array(widths, dtype=np.float64)
 
-        all_candidates_norm = get_all_candidates_width_norm()
+        all_widths_norm = get_all_candidates_width_norm()
+
+        def get_all_candidates_distance_norm():
+            distances = []
+            ip___ = 0
+            while ip___ < len(peaks_plat):
+                if initial_chamber is not None:
+                    x0 = (peaks_plat[ip___][0] + peaks_plat[ip___ + 1][0]) / 2
+                    T0 = x0 / line_n
+                    p0 = path.point(T0)
+                    cho_px = math.floor(p0.real)
+                    cho_py = math.floor(p0.imag)
+                    distance0 = (
+                        abs(initial_chamber[0] - cho_px)
+                    ) + 1  # *0.8+(abs(initial_chamber[1]-cho_py))*0.2
+                    # distance0 = abs(initial_chamber[0]-cho_px)+1
+                    distances.append(-distance0)
+                    ip___ += 2
+            return normalization(np.array(distances, dtype=np.float64)) + 1
+
+        if initial_chamber is not None:
+            all_distances_norm = get_all_candidates_distance_norm()
+
+        def get_all_conf_norm():
+            confs = []
+            ip___ = 0
+            while ip___ < len(peaks_plat):
+                p_st = peaks_plat[ip___]
+                p_ed = peaks_plat[ip___ + 1]
+                avg_y = []  # 黑色面积序列
+                avg_total = []  # 总面积序列
+                for slice0 in slices:
+                    total_blacks = sum(slice0["pixel_total"][p_st[0] : p_ed[0] + 1])
+                    full_slots = sum(slice0["pixel_black_total"][p_st[0] : p_ed[0] + 1])
+                    avg_y.append(total_blacks)
+                    avg_total.append(full_slots)
+                blacking_rates = []
+                for i in range(len(avg_y)):
+                    if i == 0:
+                        a_total = avg_total[i]
+                        if a_total == 0:
+                            a_ratio = -1
+                        else:
+                            a_ratio = avg_y[i] / a_total
+                    else:
+                        a_total = avg_total[i] - avg_total[i - 1]
+                        if a_total == 0:
+                            a_ratio = -1
+                        else:
+                            a_ratio = (avg_y[i] - avg_y[i - 1]) / a_total
+                    if a_ratio > area_sequence_sensitivity:
+                        blacking_rates.append(a_ratio)
+                    else:
+                        break
+                if debug:
+                    print(blacking_rates, avg_y)
+                conf = float(np.sum(blacking_rates))
+                confs.append(conf)
+                ip___ += 2
+            return np.array(confs, dtype=np.float64)
+
+        all_conf_norm = get_all_conf_norm()
+
+        all_norm = [all_conf_norm[i_list] * all_widths_norm[i_list] for i_list in range(len(all_conf_norm))]
+
+        all_norm_norm = normalization(all_norm)
 
         def get_confidence(p_st, p_ed, ip__, p_ed_before=None):
-            avg_grad1 = []  # 平均一阶导
-            avg_y = []  # 平均面积序列
-            avg_grad_before = []
-            for a in frame_areas:
-                aa = normalization(a) * line_n
-                avg_grad1.append((aa[p_ed[0]] - aa[p_st[0]]) / (p_ed[0] - p_st[0]))
-                avg_y.append(float(aa[p_ed[0]] - aa[p_st[0]]))
-                # 计算chomata存在性（如果有）
-                if p_ed_before is not None:
-                    avg_grad_before.append((aa[p_st[0]] - aa[p_ed_before[0]]) / (p_st[0] - p_ed_before[0]))
-            conf = float(np.average(avg_y))
-            # conf = conf*0.9+all_candidates_norm[ip__//2]*0.1
-            if p_ed_before is not None:
-                total_conf_ab = 0
-                for a, b in zip(avg_grad1, avg_grad_before):
-                    total_conf_ab += a / b
+            # avg_y = []  # 黑色面积序列
+            # avg_total = [] # 总面积序列
+            # for slice0 in slices:
+            #     total_blacks = sum(slice0["pixel_total"][p_st[0]:p_ed[0]+1])
+            #     full_slots = sum(slice0["pixel_black_total"][p_st[0]:p_ed[0]+1])
+            #     avg_y.append(total_blacks)
+            #     avg_total.append(full_slots)
+            # blacking_rates = []
+            # for i in range(len(avg_y)):
+            #     if i==0:
+            #         a_total = avg_total[i]
+            #         a_ratio = avg_y[i]/a_total
+            #     else:
+            #         a_total = avg_total[i]-avg_total[i-1]
+            #         a_ratio = (avg_y[i]-avg_y[i-1])/a_total
+            #     if a_ratio > area_sequence_sensitivity:
+            #         blacking_rates.append(a_ratio)
+            #     else:
+            #         break
+            # print(blacking_rates,avg_y)
+            # conf = float(np.sum(blacking_rates))+(all_widths_norm[ip__//2])
+            # if all_conf_norm[ip__//2] < chomata_sensitivity*max(all_conf_norm):
+            #     conf = -9999
+            if all_norm[ip__ // 2] < chomata_sensitivity * max(all_norm):
+                conf = -9999
+                # conf = all_norm[ip__//2]
+            else:
+                # conf = all_norm[ip__//2]
+                conf = 0
+                if initial_chamber is not None:
+                    conf += (all_distances_norm[ip__ // 2]) + all_norm_norm[ip__ // 2] * area_sensitivity
+            if debug:
+                print(all_conf_norm[ip__ // 2], all_widths_norm[ip__ // 2])
+                print(conf)
             return conf
 
         while ip < len(peaks_plat):
@@ -381,7 +480,7 @@ def chomatas_scan(
                 if peaks_plat[ip][0] > 0:
                     p_before = (0, 1)
                 c0 = get_confidence(peaks_plat[ip], peaks_plat[ip + 1], ip, p_before)
-                if c0 > chomata_sensitivity:
+                if c0 > 0:
                     x0 = (peaks_plat[ip][0] + peaks_plat[ip + 1][0]) / 2
                     T0 = x0 / line_n
                     p0 = path.point(T0)
@@ -390,7 +489,7 @@ def chomatas_scan(
             else:
                 p_before = peaks_plat[ip - 1]
                 c0 = get_confidence(peaks_plat[ip], peaks_plat[ip + 1], ip, p_before)
-                if c0 > chomata_sensitivity:
+                if c0 > 0:
                     x0 = (peaks_plat[ip][0] + peaks_plat[ip + 1][0]) / 2
                     T0 = x0 / line_n
                     p0 = path.point(T0)
@@ -398,10 +497,11 @@ def chomatas_scan(
                     final_chomatas.append((math.floor(p0.real), math.floor(p0.imag), c0))
             ip += 2
         # return [bin["chosen_point"] for bin in peak_bins]  # type: ignore
-        for p in final_chomatas_debug:
-            plt.plot(p[0], std_grad2[p[0]], marker="x", color="blue")
-            plt.text(p[0], std_grad2[p[0]], str(round(p[1], 4)))
-        plt.show()
+        if debug:
+            for p in final_chomatas_debug:
+                plt.plot(p[0], std_grad2[p[0]], marker="x", color="blue")
+                plt.text(p[0], std_grad2[p[0]], str(round(p[1], 4)))
+            plt.show()
         final_chomatas.sort(key=lambda x: x[2], reverse=True)
         return final_chomatas if len(final_chomatas) > 2 else final_chomatas
 
