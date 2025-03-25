@@ -961,11 +961,16 @@ class SeptaGenerator:
         septa_list = []
         # Process info about axial filling and poles folds
         axial_main_angles = []
+        axial_extension_angles = []
+        axial_extension_volutions = []
         for axial in axial_filling:
             angle_range = [axial["start_angle"], axial["end_angle"]]
             volution_range = [axial["start_volution"], axial["end_volution"]]
             if axial["type"] == "main":
                 axial_main_angles.append(angle_range)
+            elif axial["type"] == "extension":
+                axial_extension_angles.append(angle_range)
+                axial_extension_volutions.append(volution_range)
 
         poles_folds_angles = []
         poles_folds_volutions = []
@@ -981,6 +986,12 @@ class SeptaGenerator:
                 break
             if i == 0:  # skip first volution
                 continue
+
+            # Check if volution indice in volution range of axial extension
+            in_axial_extension_volution = False
+            for volution_range in axial_extension_volutions:
+                if volution_range[0] <= i < volution_range[1]:
+                    in_axial_extension_volution = True
 
             # Check if volution indice in volution range of poles septa folds
             in_poles_folds_volution = False
@@ -1025,6 +1036,15 @@ class SeptaGenerator:
                 if in_axial_main_angle:  # No septa for axial filling (main)
                     continue
 
+                # Check if theta in angle range of axial filling (extension)
+                in_axial_extension_angle = False
+                for angle_range in axial_extension_angles:
+                    if (
+                        angle_range[0] < theta < angle_range[1]
+                        or angle_range[0] < theta - 2 * np.pi < angle_range[1]
+                    ):
+                        in_axial_extension_angle = True
+
                 # Check if theta in angle range of poles septa folds
                 in_poles_folds_angle = False
                 for angle_range in poles_folds_angles:
@@ -1048,7 +1068,13 @@ class SeptaGenerator:
                 if "curve" in septa_type:
                     septa = self.one_curve_septa(interval, theta, volution, next_volution, fill_mode="white")
                 elif "ellipse" in septa_type:
-                    septa = self.one_ellipse_septa(interval, center, fossil_center, theta, fill_mode="white")
+                    if in_axial_extension_volution and in_axial_extension_angle:
+                        mode = np.random.choice(["inner", "outer"])
+                    else:
+                        mode = "inner"
+                    septa = self.one_ellipse_septa(
+                        interval, center, fossil_center, theta, mode=mode, fill_mode="white"
+                    )
 
                 septa.special_info = f"septa of volution {i//step}"
                 septa_list.append(septa)
@@ -1093,7 +1119,9 @@ class SeptaGenerator:
         if mode == "inner":
             septa_center = np.array(center) + vec_centers * (margin / distance_2points(fossil_center, center))
         elif mode == "outer":
-            septa_center = np.array(center) - vec_centers * (margin / distance_2points(fossil_center, center))
+            septa_center = np.array(center) - normal(0.3, 0.1) * vec_centers * (
+                margin / distance_2points(fossil_center, center)
+            )
 
         ellipse = Ellipse(tuple(septa_center), major_axis, minor_axis, rotation, fill_mode=fill_mode)
         return ellipse
