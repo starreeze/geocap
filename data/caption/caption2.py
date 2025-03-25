@@ -125,7 +125,7 @@ def gen_user_input_txt_2nd(rule):
 
 def main():
     with open(data_args.rules_path, "r") as f:
-        samples = json.load(f)
+        samples = json.load(f)[run_args.start_pos : run_args.end_pos]
     caption(samples, None, data_args.caption_path)
 
 
