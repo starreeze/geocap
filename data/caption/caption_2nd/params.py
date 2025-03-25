@@ -34,9 +34,9 @@ proloculus_shape_classes = {"spherical": [0, 0.33], "normal": [0.33, 0.67], "kid
 
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
 
-chomata_size_classes = {"small": [0, 0.06], "moderate": [0.06, 0.3], "massive": [0.3, 9999]}
+chomata_size_classes = {"small": [0, 0.06], "moderate": [0.06, 0.1], "massive": [0.1, 9999]}
 
-chomata_height_classes = {"low": [0, 0.3], "moderate": [0.3, 0.6], "high": [0.6, 999]}
+chomata_height_classes = {"low": [0, 0.4], "moderate": [0.4, 0.6], "high": [0.6, 999]}
 
 chomata_width_classes = {"narrow": [0, 0.1], "moderate": [0.1, 0.2], "broad": [0.2, 999]}
 

@@ -28,7 +28,7 @@ class BaseFeature:
             txt += feat
         return txt
 
-    def combineFeaturesPlus(self, feat_dict):
+    def combineFeaturesPlus(self, feat_dict, prefix_cond=None):
         txt = ""
         feat_dict_filtered = {}
         for k in feat_dict:
@@ -37,7 +37,12 @@ class BaseFeature:
         for feat in feat_dict_filtered:
             if txt != "":
                 txt += ", "
-            txt += (feat + " " + feat_dict_filtered[feat]).strip()
+            if prefix_cond is None:
+                txt += (feat + " " + feat_dict_filtered[feat]).strip()
+            elif feat_dict_filtered[feat].startswith(prefix_cond):
+                txt += (feat + " " + feat_dict_filtered[feat]).strip()
+            else:
+                txt += (feat_dict_filtered[feat]).strip()
         return txt
 
     def getCenterAndWeight(self, shapez, n_digits=4):
