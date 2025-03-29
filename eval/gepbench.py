@@ -39,7 +39,7 @@ def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: T
         ]
 
         resps = model.generate(image_paths, questions)
-        answers = [find_answer(resp) for resp in resps]
+        answers = [find_answer(resp, item["choices"]) for resp, item in zip(resps, batch)]
         for resp, item, ans in zip(resps, batch, answers):
             f.write(json.dumps(item | {"response": resp, "pred": ans}) + "\n")
         all_answer.extend(answers)
@@ -47,13 +47,18 @@ def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: T
     return all_answer
 
 
-def find_answer(resp: str) -> str:
+def find_answer(resp: str, choices: list[str]) -> str:
     words = re.findall(r"\b\w+\b", resp)  # Match full word A/B/C/D with word boundaries
     answer = "-"
     for word in words[::-1]:  # always find the last one
         if len(word) == 1 and word in "ABCD":
             answer = word
             break
+    if answer != "-":
+        return answer
+    matches = [choice for choice in choices if choice in resp]
+    if len(matches) == 1:
+        answer = matches[0]
     return answer
 
 
