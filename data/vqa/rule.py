@@ -72,7 +72,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         # reverse half of the relation pairs to avoid bias
         reversed_pairs = {}
         for key, relation in relation_pairs.items():
-            if random.random() < 0.5:
+            if random.random() < 0.5 and cls.relation_reverse[relation]:
                 reversed_pairs[(key[1], key[0])] = cls.relation_reverse[relation]
             else:
                 reversed_pairs[key] = relation
