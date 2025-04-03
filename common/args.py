@@ -109,6 +109,7 @@ class DrawArgs:
     color: list[float] = field(default_factory=lambda: [])
     n_white_line: None | int = field(default=None)
     white_line_range: float = field(default=0.25)
+    white_line_width: int = field(default=1)
     Gaussian_mean: int = field(default=0)
     Gaussian_var: float = field(default=10)
     Gaussian_proba: float = field(default=1)
