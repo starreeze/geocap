@@ -39,7 +39,7 @@ def batched_inference(model: GenerateModelBase, data: list[dict[str, Any]], f: T
         ]
 
         resps = model.generate(image_paths, questions)
-        answers = [find_answer(resp, item["choices"]) for resp, item in zip(resps, batch)]
+        answers = [find_answer(resp, list(map(str, item["choices"]))) for resp, item in zip(resps, batch)]
         for resp, item, ans in zip(resps, batch, answers):
             f.write(json.dumps(item | {"response": resp, "pred": ans}) + "\n")
         all_answer.extend(answers)
