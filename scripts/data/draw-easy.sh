@@ -11,7 +11,7 @@ else
     exit 1
 fi
 
-python run.py --module data.draw.draw \
+./run -m data.draw.draw \
     --rules_path dataset/rules-easy.json --figure_dir dataset/figures \
     --figure_prefix easy --num_workers $NUM_WORKERS \
     --line_weight 2 --line_style none --randomize False

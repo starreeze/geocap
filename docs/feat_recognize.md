@@ -3,7 +3,7 @@
 Generate fossil caption data for stage 3 training.
 
 ```shell
-python run.py --module feat_recognize.generate_dataset \
+./run -m feat_recognize.generate_dataset \
     --save_data_path dataset/ \
     --desc_prompt_dir feat_recognize/prompt_icl.txt \
     --desc_llm qwen25-14 \
@@ -14,6 +14,7 @@ python run.py --module feat_recognize.generate_dataset \
 ```
 
 The generation process contains 3 parts:
+
 1. Recognize visual features of the fossil images. The results are in `{save_data_path}/instructions.jsonl`.
 2. Replace numerical information in original fossil description. The results are in `{save_data_path}/stage3.jsonl`
 3. Paraphrase the description to enhance diversity of description. The results are in `{save_data_path}/stage3_paraphrase.jsonl`
