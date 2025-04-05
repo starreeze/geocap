@@ -37,10 +37,10 @@ class GeneratorBase:
         "circumscribed": "inscribed",
         "inscribed": "circumscribed",
         "shared edge": "shared edge",
-        "diagonal": None,
-        "major axis": None,
-        "minor axis": None,
-        "diameter": None,
+        "diagonal": "circumscribed",
+        "major axis": "circumscribed",
+        "minor axis": "circumscribed",
+        "diameter": "circumscribed",
     }
     total_relations = list(relation_reverse.keys())
 

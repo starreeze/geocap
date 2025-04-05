@@ -1,23 +1,20 @@
 "draw geometry shapes according to generated rules"
-import json
 
-#''' Do not delete, otherwise a lot of matplotlib logs will appear.
+import json
 import logging
 import os
 import random
-import sys
 from typing import Any
 
 import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
 from iterwrap import iterate_wrapper
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
-from common.args import data_args, run_args
+from common.args import data_args, draw_args
 
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
-#'''
 
 
 class Figure:
@@ -235,7 +232,7 @@ class Figure:
                 y1 = random.random()
                 angle = random.random() * 2 * np.pi
                 x2, y2 = (x1 + max_radius * np.cos(angle), y1 + max_radius * np.sin(angle))
-                self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=3)
+                self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=draw_args.white_line_width)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
         assert (color == None) or (
