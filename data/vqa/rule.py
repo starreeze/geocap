@@ -298,7 +298,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes presented in the image is {attr} than {anchor_type} in the image?",
+                    "question": f"Which of the following shapes is presented in the image and {attr} than {anchor_type}?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
@@ -339,7 +339,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes presented in the image appears {attr} frequently than {anchor_type} in the image?",
+                    "question": f"Which of the following shapes is presented in the image and appears {attr} frequently than {anchor_type}?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }

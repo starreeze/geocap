@@ -1,6 +1,8 @@
 "generate rules for producing geometry shapes"
+
 import json
 import os
+from random import shuffle
 
 import numpy as np
 from iterwrap import iterate_wrapper
@@ -220,6 +222,7 @@ def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
     assert results_list is not None
     # Flatten the list of lists into a single list
     results = [item for sublist in results_list for item in sublist]
+    shuffle(results)
     return results
 
 
