@@ -33,13 +33,13 @@ class DataArgs:
 
 @dataclass
 class RunArgs:
-    module: str = field(default="")
-    action: str = field(default="main")
+    module: str = field(default="", metadata={"aliases": ["-m"]})
+    action: str = field(default="main", metadata={"aliases": ["-a"]})
     log_level: str = field(default="INFO")
-    num_workers: int = field(default=32)
+    num_workers: int = field(default=32, metadata={"aliases": ["-n"]})
     progress_bar: bool = field(default=True)
-    start_pos: int = field(default=0)
-    end_pos: int = field(default=sys.maxsize)
+    start_pos: int = field(default=0, metadata={"aliases": ["-s"]})
+    end_pos: int = field(default=sys.maxsize, metadata={"aliases": ["-e"]})
     api_key_file: str = field(default="api_key.yaml")
 
 
@@ -285,10 +285,8 @@ class FossilEvalArgs:
     eval_end_pos: int = field(default=20000)
 
 
-alias = {"-m": "--module", "-a": "--action", "-n": "--num_workers", "-s": "--start_pos", "-e": "--end_pos"}
-
 types = (DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs)
-args = HfArgumentParser(cast(Iterable[DataClassType], types), aliases=alias).parse_args_into_dataclasses()
+args = HfArgumentParser(cast(Iterable[DataClassType], types)).parse_args_into_dataclasses()
 data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args, fossil_eval_args = (
     cast(DataArgs, args[0]),
     cast(RunArgs, args[1]),
@@ -325,3 +323,6 @@ run_args.log_level = run_args.log_level.upper()
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
 logger.setLevel(run_args.log_level)
+
+if __name__ == "__main__":
+    print(args)
