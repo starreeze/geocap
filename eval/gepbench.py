@@ -68,7 +68,7 @@ def main():
             f"Evaluating only on {run_args.start_pos} - {run_args.end_pos} images; answers may not be aligned with the questions"
         )
 
-    model: GenerateModelBase = Model(max_new_tokens=10)
+    model: GenerateModelBase = Model(vqa_args.eval_model, max_new_tokens=10)
     scores: list[float] = []
 
     for perspective in vqa_args.perspectives:

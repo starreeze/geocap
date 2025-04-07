@@ -11,7 +11,7 @@ else
     exit 1
 fi
 
-python run.py --module data.draw.draw \
+./run -m data.draw.draw \
     --rules_path dataset/rules-hard.json --figure_dir dataset/figures \
     --figure_prefix hard --num_workers $NUM_WORKERS --log_level warning \
     --Gaussian_proba 0.5 --Perlin_proba 0 --n_white_line 0 \

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 # @Date    : 2024-12-13 11:15:38
 # @Author  : Zhangtai.Wu (wzt_1824769368@163.com)
+"LLaVA-1.5 as an example for custom model"
 
 import torch
 from PIL import Image
 
+# put your custom model code in root and import here
 from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 from llava.conversation import conv_templates
 from llava.mm_utils import get_model_name_from_path, tokenizer_image_token
@@ -13,8 +15,9 @@ from llava.model.builder import load_pretrained_model
 from .base import GenerateModelBase
 
 
+# The model class must inherit from GenerateModelBase
+# See common/vllm/base.py for details on __init__ and generate
 class GenerateModel(GenerateModelBase):
-
     def __init__(self, model: str, **kwargs):
         super().__init__(model, **kwargs)
         model_path = f"/models/{model}"
