@@ -352,14 +352,15 @@ class VolutionCounter:
 
         # Post process: filter out segments that moved too far
         line_segments, step_forward = self.filter_segments(line_segments, step_forward)
-
+        
+        assert step_forward is not None
         if len(step_forward) > 0:
             thickness = np.mean(step_forward) * self.step
         else:
             thickness = 0
 
         for i in range(len(line_segments)):
-            _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])  # type: ignore
+            _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])
 
         return line_segments, thickness
 
