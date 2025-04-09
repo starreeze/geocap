@@ -359,7 +359,7 @@ class VolutionCounter:
             thickness = 0
 
         for i in range(len(line_segments)):
-            _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])
+            _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])  # type: ignore
 
         return line_segments, thickness
 
