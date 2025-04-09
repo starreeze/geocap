@@ -67,7 +67,7 @@ def species_statistics():
 
     # Calculate statistics for each species
     species_characteristics = {char: [] for char in characteristics}
-    
+
     i = 0
     for species, entries in species_data.items():
         species_slice_tab = {char: {"rating": 0.0, "valid_count": 0} for char in characteristics}
@@ -84,32 +84,38 @@ def species_statistics():
         # Calculate average for each characteristic for this species
         for char in characteristics:
             if species_slice_tab[char]["valid_count"] > 0:
-                avg_rating = round(species_slice_tab[char]["rating"] / species_slice_tab[char]["valid_count"], 2)
+                avg_rating = round(
+                    species_slice_tab[char]["rating"] / species_slice_tab[char]["valid_count"], 2
+                )
                 species_characteristics[char].append(avg_rating)
 
     # Calculate average rating across all species for each characteristic
     avg_rating_over_species = {}
     for char in characteristics:
         if species_characteristics[char]:  # Only calculate if there are valid ratings
-            avg_rating_over_species[char] = round(sum(species_characteristics[char]) / len(species_characteristics[char]), 2)
+            avg_rating_over_species[char] = round(
+                sum(species_characteristics[char]) / len(species_characteristics[char]), 2
+            )
         else:
             avg_rating_over_species[char] = 0.0
 
     # Calculate overall average across all characteristics
     valid_characteristics = [char for char in characteristics if species_characteristics[char]]
     if valid_characteristics:
-        average_score = sum(avg_rating_over_species[char] for char in valid_characteristics) / len(valid_characteristics)
+        average_score = sum(avg_rating_over_species[char] for char in valid_characteristics) / len(
+            valid_characteristics
+        )
     else:
         average_score = 0.0
 
     # Write species statistics to file
     with open(f"{fossil_eval_args.eval_result_dir}/species_statistics.jsonl", "w") as f:
-        json.dump(
-            {"Average": round(average_score, 2), "species_count": len(species_data)}, f
-        )
+        json.dump({"Average": round(average_score, 2), "species_count": len(species_data)}, f)
         f.write("\n")
         for char in characteristics:
-            json.dump({char: avg_rating_over_species[char], "species_count": len(species_characteristics[char])}, f)
+            json.dump(
+                {char: avg_rating_over_species[char], "species_count": len(species_characteristics[char])}, f
+            )
             f.write("\n")
 
 
