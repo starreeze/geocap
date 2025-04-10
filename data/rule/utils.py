@@ -226,7 +226,7 @@ def get_tangent_line(
             unique_y.append(y_val)
     x, y = unique_x, unique_y
 
-    curve_func = interp1d(x, y, kind="cubic", fill_value="extrapolate")
+    curve_func = interp1d(x, y, kind="cubic", fill_value="extrapolate")  # type: ignore
 
     slope = derivative(curve_func, tangent_point[0], dx=1e-6)
 
@@ -263,3 +263,94 @@ def round_floats(obj: T, precision=2) -> T:
     if isinstance(obj, (list, tuple)):
         return cast(T, type(obj)([round_floats(x, precision) for x in obj]))  # type: ignore
     return obj
+
+
+def segments_intersect(segment1: list[tuple[float, float]], segment2: list[tuple[float, float]]) -> bool:
+    """
+    Check if two line segments intersect.
+
+    Parameters:
+    segment1: A list of two points ((x1, y1), (x2, y2)) representing the first line segment
+    segment2: A list of two points ((x3, y3), (x4, y4)) representing the second line segment
+
+    Returns:
+    bool: True if the segments intersect, False otherwise
+    """
+    assert len(segment1) == 2 and len(segment2) == 2
+    (x1, y1), (x2, y2) = segment1
+    (x3, y3), (x4, y4) = segment2
+
+    # Calculate the direction vectors
+    dx1 = x2 - x1
+    dy1 = y2 - y1
+    dx2 = x4 - x3
+    dy2 = y4 - y3
+
+    # Calculate the determinant
+    det = dx1 * dy2 - dy1 * dx2
+
+    # If determinant is zero, lines are parallel or collinear
+    if abs(det) < 1e-9:
+        # Check if they are collinear
+        if abs((y3 - y1) * dx1 - (x3 - x1) * dy1) < 1e-9:
+            # Check if they overlap
+            t0 = (
+                ((x3 - x1) * dx1 + (y3 - y1) * dy1) / (dx1 * dx1 + dy1 * dy1)
+                if (dx1 * dx1 + dy1 * dy1) > 0
+                else 0
+            )
+            t1 = t0 + (dx2 * dx1 + dy2 * dy1) / (dx1 * dx1 + dy1 * dy1) if (dx1 * dx1 + dy1 * dy1) > 0 else 0
+
+            if dx1 == 0 and dy1 == 0:  # First segment is a point
+                return x1 == x3 and y1 == y3  # Intersect only if they are the same point
+
+            # Check if the intervals [0, 1] and [t0, t1] overlap
+            if t0 > t1:
+                t0, t1 = t1, t0
+            return max(0, t0) <= min(1, t1)
+        return False
+
+    # Calculate parameters for the intersection point
+    u = ((x3 - x1) * dy1 - (y3 - y1) * dx1) / det
+    t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / det
+
+    # Check if the intersection point is within both segments
+    # Add 10% tolerance forthe intersection condition
+    return -0.1 <= u <= 1.1 and -0.1 <= t <= 1.1
+
+
+def valid_intersection(shapes, new_shape) -> bool:
+    # Line not allowed to have >1 intersection points with Polygon
+    if new_shape.to_dict()["type"] in ["line", "segment", "ray"]:
+        for shape in shapes:
+            if shape.to_dict()["type"] == "polygon":
+                num_intersections = 0
+                for i in range(len(shape.points) - 1):
+                    line = new_shape.points
+                    edge = [shape.points[i], shape.points[i + 1]]
+                    if segments_intersect(segment1=line, segment2=edge):
+                        num_intersections += 1
+                if num_intersections > 1:
+                    return False
+    # Polygon not allowed to have >1 intersection points with Line
+    # not allowed to have any intersection point with Polygon
+    elif new_shape.to_dict()["type"] == "polygon":
+        for shape in shapes:
+            if shape.to_dict()["type"] in ["line", "segment", "ray"]:
+                num_intersections = 0
+                for i in range(len(new_shape.points)):
+                    line = shape.points
+                    edge = [new_shape.points[i], new_shape.points[(i + 1) % len(new_shape.points)]]
+                    if segments_intersect(segment1=line, segment2=edge):
+                        num_intersections += 1
+                if num_intersections > 1:
+                    return False
+            if shape.to_dict()["type"] == "polygon":
+                for i in range(len(shape.points)):
+                    for j in range(len(new_shape.points)):
+                        edge1 = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
+                        edge2 = [new_shape.points[j], new_shape.points[(j + 1) % len(new_shape.points)]]
+                        if segments_intersect(segment1=edge1, segment2=edge2):
+                            return False
+
+    return True
