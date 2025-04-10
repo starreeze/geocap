@@ -320,37 +320,40 @@ def segments_intersect(segment1: list[tuple[float, float]], segment2: list[tuple
 
 
 def valid_intersection(shapes, new_shape) -> bool:
-    # Line not allowed to have >1 intersection points with Polygon
+    # At most 1 new intersection point is allowed
+    new_intersections = 0
+
+    # New line case
     if new_shape.to_dict()["type"] in ["line", "segment", "ray"]:
         for shape in shapes:
             if shape.to_dict()["type"] == "polygon":
-                num_intersections = 0
-                for i in range(len(shape.points) - 1):
+                for i in range(len(shape.points)):
                     line = new_shape.points
-                    edge = [shape.points[i], shape.points[i + 1]]
+                    edge = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
                     if segments_intersect(segment1=line, segment2=edge):
-                        num_intersections += 1
-                if num_intersections > 1:
-                    return False
-    # Polygon not allowed to have >1 intersection points with Line
-    # not allowed to have any intersection point with Polygon
+                        new_intersections += 1
+            if shape.to_dict()["type"] in ["line", "segment", "ray"]:
+                line1 = new_shape.points
+                line2 = shape.points
+                if segments_intersect(segment1=line1, segment2=line2):
+                    new_intersections += 1
+
+    # New polygon case
     elif new_shape.to_dict()["type"] == "polygon":
         for shape in shapes:
             if shape.to_dict()["type"] in ["line", "segment", "ray"]:
-                num_intersections = 0
                 for i in range(len(new_shape.points)):
                     line = shape.points
                     edge = [new_shape.points[i], new_shape.points[(i + 1) % len(new_shape.points)]]
                     if segments_intersect(segment1=line, segment2=edge):
-                        num_intersections += 1
-                if num_intersections > 1:
-                    return False
+                        new_intersections += 1
+
             if shape.to_dict()["type"] == "polygon":
                 for i in range(len(shape.points)):
                     for j in range(len(new_shape.points)):
                         edge1 = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
                         edge2 = [new_shape.points[j], new_shape.points[(j + 1) % len(new_shape.points)]]
                         if segments_intersect(segment1=edge1, segment2=edge2):
-                            return False
+                            new_intersections += 1
 
-    return True
+    return new_intersections <= 1
