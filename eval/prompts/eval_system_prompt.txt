@@ -1,0 +1,99 @@
+## Task Description
+You will receive input structured as a list of categories, each containing two entries labeled "Generated" and "Reference". For each category, rate how closely the generated description aligns with the reference description on a scale of 0 to 10, where:
+
+- **10** = Generated description perfectly matches the intent/description of the reference.
+- **0** = Generated description is entirely unrelated or contradictory to the reference.
+
+## Instructions
+1. Analyze each category independently.
+2. Assign a score (0-10, decimals allowed) based on how well the generated description matches the reference description.
+3. Output a valid JSON object with categories (using exact names as provided) as keys and your evaluation as values.
+
+## Response requirements
+First elaborate your analysis and reasoning, then provide the final rating, an integer between 0 (worst) and 10 (best). You should put your analysis and reasoning in "reason" part whilst put your final rating into "rating" part, as the following format suggests:
+{
+    "category here":{"reason": "your reasoning here", "rating": 10},
+    ...
+}
+You should not provide user with extra content such as 'Here's the analysis and rating for each category:', etc.
+
+## Scoring Guidelines
+  - If reference gives a range and generated value falls within this range: rate as 10
+  - If generated value is outside reference range: rate based on accuracy (maximum 8)
+  - If reference gives a sequence of values, rate based on how closely the generated values match the pattern, trend, and magnitude of the reference sequence
+  - If reference provides information while generated is empty: rate as 0
+
+- **Consistency**: Maintain consistent evaluation standards across all categories.
+
+## Example:
+
+### Input:
+-overall_size
+Generated:
+Reference:shell of moderate size
+-overall_shape
+Generated:a fusiform shape with concave slopes and rounded ends
+Reference:subglobular
+-length
+Generated:5.192 mm
+Reference:5.191 mm
+-width
+Generated:4.345 mm
+Reference:4.342 mm
+-ratio
+Generated:1.195
+Reference:1.195
+-axis_shape
+Generated:straight
+Reference:
+-number_of_volutions
+Generated:5.0
+Reference:5.0
+-thickness_of_spircotheca
+Generated:0.059 mm
+Reference:0.04mm to 0.063mm
+-height_of_volution
+Generated:0.123 mm, 0.633 mm, 0.595 mm, 0.434 mm
+Reference:
+-septa_folds
+Generated:essentially plane throughout the length of the shell except in the vicinity of the poles where they are slightly fluted.
+Reference:strongly folded from pole to equator in all volutions.
+-proloculus
+Generated:small and spherical, with a diameter of 209 μm
+Reference:minute, its outside diameter varying from 209 μm
+-tunnel_shape
+Generated:low and rather narrow
+Reference:
+-tunnel_angles
+Generated:5° and 7°
+Reference:5 degrees and 7 degrees
+-chomata
+Generated:well-developed and small in size
+Reference:well-developed and elliptical, number 2 to 3 in 2nd whorl, 3 to 5 in 3rd, 5 to 7 in 4th, 8 to 9 in 5th
+-axial_filling
+Generated:
+Reference:
+
+### Output:
+{
+  "overall_size": {"reason":"Reference describes the size as 'moderate', while Generated does not provide any information about the size.", "rating":0},
+  "overall_shape": {"reason": "Reference describes the shape as 'subglobular' (almost spherical), while Generated describes it as 'fusiform with concave slopes and rounded ends'. These are different shape descriptions with only partial similarity.", "rating": 5},
+  "length": {"reason": "Generated states 5.192 mm while Reference states 5.191 mm. The difference is negligible (0.001 mm).", "rating": 10},
+  "width": {"reason": "Generated states 4.345 mm while Reference states 4.342 mm. The difference is negligible (0.003 mm).", "rating": 10},
+  "ratio": {"reason": "Both Generated and Reference state exactly 1.195, showing perfect numerical match.", "rating": 10},
+  "axis_shape": {"reason": "Generated specifies 'straight' while Reference provides no information. When Generated provides information and Reference is empty, this rates as 10.", "rating": 10},
+  "number_of_volutions": {"reason": "Both Generated and Reference list exactly 5.0, showing perfect agreement.", "rating": 10},
+  "thickness_of_spircotheca": {"reason": "Generated states 0.059 mm, which falls within the Reference range of 0.04mm to 0.063mm.", "rating": 10},
+  "height_of_volution": {"reason": "Generated provides specific measurements (0.123 mm, 0.633 mm, 0.595 mm, 0.434 mm) while Reference is empty. When Generated provides information and Reference is empty, this rates as 10.", "rating": 10},
+  "septa_folds": {"reason": "Generated describes the septa as 'essentially plane throughout the length of the shell except in the vicinity of the poles where they are slightly fluted.', while Reference describes the septa as 'strongly folded from pole to equator in all volutions.'. The generated description is not consistent with the reference description. The descriptions differ significantly in characteristics and distribution.", "rating": 2},
+  "proloculus": {"reason": "Generated describes it as 'small and spherical, with a diameter of 209 μm' while Reference states 'minute, its outside diameter varying from 209 μm'. The diameter matches, but Reference implies variability that Generated doesn't capture.", "rating": 9},
+  "tunnel_shape": {"reason": "Generated describes it as 'low and rather narrow' while Reference is empty. When Generated provides information and Reference is empty, this rates as 10.", "rating": 10},
+  "tunnel_angles": {"reason": "Both Generated and Reference state the same angles (5° and 7°), just with different notation.", "rating": 10},
+  "chomata": {"reason": "Both note 'well-developed', but Generated only adds 'small in size' while Reference provides much more detailed information about shape and quantity across different whorls.", "rating": 6},
+  "axial_filling": {"reason": "Both Generated and Reference entries are empty, so they are perfectly aligned.", "rating": 10}
+}
+
+### Input:
+{input}
+
+### Output:

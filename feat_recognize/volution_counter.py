@@ -110,6 +110,27 @@ class VolutionCounter:
             self.finish = True
             return False
 
+    def distance_between_volutions(
+        self, detected_volution: list[tuple[int, int]], cur_volutions: list[list[tuple[int, int]]]
+    ) -> int:
+        if not cur_volutions:
+            return 10000
+
+        last_volution = cur_volutions[-1]
+        min_distance = 10000
+
+        # Create a dictionary of x -> y for the last volution for faster lookup
+        last_volution_dict = {point[0]: point[1] for point in last_volution}
+
+        # For each point in the detected volution, find the corresponding point in the last volution
+        for x, y in detected_volution:
+            if x in last_volution_dict:
+                # Calculate the absolute y-distance between points with the same x-coordinate
+                distance = abs(y - last_volution_dict[x])
+                min_distance = min(min_distance, distance)
+
+        return min_distance
+
     def move(self, points: list[tuple[int, int]]) -> bool:
         """Move the points towards the center of the volution."""
         for i in range(len(points)):
@@ -194,6 +215,18 @@ class VolutionCounter:
 
         return points, len(points)
 
+    def get_almost_black_line(self, vertex: tuple[int, int], theta: float, max_expand_len: int):
+        points = []
+        for r in range(max_expand_len):
+            x = int(vertex[0] + r * np.cos(theta))
+            y = int(vertex[1] + r * np.sin(theta))
+            if x < 0 or x >= self.img_gray.shape[1] or y < 0 or y >= self.img_gray.shape[0]:
+                break
+            # if self.img_gray[y, x] == 0:
+            points.append((x, y))
+
+        return points, len([p for p in points if self.img_gray[p[1], p[0]] == 0])
+
     def get_expand_points(
         self, vertex: tuple[int, int], theta_ref: float, theta_margin: float, max_expand_len: int
     ):
@@ -201,7 +234,8 @@ class VolutionCounter:
         max_score = -1
         theta_range = np.arange(theta_ref - theta_margin, theta_ref + theta_margin, 0.01)
         for theta in theta_range:
-            points, num_points = self.get_continuous_black_line(vertex, theta, max_expand_len)
+            # points, num_points = self.get_continuous_black_line(vertex, theta, max_expand_len)
+            points, num_points = self.get_almost_black_line(vertex, theta, max_expand_len)
             score = (num_points / max_expand_len) - 1.0 * (abs(theta - theta_ref) / theta_margin)
             if score > max_score:
                 expand_points = points
@@ -215,7 +249,7 @@ class VolutionCounter:
         line_segments: list[list[tuple[int, int]]],
         num_volutions: int,
         theta_margin: float = 0.5 * np.pi,
-        max_expand_times: int = 10,
+        max_expand_times: int = 6,
         max_expand_len: int = 10,
         base_expand_ratio: float = 0.8,
     ):
@@ -319,8 +353,11 @@ class VolutionCounter:
         # Post process: filter out segments that moved too far
         line_segments, step_forward = self.filter_segments(line_segments, step_forward)
 
-        assert isinstance(step_forward, list)
-        thickness = np.mean(step_forward) * self.step
+        assert step_forward is not None
+        if len(step_forward) > 0:
+            thickness = np.mean(step_forward) * self.step
+        else:
+            thickness = 0
 
         for i in range(len(line_segments)):
             _ = self.catch_frontier(line_segments, step_forward, i, check_adsorption_mask[i])
@@ -394,7 +431,10 @@ class VolutionCounter:
 
             while not self.finish:
                 detected_volution = [segment[0] for segment in line_segments]
-                if len(detected_volution) > 3:
+                if (
+                    len(detected_volution) > 3
+                    and self.distance_between_volutions(detected_volution, volutions[i]) > 2
+                ):
                     volutions[i].append(detected_volution)
                 else:
                     break
