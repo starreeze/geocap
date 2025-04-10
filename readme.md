@@ -14,12 +14,13 @@ A `./run` is provided for running a module. Examples:
 chmod +x run
 
 # run the file: default entry is main(); no argument is expected
-./run --module data.rule.generate --num_basic_geo_samples 10
+./run -m data.rule.generate --num_basic_geo_samples 10
 
 # you can also specify the entry function (--action); no argument is expected
-./run --module data.format --action to_llava
+./run -m data.format --action to_llava
 
-# of course, you can also run the file via python
+# If you ensure that `if __name__ == '__main__': main()` is present in the file
+# You can also run the file directly via python
 python -m data.rule.generate --num_basic_geo_samples 10
 ```
 
@@ -33,7 +34,7 @@ GePBench is a large-scale, highly customizable multimodal benchmark on geometric
 
 ### Test Data
 
-We provide a standard open test set on [TODO]. Please download and unzip to `./dataset`. Run `tree dataset --filelimit 10` should result in this:
+We provide a standard open test set on [TODO]. Please download and unzip to `./dataset`. `tree dataset --filelimit 10` should result in this:
 
 ```
 dataset
@@ -56,6 +57,8 @@ dataset
 
 ### Supported Models
 
+[TODO] add detailed instruction
+
 Our officially supported models can be found in `./common/vllm`. Please download the corresponding checkpoints from huggingface and save them in `./models` with the same directory name as the python module (extension excluded). You can download them via
 
 ```shell
@@ -72,9 +75,9 @@ The evaluation results will be saved in `results/{model_name}-{model_size}`.
 
 ### Evaluate on Custom Models
 
-The easiest way is to create a file `common/vllm/model_name.py`, write a class `GenerateModel` inherited from `common/vllm/base.py: GenerateModelBase`, and implement the its `__init__` and `generate` method. Please read the base class [](common/vllm/base.py) first and refer to the LLaVA-1.5 model [](common/vllm/llava.py) as an example. After that, your model become one of the supported models and can be used in the same way as the officially supported models.
+The easiest way is to create a file `common/vllm/model_name.py`, write a class `GenerateModel` inherited from `common/vllm/base.py: GenerateModelBase`, and implement the its `__init__` and `generate` method. Please read the base class [common/vllm/base.py](common/vllm/base.py) first and refer to the LLaVA-1.5 model [common/vllm/llava.py](common/vllm/llava.py) as an example. After that, your model become one of the supported models and can be used in the same way as the officially supported models.
 
-Another option is to perform your own generation process before calculating the accuracy by referring to [](eval/gepbench.py) which implements the evaluation process. Temperature should be set to 0.0 and do_sample should be set to False.
+Another option is to perform your own generation process before calculating the accuracy by referring to [eval/gepbench.py](eval/gepbench.py) which implements the evaluation process. Temperature should be set to 0.0 and do_sample should be set to False.
 
 ## Constructing Training Set
 
@@ -84,7 +87,7 @@ To construct the large-scale training set, just run the following command:
 scripts/data/generate.sh train
 ```
 
-Of course, you can also generate the test set in the same way. The only difference is the number of samples.
+Of course, you can also generate your own test set in the same way. The only difference is the number of samples.
 
 The following is a description on the three phases and corresponding parameters for constructing the data. Please read it for customizing the data generation process.
 
