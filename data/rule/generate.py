@@ -18,7 +18,7 @@ from data.rule.relations import (
     SeptaGenerator,
 )
 from data.rule.shapes import ShapeGenerator
-from data.rule.utils import no_overlap, overlap_area, round_floats
+from data.rule.utils import no_overlap, overlap_area, round_floats, valid_intersection
 
 
 def generate_fossil_rules() -> list[dict[str, list]]:
@@ -141,7 +141,15 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
         num_shapes = randint(1, max_num_shapes // 2 + 1)  # leave space for special relations
         for _ in range(num_shapes):
             new_shape = shape_generator()
-            if no_overlap(shapes, new_shape):
+            new_shape_bbox = new_shape.get_bbox()
+            area_in_canvas = overlap_area(new_shape_bbox, [[0, 1], [1, 0]])
+            area_new_shape = (new_shape_bbox[1][0] - new_shape_bbox[0][0]) * (
+                new_shape_bbox[0][1] - new_shape_bbox[1][1]
+            )
+            if area_in_canvas / area_new_shape < rule_args.in_canvas_area_thres:
+                continue
+
+            if no_overlap(shapes, new_shape) and valid_intersection(shapes, new_shape):
                 shapes.append(new_shape)
 
         relations = []
@@ -155,10 +163,12 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
 
             exclude_shape = [head_shape]
             for t_shape in tail_shape:
-                if no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
+                if no_overlap(shapes, t_shape, exclude_shape=exclude_shape) and valid_intersection(
+                    shapes, t_shape
+                ):
                     # Check if each tail_shape is in the canvas
-                    area_in_canvas = overlap_area(t_shape.get_bbox(), [[0, 1], [1, 0]])
                     tail_bbox = t_shape.get_bbox()
+                    area_in_canvas = overlap_area(tail_bbox, [[0, 1], [1, 0]])
                     area_tail_bbox = (tail_bbox[1][0] - tail_bbox[0][0]) * (tail_bbox[0][1] - tail_bbox[1][1])
                     if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
                         continue
@@ -218,6 +228,7 @@ def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
         num_workers=num_workers,
         run_name="generate_rules",
         bar=False,
+        restart=True,
     )
     assert results_list is not None
     # Flatten the list of lists into a single list

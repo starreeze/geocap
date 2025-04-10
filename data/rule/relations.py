@@ -251,7 +251,7 @@ class LineRelationGenerator:
         b2 = p[1] - k * p[0]
 
         points = another_2points_on_line(line=(k, b2), point=p)
-        line = Line(type=self.line.type, points=points)
+        line = Line(type="segment", points=points)
         return line
 
     def get_tangent_circle(self) -> Ellipse:
