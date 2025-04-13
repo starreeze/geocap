@@ -5,7 +5,15 @@ from typing import Any, Literal
 import numpy as np
 from numpy.random import normal, randint, uniform
 
-from data.rule.shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2, Line, Polygon
+from data.rule.shapes import (
+    Curve,
+    CustomedShape,
+    Ellipse,
+    Fusiform,
+    Fusiform_2,
+    Line,
+    Polygon,
+)
 from data.rule.utils import (
     another_2points_on_line,
     calculate_angle,

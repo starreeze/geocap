@@ -1,9 +1,14 @@
 import json
-from copy import deepcopy
-from constants import REASONING_RESP_INST, REASONING_GRADING_PREFIX, REASONING_GRADING_INST
 import os
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from copy import deepcopy
+
+from constants import (
+    REASONING_GRADING_INST,
+    REASONING_GRADING_PREFIX,
+    REASONING_RESP_INST,
+)
 from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def get_reasoning_result(prompt):

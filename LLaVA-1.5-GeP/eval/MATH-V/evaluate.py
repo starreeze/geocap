@@ -1,9 +1,10 @@
-import re
-from tqdm import tqdm
-import json
-from utils import save_jsonl, load_jsonl, find_math_answer, is_equal, is_number
-import os
 import argparse
+import json
+import os
+import re
+
+from tqdm import tqdm
+from utils import find_math_answer, is_equal, is_number, load_jsonl, save_jsonl
 
 id_raw = {example["id"]: example for example in load_jsonl("./MATH-V/data/test.jsonl")}
 

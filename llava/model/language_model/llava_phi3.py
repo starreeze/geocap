@@ -17,13 +17,17 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-
-from transformers import AutoConfig, AutoModelForCausalLM, Phi3Config, Phi3Model, Phi3ForCausalLM
-
-from transformers.modeling_outputs import CausalLMOutputWithPast
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    Phi3Config,
+    Phi3ForCausalLM,
+    Phi3Model,
+)
 from transformers.generation.utils import GenerateOutput
+from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from ..llava_arch import LlavaMetaModel, LlavaMetaForCausalLM
+from ..llava_arch import LlavaMetaForCausalLM, LlavaMetaModel
 
 
 class LlavaPhi3Config(Phi3Config):

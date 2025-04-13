@@ -1,6 +1,7 @@
-from data.caption.caption_2nd.params import *
-from data.caption.caption_2nd.base import BaseFeature
 import math
+
+from data.caption.caption_2nd.base import BaseFeature
+from data.caption.caption_2nd.params import *
 
 
 class Proloculus(BaseFeature):

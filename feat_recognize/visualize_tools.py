@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,9 +8,9 @@ from matplotlib.patches import Circle
 
 from common.args import feat_recog_args
 from feat_recognize.initial_chamber import ProloculusDetector
+from feat_recognize.recognize import chomatas_scan
 from feat_recognize.utils import resize_img
 from feat_recognize.volution_counter import VolutionCounter
-from feat_recognize.recognize import chomatas_scan
 
 
 def visualize_volutions(

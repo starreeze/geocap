@@ -1,7 +1,8 @@
-import argparse, json
+import argparse
+import json
+import os
 
 from tqdm import tqdm
-import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -20,10 +21,10 @@ if __name__ == "__main__":
 
     if mode == "descriptive":
         from descriptive_utils import (
-            preprocess_descriptive_grading_queries,
             build_descriptive_grading_queries,
-            postprocess_descriptive_grading_queries,
             get_descriptive_result,
+            postprocess_descriptive_grading_queries,
+            preprocess_descriptive_grading_queries,
         )
 
         groups = preprocess_descriptive_grading_queries(data, response)
@@ -44,7 +45,10 @@ if __name__ == "__main__":
             json.dump(queries, f, indent=4)
 
     elif mode == "reasoning":
-        from reasoning_utils import build_reasoning_grading_queries, get_reasoning_result
+        from reasoning_utils import (
+            build_reasoning_grading_queries,
+            get_reasoning_result,
+        )
 
         queries = build_reasoning_grading_queries(data, response)
         prompt = []

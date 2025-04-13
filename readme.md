@@ -250,8 +250,17 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 2. Config your vscode to use black to do code formatting. The arguments are supposed to be:
    ![](docs/assets/black.png)
    If you do not like this code style or you cannot complete the config, you can also use `black` to format your code before opening a PR:
-
    ```shell
    pip install black==24.10.0
    black . --skip-magic-trailing-comma --line-length 110
+   ```
+3. Install isort extension in your vscode and run `isort` to sort your imports automatically, or run this before opening a PR:
+   ```shell
+   pip install isort==6.0.1
+   isort . --profile black
+   ```
+4. Run `flake8` to check your code style and fix all the errors before opening a PR:
+   ```shell
+   pip install flake8==7.2.0
+   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava
    ```
