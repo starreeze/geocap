@@ -4,13 +4,7 @@ from scipy.misc import derivative
 from scipy.signal import find_peaks
 
 from data.caption.caption_2nd.base import BaseFeature
-from data.caption.caption_2nd.custom_shapes import (
-    Curve,
-    CustomedShape,
-    Ellipse,
-    Fusiform,
-    Fusiform_2,
-)
+from data.caption.caption_2nd.custom_shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2
 from data.caption.caption_2nd.params import *
 
 

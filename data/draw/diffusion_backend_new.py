@@ -421,10 +421,7 @@ def generate_basic_mask(volution_memory: dict, filling: list) -> np.ndarray:
 
 
 def diffuse(img: np.ndarray, mask: np.ndarray, ref_path: str, num_refs: int) -> np.ndarray:
-    from MimicBrush.run_gradio3_demo import (
-        crop_padding_and_resize,
-        inference_single_image,
-    )
+    from MimicBrush.run_gradio3_demo import crop_padding_and_resize, inference_single_image
 
     def get_random_ref_image(ref_path: list) -> np.ndarray:
         ref_image = cv2.imread(random.choice(ref_path))

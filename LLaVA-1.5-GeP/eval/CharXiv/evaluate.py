@@ -45,10 +45,7 @@ if __name__ == "__main__":
             json.dump(queries, f, indent=4)
 
     elif mode == "reasoning":
-        from reasoning_utils import (
-            build_reasoning_grading_queries,
-            get_reasoning_result,
-        )
+        from reasoning_utils import build_reasoning_grading_queries, get_reasoning_result
 
         queries = build_reasoning_grading_queries(data, response)
         prompt = []

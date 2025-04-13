@@ -32,4 +32,4 @@ jobs:
           npx pyright --level warning
           black --check . --line-length 110 --skip-magic-trailing-comma
           # flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=$IGNORE_DIRS
-          isort . --check-only --skip $IGNORE_DIRS --profile black
+          isort . --check-only --line-length 110 --skip $IGNORE_DIRS --profile black

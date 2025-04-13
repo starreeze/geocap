@@ -257,7 +257,7 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 3. Install isort extension in your vscode and run `isort` to sort your imports automatically, or run this before opening a PR:
    ```shell
    pip install isort==6.0.1
-   isort . --profile black
+   isort . --profile black  --line-length 110
    ```
 4. Run `flake8` to check your code style and fix all the errors before opening a PR:
    ```shell

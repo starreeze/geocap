@@ -2,11 +2,7 @@ import json
 import os
 from copy import deepcopy
 
-from constants import (
-    REASONING_GRADING_INST,
-    REASONING_GRADING_PREFIX,
-    REASONING_RESP_INST,
-)
+from constants import REASONING_GRADING_INST, REASONING_GRADING_PREFIX, REASONING_RESP_INST
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
