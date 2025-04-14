@@ -7,17 +7,18 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from common.args import caption_args, feat_recog_args, logger, run_args
+from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
 from feat_recognize.recognize import recognize_feature
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
-instructions_path = os.path.join("dataset/instructions/instructions_no_angle_all.jsonl")
-stage3_data_path = os.path.join("dataset/num_replace/stage3_no_angle.jsonl")
+instructions_path = os.path.join("dataset/instructions/instructions_all.jsonl")
+stage3_data_path = os.path.join("dataset/num_replace/stage3.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "stage3_paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "stage3_tag_format.jsonl")
+stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "stage3_add_default_value.jsonl")
 llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
 # internvl_data_path = os.path.join("dataset/end_to_end/stage3_internvl.jsonl")
@@ -53,7 +54,7 @@ class DataGenerator:
             images = info["images"]
             for image_dict in images:
                 section_type = image_dict["section_type"]
-                specimen_type = image_dict["specimen_type"]
+                # specimen_type = image_dict["specimen_type"]
                 pixel_mm = image_dict["pixel/mm"]
                 if (
                     "axial" in section_type.lower()
@@ -148,10 +149,39 @@ class DataGenerator:
                 # Convert to diameter
                 new_image_info["size_init_chamber"] = initial_chamber[2] * image_info["pixel_mm"] * 1000
 
-            if tunnel_angles:
-                new_image_info["tunnel_angles"] = tunnel_angles
+            tunnel_angles = self.post_process_tunnel_angles(
+                tunnel_angles, int(new_image_info["num_volutions"])
+            )
+            new_image_info["tunnel_angles"] = tunnel_angles
 
         return new_image_info
+
+    def post_process_tunnel_angles(
+        self, tunnel_angles: dict, num_volutions: int, low_thres: int = 15, high_thres: int = 55
+    ) -> dict:
+        # Add default value if fail to detect
+        for i in range(1, num_volutions + 1):
+            if i not in tunnel_angles:
+                tunnel_angles[i] = 30
+
+        # Process out of range values
+        in_range_angles = [angle for angle in tunnel_angles.values() if low_thres < angle < high_thres]
+        if in_range_angles:
+            avg_angles = int(sum(in_range_angles) / len(in_range_angles))
+        else:
+            avg_angles = 30
+        for i, angle in tunnel_angles.items():
+            if angle < low_thres or angle > high_thres:
+                tunnel_angles[i] = avg_angles
+
+        tunnel_angles = dict(sorted(tunnel_angles.items(), key=lambda x: x[0]))
+        # Outer volution has bigger tunnel angles
+        for i, angle in tunnel_angles.items():
+            if i == 1:
+                continue
+            tunnel_angles[i] = max(angle, tunnel_angles[i - 1] - 5)
+
+        return tunnel_angles
 
     def _generate_instruction(self, image_info: dict) -> str:
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
@@ -352,6 +382,38 @@ def tag_format(start_pos=None, end_pos=None):
     torch.cuda.empty_cache()
 
 
+def add_default_value(start_pos=None, end_pos=None):
+    caption_args.paraphrase_prompt_dir = "data/caption/prompts/add_default_value.txt"
+    paraphraser = Paraphraser()
+    # Read original captions
+    if start_pos is not None and end_pos is not None:
+        input_data_path = os.path.join(
+            feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+        )
+        output_path = os.path.join(
+            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
+        )
+    else:
+        input_data_path = stage3_tag_format_path
+        output_path = stage3_add_default_value_path
+
+    with open(input_data_path, "r") as f:
+        captions = [json.loads(line) for line in f]
+
+    # Extract and paraphrase outputs
+    original_outputs = [caption["output"] for caption in captions]
+    paraphrased_outputs = paraphraser(original_outputs)
+
+    # Replace original outputs with paraphrased ones
+    for caption, paraphrased_output in zip(captions, paraphrased_outputs):
+        caption["output"] = paraphrased_output
+
+    with open(output_path, "w") as f:
+        for caption in captions:
+            f.write(json.dumps(caption) + "\n")
+    torch.cuda.empty_cache()
+
+
 def format_to_llava():
     data: list[str] = open(stage3_paraphrase_path, "r").readlines()
     target_data = []
@@ -391,6 +453,7 @@ def main():
     generate_dataset(use_vis_tools=True)
     paraphrase()
     tag_format()
+    add_default_value()
     # format_to_llava()
     format_to_internvl()
 

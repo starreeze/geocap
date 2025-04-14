@@ -262,5 +262,5 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 4. Run `flake8` to check your code style and fix all the errors before opening a PR:
    ```shell
    pip install flake8==7.2.0
-   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava
+   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava,internvl
    ```

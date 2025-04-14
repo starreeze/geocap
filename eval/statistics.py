@@ -1,8 +1,6 @@
+import csv
 import json
-import os
 from collections import defaultdict
-
-from tqdm import tqdm
 
 from common.args import fossil_eval_args
 
@@ -43,12 +41,13 @@ def feature_statistics():
         slice_tab[char]["rating"] = round(slice_tab[char]["rating"] / slice_tab[char]["valid_count"], 2)
         average_score += slice_tab[char]["rating"]
 
-    with open(f"{fossil_eval_args.eval_result_dir}/feature_statistics.jsonl", "w") as f:
-        json.dump({"Average": round(average_score / len(characteristics), 2)}, f)
-        f.write("\n")
+    # Write to CSV instead of JSONL
+    with open(f"{fossil_eval_args.eval_result_dir}/feature_statistics.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Feature", "Rating", "Valid Count"])
+        writer.writerow(["Average", round(average_score / len(characteristics), 2), ""])
         for char in characteristics:
-            json.dump({char: slice_tab[char]["rating"], "valid_count": slice_tab[char]["valid_count"]}, f)
-            f.write("\n")
+            writer.writerow([char, slice_tab[char]["rating"], slice_tab[char]["valid_count"]])
 
 
 def species_statistics():
@@ -107,15 +106,13 @@ def species_statistics():
     else:
         average_score = 0.0
 
-    # Write species statistics to file
-    with open(f"{fossil_eval_args.eval_result_dir}/species_statistics.jsonl", "w") as f:
-        json.dump({"Average": round(average_score, 2), "species_count": len(species_data)}, f)
-        f.write("\n")
+    # Write species statistics to CSV instead of JSONL
+    with open(f"{fossil_eval_args.eval_result_dir}/species_statistics.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Feature", "Rating", "Species Count"])
+        writer.writerow(["Average", round(average_score, 2), len(species_data)])
         for char in characteristics:
-            json.dump(
-                {char: avg_rating_over_species[char], "species_count": len(species_characteristics[char])}, f
-            )
-            f.write("\n")
+            writer.writerow([char, avg_rating_over_species[char], len(species_characteristics[char])])
 
 
 def statistics():

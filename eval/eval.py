@@ -1,6 +1,5 @@
 import json
 import os
-import re
 
 from tqdm import tqdm
 
@@ -8,6 +7,25 @@ from common.args import fossil_eval_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from eval.statistics import statistics
 from eval.utils import calculate_score, extract_range_or_num, extract_tunnel_shape, find_first_json_block
+
+characteristics = [
+    "overall_size",
+    "overall_shape",
+    "length",
+    "width",
+    "ratio",
+    "axis_shape",
+    "number_of_volutions",
+    "thickness_of_spirotheca",
+    "height_of_volution",
+    "septa_folds",
+    "proloculus",
+    "tunnel_shape",
+    "tunnel_angles",
+    "chomata",
+    "axial_filling",
+]
+rule_based_eval_features = ["length", "width", "ratio", "number_of_volutions", "proloculus"]
 
 
 def record_err(input, output, error, idx, mode):
@@ -33,21 +51,22 @@ class Evaluater:
             self.mode = "local"
         else:
             self.mode = "api"
-        self.sys_prompt = "You are a helpful assistant that always responds in JSON format."
+        self.sys_prompt = "You are a helpful assistant and always respond in JSON format."
         self.llm_generator = generator_mapping[model_name](
             model_path, temperature=0.2, max_tokens=8192, sys_prompt=self.sys_prompt
         )
         self.loaded_llm = True
 
         # Initialize prompt
-        with open("eval/prompts/extract_system_prompt.txt", "r", encoding="utf8") as system_prompt_file:
+        with open("eval/prompts/extract_v2.txt", "r", encoding="utf8") as system_prompt_file:
+            # with open("eval/prompts/extract_system_prompt.txt", "r", encoding="utf8") as system_prompt_file:
             self.prompt = system_prompt_file.read()
 
     def reload_eval_mode(self):
         with open("eval/prompts/eval_system_prompt.txt", "r", encoding="utf8") as system_prompt_file:
             self.prompt = system_prompt_file.read()
 
-    def __make_prompt(self, testee_batch):
+    def get_messages(self, testee_batch):
         if self.mode == "local":
             messages = [
                 [
@@ -65,7 +84,7 @@ class Evaluater:
 
     def add_default_extraced_value(self, extracted_json_item):
         default_value_map = {
-            "overall_size": "moderate size",
+            "overall_size": "",
             "overall_shape": "",
             "length": "",
             "width": "",
@@ -79,7 +98,7 @@ class Evaluater:
             "tunnel_shape": "moderate height, moderate width",
             "tunnel_angles": "",
             "chomata": "indistinct",
-            "axial_filling": "light to moderately developed",
+            "axial_filling": "present",
         }
         for key, value in default_value_map.items():
             if extracted_json_item.get(key) == "":
@@ -89,7 +108,7 @@ class Evaluater:
     def extract(self, entry_batch, mode):
         fail_flag = False
         testee = [entry[mode] for entry in entry_batch]
-        messages = self.__make_prompt(testee)
+        messages = self.get_messages(testee)
         responses = self.llm_generator(messages)
         outputs = []
         for idx, batch in tqdm(enumerate(responses), total=len(messages), desc=f"Eval: Extracting {mode}"):
@@ -107,8 +126,9 @@ class Evaluater:
                     json_item.clear()
                     json_item.update(new_json_item)
 
-                # Set default value for each feature
-                json_item = self.add_default_extraced_value(json_item)
+                # Set default value for each feature in reference
+                if mode == "reference":
+                    json_item = self.add_default_extraced_value(json_item)
 
             except Exception as e:
                 process_json_batch = [{"image_path": entry_batch[idx].get("img", "")}]
@@ -119,67 +139,44 @@ class Evaluater:
 
         return outputs, fail_flag
 
+    def make_eval_prompt(self, eval_pair):
+        one_eval_pair = []
+        for char in characteristics:
+            if char in rule_based_eval_features:
+                continue
+
+            try:
+                A_content = eval_pair[0][char]
+            except KeyError:
+                A_content = ""
+            try:
+                B_content = eval_pair[1][char]
+            except KeyError:
+                B_content = ""
+            one_eval_pair.append(f"- {char}\nGenerated:{A_content}\nReference:{B_content}")
+        return "\n".join(one_eval_pair)
+
     def evaluate(self, outputs: list[dict], references: list[dict], caption_batch: list[dict]):
-        characteristics = [
-            "overall_size",
-            "overall_shape",
-            "length",
-            "width",
-            "ratio",
-            "axis_shape",
-            "number_of_volutions",
-            "thickness_of_spirotheca",
-            "height_of_volution",
-            "septa_folds",
-            "proloculus",
-            "tunnel_shape",
-            "tunnel_angles",
-            "chomata",
-            "axial_filling",
-        ]
-
-        def make_eval_prompt(eval_pair):
-            one_eval_pair = []
-            for char in characteristics:
-                try:
-                    A_content = eval_pair[0][char]
-                except:
-                    if char == "proloculus":
-                        try:
-                            A_content = eval_pair[0]["initial_chamber"]
-                        except Exception as e:
-                            print(e)
-                            A_content = ""
-                    else:
-                        A_content = ""
-
-                try:
-                    B_content = eval_pair[1][char]
-                except:
-                    if char == "proloculus":
-                        try:
-                            B_content = eval_pair[1]["initial_chamber"]
-                        except Exception as e:
-                            print(e)
-                            B_content = ""
-                    else:
-                        B_content = ""
-                one_eval_pair.append(f"-{char}\nGenerated:{A_content}\nReference:{B_content}")
-            return "\n".join(one_eval_pair)
-
         assert len(outputs) == len(references)
         fail_flag = False
         detailed_scores = []
 
-        prompts = [make_eval_prompt(eval_pair) for eval_pair in zip(outputs, references)]
-        prompts = self.__make_prompt(prompts)
+        prompts = [self.make_eval_prompt(eval_pair) for eval_pair in zip(outputs, references)]
+        prompts = self.get_messages(prompts)
         responses = self.llm_generator(prompts, batch_size=1)
 
-        for idx, batch in tqdm(enumerate(responses), total=len(prompts), desc=f"Eval: Evaluating"):
+        for idx, batch in tqdm(enumerate(responses), total=len(prompts), desc="Eval: Evaluating"):
             score_dict = {"image_path": caption_batch[idx].get("img", "")}
+            for char in characteristics:
+                score_dict[char] = {"reason": "", "rating": 0}
+
             try:
-                assert len(batch) == 1
-                score_dict = score_dict | json.loads(batch[0].strip("```json").strip("```"))
+                for response in batch:
+                    json_block, remaining_text = find_first_json_block(response)
+                    detailed_score = json.loads(json_block)
+                    for char in detailed_score.keys():
+                        score_dict[char] = detailed_score[char]
+
                 for char in characteristics:
                     if len(references[idx].get(char, "")) == 0:
                         score_dict[char] = {"reason": "Reference is empty, skipped evaluation", "rating": -1}
@@ -240,6 +237,11 @@ def main():
     with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "w") as f:
         json.dump(detailed, f)
 
+    # ---------debug---------
+    # with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "r") as f:
+    #     detailed = json.load(f)
+    #     fail = False
+
     # Replace the numerical features with manually caculated ones
     detailed = rule_based_eval(detailed, ex_o, ex_r)
 
@@ -252,7 +254,6 @@ def main():
 
 
 def rule_based_eval(detailed_score_list, extracted_output_info, extracted_reference_info):
-    numerical_features = ["length", "width", "ratio", "number_of_volutions", "proloculus"]
     new_detailed = []
     for detail, output, reference in zip(
         detailed_score_list, extracted_output_info, extracted_reference_info
@@ -260,8 +261,8 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
         new_detail = detail.copy()
 
         # Calculate scores for numerical features
-        for feature in numerical_features:
-            if new_detail[feature].get("rating") == -1:
+        for feature in rule_based_eval_features:
+            if new_detail[feature].get("rating") == -1 or feature == "tunnel_shape":
                 continue
 
             if not isinstance(reference[feature], str):
