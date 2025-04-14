@@ -1,15 +1,15 @@
+import json
 import math
-import numpy as np
+import os
+
 import torch
 import torchvision.transforms as T
-from decord import VideoReader, cpu
-from internvl_chat.internvl.conversation import get_conv_template
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
-from transformers import AutoModel, AutoTokenizer, StoppingCriteria, StoppingCriteriaList
-import os
-import json
 from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
+
+from internvl_chat.internvl.conversation import get_conv_template
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
@@ -172,7 +172,7 @@ def main():
         "<tunnel shape>",
         "<tunnel angle>",
     ]
-    
+
     with open(output_path, "w") as f_out:
         for data in tqdm(test_data):
             image_file = os.path.join(image_root, data["image"])
@@ -186,7 +186,7 @@ def main():
             # Track the next tag we need to ensure appears in the response
             for tag in all_tags:
                 eos_token_id = tokenizer.convert_tokens_to_ids(["<", "</", ".</", "</s"])
-                generation_config['eos_token_id'] = eos_token_id
+                generation_config["eos_token_id"] = eos_token_id
 
                 template = get_conv_template(model.template)
                 template.system_message = model.system_message
@@ -194,15 +194,15 @@ def main():
                 template.append_message(template.roles[1], response + f" {tag}")
                 query = template.get_prompt()
                 # Remove the trailing <|im_end|>\n
-                assert query.endswith('<|im_end|>\n')
-                query = query[:-len('<|im_end|>\n')]
+                assert query.endswith("<|im_end|>\n")
+                query = query[: -len("<|im_end|>\n")]
 
                 for num_patches in num_patches_list:
                     image_tokens = "<img>" + "<IMG_CONTEXT>" * model.num_image_token * num_patches + "</img>"
-                    query = query.replace('<image>', image_tokens, 1)
+                    query = query.replace("<image>", image_tokens, 1)
 
-                model_inputs = tokenizer(query, return_tensors='pt')
-                input_ids = model_inputs['input_ids'].to("cuda")
+                model_inputs = tokenizer(query, return_tensors="pt")
+                input_ids = model_inputs["input_ids"].to("cuda")
 
                 cur_response_ids = model.generate(pixel_values, input_ids, **generation_config)
                 cur_response = tokenizer.batch_decode(cur_response_ids, skip_special_tokens=True)[0]
