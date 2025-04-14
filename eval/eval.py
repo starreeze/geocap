@@ -58,8 +58,7 @@ class Evaluater:
         self.loaded_llm = True
 
         # Initialize prompt
-        with open("eval/prompts/extract_v2.txt", "r", encoding="utf8") as system_prompt_file:
-            # with open("eval/prompts/extract_system_prompt.txt", "r", encoding="utf8") as system_prompt_file:
+        with open("eval/prompts/extract_system_prompt.txt", "r", encoding="utf8") as system_prompt_file:
             self.prompt = system_prompt_file.read()
 
     def reload_eval_mode(self):
