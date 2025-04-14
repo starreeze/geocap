@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 from common.args import fossil_eval_args
 
-
 characteristics = [
     "overall_size",
     "overall_shape",

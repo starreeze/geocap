@@ -1,10 +1,11 @@
-from data.caption.caption_2nd.params import *
-from data.caption.caption_2nd.base import BaseFeature
-from scipy.signal import find_peaks
-from data.caption.caption_2nd.custom_shapes import Curve, CustomedShape, Fusiform, Fusiform_2, Ellipse
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.misc import derivative
+from scipy.signal import find_peaks
+
+from data.caption.caption_2nd.base import BaseFeature
+from data.caption.caption_2nd.custom_shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2
+from data.caption.caption_2nd.params import *
 
 
 class Chomata(BaseFeature):

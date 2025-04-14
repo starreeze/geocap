@@ -1,7 +1,8 @@
-import json
 import argparse
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import json
+
 from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 demo_prompt = """
 Please read the following examples. Then extract the answer from the model response and type it at the end of the prompt.

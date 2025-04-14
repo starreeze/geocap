@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from common.args import feat_recog_args, logger, run_args, caption_args
+from common.args import caption_args, feat_recog_args, logger, run_args
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
 from feat_recognize.recognize import recognize_feature

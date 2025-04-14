@@ -1,10 +1,11 @@
 import json
 import os
 import re
-import numpy as np
 
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
+
 from common.args import feat_recog_args
 from feat_recognize.utils import circle_weight_array
 

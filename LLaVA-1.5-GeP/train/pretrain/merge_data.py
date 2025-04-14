@@ -1,7 +1,6 @@
 import json
 import random
 
-
 file_paths = [
     "./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json",
     "LLaVA-1.5-GeP/train/pretrain/easy_complete.jsonl",
