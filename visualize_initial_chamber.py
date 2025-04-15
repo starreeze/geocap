@@ -8,7 +8,7 @@ from iterwrap import iterate_wrapper
 from tqdm import tqdm
 
 from common.args import feat_recog_args
-from feat_recognize.initial_chamber import ProloculusDetector
+from stage3.initial_chamber import ProloculusDetector
 
 detector = ProloculusDetector()
 
