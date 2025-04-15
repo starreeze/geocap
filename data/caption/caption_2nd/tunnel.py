@@ -3,19 +3,20 @@ from data.caption.caption_2nd.base import BaseFeature
 import json
 from data.rule.shapes import GSRule
 
+
 class Tunnel(BaseFeature):
     def __init__(self, rule000, visible_chomata_idx, chomata_whs_relative, tunnel_angles=[]):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
         self.rule = rule000
         self.visible_chomata_idx = visible_chomata_idx
-        self.chomata_whs_relative=chomata_whs_relative
+        self.chomata_whs_relative = chomata_whs_relative
 
     def getTunnelHeight(self):
-        tunnel_heights=[self.chomata_whs_relative[k][1] for k in self.chomata_whs_relative]
-        res = self.standardRangeFilter(chomata_height_classes, sum(tunnel_heights)/len(tunnel_heights))
-        if res=="moderate":
-            res="height moderate"
+        tunnel_heights = [self.chomata_whs_relative[k][1] for k in self.chomata_whs_relative]
+        res = self.standardRangeFilter(chomata_height_classes, sum(tunnel_heights) / len(tunnel_heights))
+        if res == "moderate":
+            res = "height moderate"
         return res
 
     def genTunnelFeatures(self):
@@ -42,7 +43,9 @@ class Tunnel(BaseFeature):
             feat = f"Tunnels {tunnel_height}, narrow in inner volutions and moderate in outer volutions. "
         elif angles_classes[0] == "moderate" and angles_classes[-1] == "narrow":
             feat = f"Tunnels {tunnel_height}, narrower in outer volutions compared to inner volutions. "
-        elif angles_classes[0] == "broad" and (angles_classes[-1] == "moderate" or angles_classes[-1] == "narrow"):
+        elif angles_classes[0] == "broad" and (
+            angles_classes[-1] == "moderate" or angles_classes[-1] == "narrow"
+        ):
             feat = f"Tunnels {tunnel_height}, broader in inner volutions compared to outer volutions. "
         else:
             feat = f"Tunnels {tunnel_height}, width moderate. "
@@ -70,10 +73,10 @@ class Tunnel(BaseFeature):
         return txt
 
     def genUserInput(self):
-        tagged=[]
+        tagged = []
         txt = "<tunnel shape>"
         txt += self.genTunnelFeatures()
-        txt+="</tunnel shape>"
+        txt += "</tunnel shape>"
         tagged.append(txt)
         txt = f"<tunnel angle>{self.genTunnelAngleDescription()}</tunnel angle>"
         tagged.append(txt)

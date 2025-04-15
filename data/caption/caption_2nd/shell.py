@@ -104,15 +104,19 @@ class Shell(BaseFeature):
             return "straight"
 
     def genUserInput(self):
-        tagged=[]
+        tagged = []
         txt = "<shell>Shell {shape}, ".format(shape=self.getShape())
-        txt += "with {slope} slopes and {pole} ends. </shell>".format(slope=self.getSlope(), pole=self.getPole())
+        txt += "with {slope} slopes and {pole} ends. </shell>".format(
+            slope=self.getSlope(), pole=self.getPole()
+        )
         tagged.append(txt)
         txt = "<length>The axial length is {length} mm, </length>".format(length=self.length)
         tagged.append(txt)
         txt = "<width>and the sagittal width is {width} mm, </width>".format(width=self.width)
         tagged.append(txt)
-        txt = "<ratio>width a ratio of length to width of {ratio}. </ratio>".format(ratio=self.length_width_ratio)
+        txt = "<ratio>width a ratio of length to width of {ratio}. </ratio>".format(
+            ratio=self.length_width_ratio
+        )
         tagged.append(txt)
         txt = "<axis>Axis {convexity}. </axis>".format(convexity=self.getAxis())
         tagged.append(txt)
