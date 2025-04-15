@@ -4,10 +4,10 @@ import os
 import sys
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Literal, cast
+from typing import Iterable, Literal, cast
 
 from rich.logging import RichHandler
-from transformers import HfArgumentParser
+from transformers.hf_argparser import DataClassType, HfArgumentParser
 
 
 @dataclass
@@ -33,13 +33,13 @@ class DataArgs:
 
 @dataclass
 class RunArgs:
-    module: str = field(default="")
-    action: str = field(default="main")
+    module: str = field(default="", metadata={"aliases": ["-m"]})
+    action: str = field(default="main", metadata={"aliases": ["-a"]})
     log_level: str = field(default="INFO")
-    num_workers: int = field(default=32)
+    num_workers: int = field(default=32, metadata={"aliases": ["-n"]})
     progress_bar: bool = field(default=True)
-    start_pos: int = field(default=0)
-    end_pos: int = field(default=sys.maxsize)
+    start_pos: int = field(default=0, metadata={"aliases": ["-s"]})
+    end_pos: int = field(default=sys.maxsize, metadata={"aliases": ["-e"]})
     api_key_file: str = field(default="api_key.yaml")
 
 
@@ -264,9 +264,9 @@ class FeatureRecognizeArgs:
     volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
     fossil_data_path: str = field(default="dataset/common")
-    desc_llm: str = field(default="qwen25-14")
-    desc_prompt_dir: str = field(default="feat_recognize/prompt.txt")
-    desc_batchsize: int = field(default=4)
+    num_replace_llm: str = field(default="qwen25-14")
+    num_replace_prompt_dir: str = field(default="stage3/prompts/num_replace_icl.txt")
+    num_replace_batchsize: int = field(default=4)
     save_data_path: str = field(default="dataset/")
 
 
@@ -279,33 +279,26 @@ class FossilEvalArgs:
     manual_fix_index: int = field(default=-1)
     manual_fix_content: str = field(default="")
 
-    eval_result_dir: str = field(default="dataset/eval_result")
-    eval_origin_file: str = field(default="dataset/batch_test_s3.json")
+    eval_result_dir: str = field(default="eval_data/deepseek_eval/internvl")
+    eval_reference_file: str = field(default="eval_data/deepseek_eval/extracted_reference_info.json")
+    eval_origin_file: str = field(default="eval_data/origin_files/internvl.json")
     eval_start_pos: int = field(default=0)
     eval_end_pos: int = field(default=20000)
 
 
-(
-    data_args,
-    run_args,
-    rule_args,
-    draw_args,
-    caption_args,
-    vqa_args,
-    feat_recog_args,
-    fossil_eval_args,
-) = HfArgumentParser(
-    [DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs]  # type: ignore
-).parse_args_into_dataclasses()
+types = (DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs)
+args = HfArgumentParser(cast(Iterable[DataClassType], types)).parse_args_into_dataclasses()
+data_args, run_args, rule_args, draw_args, caption_args, vqa_args, feat_recog_args, fossil_eval_args = (
+    cast(DataArgs, args[0]),
+    cast(RunArgs, args[1]),
+    cast(RuleArgs, args[2]),
+    cast(DrawArgs, args[3]),
+    cast(CaptionArgs, args[4]),
+    cast(VQAArgs, args[5]),
+    cast(FeatureRecognizeArgs, args[6]),
+    cast(FossilEvalArgs, args[7]),
+)
 
-data_args = cast(DataArgs, data_args)
-run_args = cast(RunArgs, run_args)
-rule_args = cast(RuleArgs, rule_args)
-draw_args = cast(DrawArgs, draw_args)
-caption_args = cast(CaptionArgs, caption_args)
-vqa_args = cast(VQAArgs, vqa_args)
-feat_recog_args = cast(FeatureRecognizeArgs, feat_recog_args)
-fossil_eval_args = cast(FossilEvalArgs, fossil_eval_args)
 
 data_args.figure_prefix = (
     data_args.figure_prefix
@@ -331,3 +324,6 @@ run_args.log_level = run_args.log_level.upper()
 logging.basicConfig(level=run_args.log_level, format="%(message)s", datefmt="[%X]", handlers=[RichHandler()])
 logger = logging.getLogger("rich")
 logger.setLevel(run_args.log_level)
+
+if __name__ == "__main__":
+    print(args)

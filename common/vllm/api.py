@@ -43,5 +43,5 @@ if __name__ == "__main__":
     print(res)
 
 # Then run the following command to evaluate the model
-# python run.py --module eval.evaluate --eval_model {model_name}-{model_size} --eval_batchsize 4
+# ./run -m eval.evaluate --eval_model {model_name}-{model_size} --eval_batchsize 4
 # and record the results in the table

@@ -1,10 +1,11 @@
 import argparse
-from transformers import AutoTokenizer, AutoModelForCausalLM, StoppingCriteria
-import torch
-import os
 import json
-from tqdm import tqdm
+import os
+
 import shortuuid
+import torch
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria
 
 from llava.conversation import default_conversation
 from llava.utils import disable_torch_init

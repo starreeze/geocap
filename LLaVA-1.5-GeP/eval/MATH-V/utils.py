@@ -1,13 +1,10 @@
 import json
-from tqdm import tqdm
-from latex2sympy2 import latex2sympy
 import re
-import time  #
+import time
 from math import *
 
-import json
+from latex2sympy2 import latex2sympy
 from tqdm import tqdm
-import time
 
 
 def timestamp() -> str:

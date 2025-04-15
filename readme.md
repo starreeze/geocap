@@ -1,25 +1,95 @@
-# GeoCap
+# Introduction
 
-geometry caption & geography fossil caption
+geometric perception evaluation / enhancement & detailed fossil caption
 
 ## Install
 
-Requirements are provided in `deploy/requirements.txt`. It's recommended to use python 3.10.
+Requirements are provided in `deploy/requirements.txt`. It's recommended to use python 3.10+.
 
 ## Running a module
 
-A `run.py` is provided for running a module. This is an elegant workaround for importing errors from different packages. Examples:
+A `./run` is provided for running a module. Examples:
 
 ```shell
-python run.py --module data.rule.generate --num_basic_geo_samples 10  # default entry is main()
-python run.py --module data.format --action to_llava  # you can also specify the entry function (--action)
+chmod +x run
+
+# run the file: default entry is main(); no argument is expected
+./run -m data.rule.generate --num_basic_geo_samples 10
+
+# you can also specify the entry function (--action); no argument is expected
+./run -m data.format --action to_llava
+
+# If you ensure that `if __name__ == '__main__': main()` is present in the file
+# You can also run the file directly via python
+python -m data.rule.generate --num_basic_geo_samples 10
 ```
 
-## GePBench
+# GePBench
 
-GePBench is a large-scale, highly customizable multimodal benchmark on geometric perception, targeting at core visual perception capabilities such as spatial awareness and fine-grained visual perception. The benchmark is in VQA format, covering 6 aspects and categorized into easy and hard split. An example of each category is provided below:
+GePBench is a large-scale, highly customizable multimodal benchmark on geometric perception, targeting at core visual perception capabilities such as spatial awareness and fine-grained visual perception. The benchmark is in VQA format, covering 6 aspects and categorized into easy and hard split. An example of each category:
 
-To construct the benchmark from scratch, follow the three phases described below.
+![](docs/assets/gepbench.png)
+
+## Evaluation on Test Set
+
+### Test Data
+
+We provide a standard open test set on [TODO]. Please download and unzip to `./dataset`. `tree dataset --filelimit 10` should result in this:
+
+```
+dataset
+├── figures  [xxx entries exceeds filelimit, not opening dir]
+├── vqa-easy
+│   ├── counting.jsonl
+│   ├── existence.jsonl
+│   ├── location.jsonl
+│   ├── reference.jsonl
+│   ├── relation.jsonl
+│   └── size.jsonl
+└── vqa-hard
+    ├── counting.jsonl
+    ├── existence.jsonl
+    ├── location.jsonl
+    ├── reference.jsonl
+    ├── relation.jsonl
+    └── size.jsonl
+```
+
+### Supported Models
+
+[TODO] add detailed instruction
+
+Our officially supported models can be found in `./common/vllm`. Please download the corresponding checkpoints from huggingface and save them in `./models` with the same directory name as the python module (extension excluded). You can download them via
+
+```shell
+huggingface-cli download org_name/{model_name}-{model_size} --local-dir models/{model_name}-{model_size}
+```
+
+After obtaining all the checkpoints, start evaluation with
+
+```shell
+scripts/eval/bench.sh --eval_model {model_name}-{model_size} --eval_batchsize {batchsize}
+```
+
+The evaluation results will be saved in `results/{model_name}-{model_size}`.
+
+### Evaluate on Custom Models
+
+The easiest way is to create a file `common/vllm/model_name.py`, write a class `GenerateModel` inherited from `common/vllm/base.py: GenerateModelBase`, and implement the its `__init__` and `generate` method. Please read the base class [common/vllm/base.py](common/vllm/base.py) first and refer to the LLaVA-1.5 model [common/vllm/llava.py](common/vllm/llava.py) as an example. After that, your model become one of the supported models and can be used in the same way as the officially supported models.
+
+Another option is to perform your own generation process before calculating the accuracy by referring to [eval/gepbench.py](eval/gepbench.py) which implements the evaluation process. Temperature should be set to 0.0 and do_sample should be set to False.
+
+## Constructing Training Set
+
+To construct the large-scale training set, just run the following command:
+
+```shell
+scripts/data/generate.sh train
+```
+
+Of course, you can also generate your own test set in the same way. The only difference is the number of samples.
+
+The following is a description on the three phases and corresponding parameters for constructing the data. Please read it for customizing the data generation process.
 
 ### Structured textual description
 
@@ -60,7 +130,7 @@ Each 'level' argument is an integer (with a default value) representing the rela
 For example, if more ellipse is expected, you can set a higher level for ellipse_shape_level:
 
 ```shell
-python run.py --module data.rule.generate --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
+./run -m data.rule.generate --polygon_shape_level 1 --line_shape_level 1 --ellipse_shape_level 3 --spiral_shape_level 1
 ```
 
 For the output, each data sample contains two parts:
@@ -131,30 +201,14 @@ scripts/data/vqa.sh {easy/hard}
 
 The questions will be generated (by default) in `data/vqa`.
 
-### Evaluating VQA questions
-
-Our officially supported models can be found in `./eval`. You should download the corresponding checkpoints from huggingface and save them in `./models` with the same directory name as the python module (extension excluded). You can download them via
-
-```shell
-huggingface-cli download org_name/model_name --local-dir models/model_name
-```
-
-After obtaining all the checkpoints, start evaluation with
-
-```shell
-scripts/eval/bench.sh --eval_model {model_name}_{model_size} --eval_batchsize {batchsize}
-```
-
-The evaluation results will be saved in `eval/results/{model_name}_{model_size}`.
-
-## Fossil image caption
+# Fossil image caption
 
 ### rules generation (structured textual description)
 
 For stage 1, refer to the guidance in [gepbench](#structured-textual-description). For stage 2, just add argument `--stage 2`.
 
 ```shell
-python run.py --module data.rule.generate --stage 2 --num_fossil_samples 100000
+./run -m data.rule.generate --stage 2 --num_fossil_samples 100000
 ```
 
 ### Figure Rendering
@@ -164,7 +218,7 @@ Just the same as [gepbench](#figure-rendering).
 ### Image caption generation
 
 ```shell
-python run.py --module data.caption.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
+./run -m data.caption.caption [ --caption_batchsize ${BatchSize} ] [ --caption_llm ${LLM ID} ] [ --numeric_ratio ${ratio} ]
 ```
 
 Only part of the shapes will add numeric values, controlled by ${ratio}.
@@ -176,25 +230,37 @@ For specific fossil feature recognition, the following arguments are provided:
 - houghcircle_params: a dictionary of `cv2.HoughCircles` params for initial chamber detection. Higher `param2` results in initial chamber with higher confident level.
 - volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
 
-For more description about feature recognition, please check out [readme.md](feat_recognize/readme.md) in `feat_recognize`.
+For more description about feature recognition, please check out [stage3.md](docs/stage3.md).
 
 ### Eval_Stage3 Module
+
 It is a module that could evaluate the accuracy of the fossil description generated by the stage 2/3 module. To use this module, use command:
+
 ```shell
-python run.py --module eval_stage3.eval --read_extraction False
+./run -m eval_stage3.eval --read_extraction False
 ```
+
 The module will generate an extraction of info of `--eval_origin_path` as an intermidiate result. You can reload this result by setting `--read_extraction` to `True`. You may specify the path of the final result as well, by setting `--eval_result_path` to the path of the final result.
 
-## Contributing
+# Contributing
 
 Fork and open a pull request. Follow the instructions below or your PR will fail.
 
 1. Use `Pylance` (basic level) to lint your code while doing your work. Refer to https://docs.pydantic.dev/latest/integrations/visual_studio_code/#configure-vs-code to configure your VSCode. NOTE: Be cautious of using `# type: ignore` to suppress type errors, as you may be ignoring valuable traces of bugs; usually typing.cast() is more preferred. If you want to add external modules which will not pass the linter, you can add them to `pyrightconfig.json`.
 2. Config your vscode to use black to do code formatting. The arguments are supposed to be:
-   ![](assets/black.png)
+   ![](docs/assets/black.png)
    If you do not like this code style or you cannot complete the config, you can also use `black` to format your code before opening a PR:
-
    ```shell
    pip install black==24.10.0
    black . --skip-magic-trailing-comma --line-length 110
+   ```
+3. Install isort extension in your vscode and run `isort` to sort your imports automatically, or run this before opening a PR:
+   ```shell
+   pip install isort==6.0.1
+   isort . --profile black  --line-length 110
+   ```
+4. Run `flake8` to check your code style and fix all the errors before opening a PR:
+   ```shell
+   pip install flake8==7.2.0
+   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava
    ```

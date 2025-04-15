@@ -1,9 +1,10 @@
-import os
 import json
-import time
+import os
 import pickle
-import openai
 import re
+import time
+
+import openai
 from openai import OpenAI
 
 

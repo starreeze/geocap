@@ -1,7 +1,6 @@
 import json
 import random
 
-
 input_files = [
     "/captions-easy/n0_018k.jsonl",
     "/captions-easy/n0_037k.jsonl",

@@ -1,12 +1,13 @@
-import os
-import copy
 import argparse
+import copy
 import json
-from tqdm import tqdm
+import os
 from collections import defaultdict
-from utils import *
-from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from prompts import demo_prompt_extract
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from utils import *
 
 
 def verify_extraction(extraction):

@@ -4,7 +4,7 @@
 2. Run the code for evaluation:
 
 ```
-python run.py --module eval.evaluate --eval_model minigptv2 --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
+./run -m eval.evaluate --eval_model minigptv2 --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
 ```
 
 ## LLaVA
@@ -23,7 +23,7 @@ These are the evaluation codes for the "Impact of Visual Encoders" section in th
 2. Run the code for evaluation:
 
 ```
-python run.py --module eval.evaluate --eval_model llavav-xx/llavam-xx --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
+./run -m eval.evaluate --eval_model llavav-xx/llavam-xx --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
 ```
 
 ### llavaonevision.py
@@ -34,5 +34,5 @@ This is the evaluation code for the LLaVA-OneVision series models.
 2. Run the code for evaluation:
 
 ```
-python run.py --module eval.evaluate --eval_model llavaonevision-xx --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
+./run -m eval.evaluate --eval_model llavaonevision-xx --eval_batchsize 8 --vqa_question_dir dataset/dataset/vqa-hard --vqa_output_dir results/hard --figure_dir dataset/dataset/figures --figure_prefix hard --end_pos 2000
 ```

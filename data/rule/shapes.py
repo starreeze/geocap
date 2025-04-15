@@ -309,23 +309,8 @@ class Ellipse(GSRule):
         return {"type": "ellipse"} | asdict(self)
 
     def get_bbox(self) -> list[tuple[float, float]]:
-        h, k = self.center
-        a = 0.5 * self.major_axis
-        b = 0.5 * self.minor_axis
-
-        # Rotation matrix
-        cos_r = np.cos(self.rotation)
-        sin_r = np.sin(self.rotation)
-
-        # Corner points in the local (rotated) coordinate system
-        points = [
-            (a * cos_r, a * sin_r),  # (a, 0) rotated
-            (-a * cos_r, -a * sin_r),  # (-a, 0) rotated
-            (b * -sin_r, b * cos_r),  # (0, b) rotated
-            (-b * -sin_r, -b * cos_r),  # (0, -b) rotated
-        ]
-        transformed_points = [(h + x, k + y) for x, y in points]
-        return self.bbox_from_points(transformed_points)
+        curve_points = self.curve_points.tolist()
+        return self.bbox_from_points(curve_points)
 
     def get_area(self) -> float:
         return np.pi * self.major_axis * self.minor_axis / 4

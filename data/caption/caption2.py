@@ -5,19 +5,20 @@ import json
 import math
 import os
 import random
+import re
 from typing import Any
 
-from data.caption.caption_2nd.shell import Shell
-from data.caption.caption_2nd.volution import Volution
-from data.caption.caption_2nd.tunnel import Tunnel
-from data.caption.caption_2nd.proloculus import Proloculus
+from tqdm import tqdm
+
+from common.args import caption_args, data_args, run_args
 from data.caption.caption_2nd.chomata import Chomata
 from data.caption.caption_2nd.deposit import Deposit
+from data.caption.caption_2nd.proloculus import Proloculus
 from data.caption.caption_2nd.septa import Septa
+from data.caption.caption_2nd.shell import Shell
+from data.caption.caption_2nd.tunnel import Tunnel
+from data.caption.caption_2nd.volution import Volution
 from data.caption.prompt import *
-import re
-from tqdm import tqdm
-from common.args import caption_args, data_args, run_args
 
 
 def caption(rules: list[dict[str, Any]], generator, output_path: str):

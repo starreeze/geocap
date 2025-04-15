@@ -1,13 +1,14 @@
-import os, json
+import json
+import os
+
 from constants import (
-    DESCRIPTIVE_RESP_INST,
+    DESCRIPTIVE_GRADING_ICL,
     DESCRIPTIVE_GRADING_PREFIX,
     DESCRIPTIVE_GRADING_QMAP,
-    DESCRIPTIVE_GRADING_ICL,
+    DESCRIPTIVE_RESP_INST,
 )
-import os
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def get_rubric(qid):

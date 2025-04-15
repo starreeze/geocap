@@ -14,8 +14,8 @@ fi
 
 read -r -a SAMPLES <<<"$NUM_SAMPLE"
 
-python run.py --module data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[0]} --perspectives existence counting size reference
+./run -m data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[0]} --perspectives existence counting size reference
 
-python run.py --module data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[1]} --perspectives location
+./run -m data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[1]} --perspectives location
 
-python run.py --module data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[2]} --perspectives relation
+./run -m data.vqa.question --rules_path dataset/rules-$LEVEL.json --vqa_question_dir dataset/vqa-$LEVEL --end_pos ${SAMPLES[2]} --perspectives relation
