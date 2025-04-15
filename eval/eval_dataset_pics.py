@@ -7,7 +7,6 @@ from tqdm import tqdm
 import argparse
 import time
 import json
-import torch
 import jsonlines
 
 

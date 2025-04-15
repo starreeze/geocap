@@ -1,6 +1,3 @@
-import json
-from data.rule.shapes import GSRule
-
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.params import *
 

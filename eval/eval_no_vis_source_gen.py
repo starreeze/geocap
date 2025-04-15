@@ -1,11 +1,7 @@
-import base64
 import json
 import jsonlines
 
 from tqdm import tqdm
-
-from common.args import fossil_eval_args
-from common.args import vqa_args
 
 # from common.llm import generator_mapping, model_path_mapping
 # from common.llm import APIGenerator  # sry but now we do this
