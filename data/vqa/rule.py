@@ -16,7 +16,6 @@ class RuleBasedQAGenerator(GeneratorBase):
         qa_pairs: list[dict[str, Any]] = []
         for i, figure in tqdm(enumerate(self.data), total=len(self.data)):
             for j, qa in enumerate(getattr(self, perspective)(figure)):
-                self.clarify_hierarchical_choices(qa)
                 qa_pairs.append({"image_id": i, "question_id": j} | qa)
         return qa_pairs
 
@@ -47,7 +46,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             choices = [max(0, correct_answer + i - position) for i in range(4)]
             if len(set(choices)) < 4:  # Handle cases where some choices are 0
                 choices = list(range(4))
-            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "counting")
+            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), add_s=True)
             question = f"How many {clarified_type} are there in the image?"
 
             qa_pairs.append({"question": question, "choices": choices, "answer": correct_answer})
@@ -93,8 +92,8 @@ class RuleBasedQAGenerator(GeneratorBase):
         # generate questions
         qa_pairs: list[dict[str, Any]] = []
         for pair, relation in sampled_pairs.items():
-            type1 = cls.clarify_hierarchical_text(pair[0], list(figure["counts"].keys()), "relation")
-            type2 = cls.clarify_hierarchical_text(pair[1], list(figure["counts"].keys()), "relation")
+            type1 = cls.clarify_hierarchical_text(pair[0], list(figure["counts"].keys()))
+            type2 = cls.clarify_hierarchical_text(pair[1], list(figure["counts"].keys()))
             question = f"What is the relationship of the {type1} to the {type2} in the image?"
             if pair in relation_pairs:
                 compliment = [r for r in cls.total_relations if r != relation]
@@ -128,7 +127,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             sampled_types = random.sample(types, min(len(types), num_questions))
 
             for type in sampled_types:
-                clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "size")
+                clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()))
                 shape = next(s for s in figure["shapes"] if s["type"] == type)
                 if dim == "area":
                     correct_value = shape["area"]
@@ -190,7 +189,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         # Generate absolute position questions
         sampled_types = random.sample(types, len(types))
         for type in sampled_types:
-            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()), "location")
+            clarified_type = cls.clarify_hierarchical_text(type, list(figure["counts"].keys()))
             shape = next(s for s in figure["shapes"] if s["type"] == type)
             x, y = shape["center"]
             correct_pos = get_position(x, y)
@@ -207,8 +206,8 @@ class RuleBasedQAGenerator(GeneratorBase):
         sampled_pairs = random.sample(type_pairs, len(type_pairs))
         relative_qa_pairs: list[dict[str, Any]] = []
         for type_a, type_b in sampled_pairs:
-            type_a_clear = cls.clarify_hierarchical_text(type_a, list(figure["counts"].keys()), "location")
-            type_b_clear = cls.clarify_hierarchical_text(type_b, list(figure["counts"].keys()), "location")
+            type_a_clear = cls.clarify_hierarchical_text(type_a, list(figure["counts"].keys()))
+            type_b_clear = cls.clarify_hierarchical_text(type_b, list(figure["counts"].keys()))
             shape_a = next(s for s in figure["shapes"] if s["type"] == type_a)
             shape_b = next(s for s in figure["shapes"] if s["type"] == type_b)
             x_a, y_a = shape_a["center"]
@@ -273,23 +272,23 @@ class RuleBasedQAGenerator(GeneratorBase):
         size_freq_qa_pairs = []
         if len(size_qa_shapes) > 0:
             answer_type, anchor_type, choices_types = random.choice(size_qa_shapes)
-            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"], "size")
+            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"])
             if counts[anchor_type] == 1:
-                anchor_type = "the " + cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+                anchor_type = "the " + cls.clarify_hierarchical_text(anchor_type, figure["counts"])
             else:
-                anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+                anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"])
                 if " (" in anchor_type:
                     anchor_type = anchor_type.replace(" (", "s (")
                 else:
                     anchor_type += "s"
-                anchor_type = "all " + anchor_type
+                anchor_type = "all the " + anchor_type
             choices_types = (
                 [
-                    cls.clarify_hierarchical_text(choices_type, figure["counts"], "size")
+                    cls.clarify_hierarchical_text(choices_type, figure["counts"])
                     for choices_type in choices_types
                 ]
                 + [
-                    cls.clarify_hierarchical_text(t, figure["counts"], "size")
+                    cls.clarify_hierarchical_text(t, figure["counts"])
                     for t in filter(lambda x: x != "line", cls.total_shapes)
                     if t not in counts
                 ]
@@ -298,7 +297,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes is presented in the image and {attr} than {anchor_type}?",
+                    "question": f"Which of the following is presented in the image and has a {attr} area than {anchor_type}?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
@@ -318,19 +317,19 @@ class RuleBasedQAGenerator(GeneratorBase):
                 freq_qa_shapes.append((answer_type, anchor_type, choices_types))
         if len(freq_qa_shapes) > 0:
             answer_type, anchor_type, choices_types = random.choice(freq_qa_shapes)
-            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"], "size")
-            anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"], "size")
+            answer_type = cls.clarify_hierarchical_text(answer_type, figure["counts"])
+            anchor_type = cls.clarify_hierarchical_text(anchor_type, figure["counts"])
             if " (" in anchor_type:
-                anchor_type = anchor_type.replace(" (", "s (")
+                anchor_type = anchor_type.replace(" (", "(s) (")
             else:
-                anchor_type += "s"
+                anchor_type += "(s)"
             choices_types = (
                 [
-                    cls.clarify_hierarchical_text(choices_type, figure["counts"], "counting")
+                    cls.clarify_hierarchical_text(choices_type, figure["counts"])
                     for choices_type in choices_types
                 ]
                 + [
-                    cls.clarify_hierarchical_text(t, figure["counts"], "counting")
+                    cls.clarify_hierarchical_text(t, figure["counts"])
                     for t in cls.total_shapes
                     if t not in counts
                 ]
@@ -339,22 +338,19 @@ class RuleBasedQAGenerator(GeneratorBase):
             random.shuffle(choices_types)
             size_freq_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes is presented in the image and appears {attr} frequently than {anchor_type}?",
+                    "question": f"Which of the following is presented in the image and appears {attr} frequently than {anchor_type}?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
             )
 
         # Location-based questions (relatively & absolutely comparison)
-        distinguish_threshold = (
-            vqa_args.distinguish_threshold_of_relative_direction
-        )  # The minimum distance between two shapes.
-        deviation_threshold = (
-            vqa_args.deviation_threshold_of_relative_direction
-        )  # The maximum deviation angle between the direction of the anchor shape related to the answer shape && the direction of vec.
-        exclusiv_deviation_threshold = (
-            vqa_args.exclusiv_deviation_threshold_of_relative_direction
-        )  # The minimum deviation angle between the direction of the shape (excluding the answer shape) related to the anchor shape && the direction of vec.
+        # The minimum distance between two shapes.
+        distinguish_threshold = vqa_args.distinguish_threshold_of_relative_direction
+        # The maximum deviation angle between the direction of the anchor shape related to the answer shape && the direction of vec.
+        deviation_threshold = vqa_args.deviation_threshold_of_relative_direction
+        # The minimum deviation angle between the direction of the shape (excluding the answer shape) related to the anchor shape && the direction of vec.
+        exclusiv_deviation_threshold = vqa_args.exclusiv_deviation_threshold_of_relative_direction
         #     acquire all shapes that appears only once
         candidate_types = []
         for shape, freq in counts.items():
@@ -451,17 +447,17 @@ class RuleBasedQAGenerator(GeneratorBase):
                 if anchor_shape is None:
                     continue
                 answer_type = cls.clarify_hierarchical_text(
-                    answer_shape["type"], list(figure["counts"].keys()), "location"
+                    answer_shape["type"], list(figure["counts"].keys())
                 )
                 anchor_type = cls.clarify_hierarchical_text(
-                    anchor_shape["type"], list(figure["counts"].keys()), "location"
+                    anchor_shape["type"], list(figure["counts"].keys())
                 )
                 candidate_types_1 = [
-                    cls.clarify_hierarchical_text(shape["type"], list(figure["counts"].keys()), "location")
+                    cls.clarify_hierarchical_text(shape["type"], list(figure["counts"].keys()))
                     for shape in candidate_shapes
                 ]
                 candidate_types_2 = [
-                    cls.clarify_hierarchical_text(t, list(figure["counts"].keys()), "location")
+                    cls.clarify_hierarchical_text(t, list(figure["counts"].keys()))
                     for t in cls.total_shapes
                     if t not in counts
                 ]
@@ -475,7 +471,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                 random.shuffle(candidate_types)
                 direction_qa_pairs.append(
                     {
-                        "question": f"Which of the following shapes is {direction} the {anchor_type}?",
+                        "question": f"Considering the centroid, which of the following is {direction} the {anchor_type}?",
                         "choices": candidate_types,
                         "answer": answer_type,
                     }
@@ -526,17 +522,15 @@ class RuleBasedQAGenerator(GeneratorBase):
                 + [shape_type for shape_type in cls.total_shapes if shape_type not in counts]
             )[:3]
             choices_types = [
-                cls.clarify_hierarchical_text(shape_type, list(figure["counts"].keys()), "location")
+                cls.clarify_hierarchical_text(shape_type, list(figure["counts"].keys()))
                 for shape_type in choices_types
             ]
-            answer_type = cls.clarify_hierarchical_text(
-                answer_type, list(figure["counts"].keys()), "location"
-            )
+            answer_type = cls.clarify_hierarchical_text(answer_type, list(figure["counts"].keys()))
             choices_types.append(answer_type)
             random.shuffle(choices_types)
             direction_qa_pairs.append(
                 {
-                    "question": f"Which of the following shapes is {direction}?",
+                    "question": f"Considering the centroid, which of the following is {direction}?",
                     "choices": choices_types,
                     "answer": answer_type,
                 }
@@ -587,7 +581,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         if "TT" in question_types and len(all_present_types) >= 2:
             present_types = random.sample(all_present_types, k=2)
             clarified_types = [
-                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence")
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()))
                 for present_type in present_types
             ]
             _idx: int = random.randint(0, 1)
@@ -607,7 +601,7 @@ class RuleBasedQAGenerator(GeneratorBase):
         if "FF" in question_types and len(all_absent_types) >= 2:
             absent_types = random.sample(all_absent_types, k=2)
             clarified_types = [
-                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence")
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()))
                 for absent_type in absent_types
             ]
             _idx: int = random.randint(0, 1)
@@ -632,8 +626,8 @@ class RuleBasedQAGenerator(GeneratorBase):
             present_type = random.choice(all_present_types)
             absent_type = random.choice(all_absent_types)
             clarified_types = [
-                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys()), "existence"),
-                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys()), "existence"),
+                cls.clarify_hierarchical_text(present_type, list(figure["counts"].keys())),
+                cls.clarify_hierarchical_text(absent_type, list(figure["counts"].keys())),
             ]
             _present_idx = random.randint(0, 1)
             if _present_idx:
@@ -653,6 +647,7 @@ class RuleBasedQAGenerator(GeneratorBase):
 
         # 2. Multiple choice question about present or absent shape
         absent_types = all_absent_types
+        present_types = list(counts.keys())
         can_ask_absent = len(counts) >= 3 and len(absent_types) >= 1  # Need 3 present + 1 absent
         can_ask_present = len(counts) >= 1 and len(absent_types) >= 3  # Need 1 present + 3 absent
         if can_ask_absent or can_ask_present:
@@ -661,7 +656,7 @@ class RuleBasedQAGenerator(GeneratorBase):
             else:
                 ask_absent = can_ask_absent
             if ask_absent:
-                present_types = random.sample(list(counts.keys()), 3)
+                present_types = random.sample(present_types, 3)
                 absent_type = random.choice(absent_types)
                 choices = present_types + [absent_type]
                 random.shuffle(choices)
@@ -670,8 +665,14 @@ class RuleBasedQAGenerator(GeneratorBase):
                     "choices": choices,
                     "answer": absent_type,
                 }
+                # Note that even in asking about absent type, we use present types to clarify choices.
+                # E.g., consider the case that rectangle is absent and square and quadrilateral are present:
+                # For square, we will need to use "rectangle (excluding square)" to clarify choices;
+                # For quadrilateral, "rectangle" is the correct expression.
+                # Of course, those that co-occur in choices will always be clarified.
+                cls.clarify_hierarchical_choices(qa, present_types)
             else:
-                present_type = random.choice(list(counts.keys()))
+                present_type = random.choice(present_types)
                 absent_choices = random.sample(absent_types, 3)
                 choices = [present_type] + absent_choices
                 random.shuffle(choices)
@@ -680,6 +681,7 @@ class RuleBasedQAGenerator(GeneratorBase):
                     "choices": choices,
                     "answer": present_type,
                 }
+                cls.clarify_hierarchical_choices(qa, present_types)
             qa_pairs.append(qa)
 
         return qa_pairs

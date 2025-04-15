@@ -264,9 +264,9 @@ class FeatureRecognizeArgs:
     volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
     fossil_data_path: str = field(default="dataset/common")
-    desc_llm: str = field(default="qwen25-14")
-    desc_prompt_dir: str = field(default="feat_recognize/prompt.txt")
-    desc_batchsize: int = field(default=4)
+    num_replace_llm: str = field(default="qwen25-14")
+    num_replace_prompt_dir: str = field(default="stage3/prompts/num_replace_icl.txt")
+    num_replace_batchsize: int = field(default=4)
     save_data_path: str = field(default="dataset/")
 
 
@@ -279,8 +279,9 @@ class FossilEvalArgs:
     manual_fix_index: int = field(default=-1)
     manual_fix_content: str = field(default="")
 
-    eval_result_dir: str = field(default="dataset/eval_result")
-    eval_origin_file: str = field(default="dataset/batch_test_s3.json")
+    eval_result_dir: str = field(default="eval_data/deepseek_eval/internvl")
+    eval_reference_file: str = field(default="eval_data/deepseek_eval/extracted_reference_info.json")
+    eval_origin_file: str = field(default="eval_data/origin_files/internvl.json")
     eval_start_pos: int = field(default=0)
     eval_end_pos: int = field(default=20000)
 

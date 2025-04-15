@@ -1,5 +1,6 @@
-from scipy import special
 import math
+
+from scipy import special
 
 
 class BaseFeature:

@@ -1,11 +1,12 @@
-from PIL import Image
-from io import BytesIO
-import base64
-import torch
-import math
 import ast
+import base64
+import math
+from io import BytesIO
 
+import torch
+from PIL import Image
 from transformers import StoppingCriteria
+
 from llava.constants import IMAGE_TOKEN_INDEX
 
 

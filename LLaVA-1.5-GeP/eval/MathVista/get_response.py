@@ -1,13 +1,15 @@
-import json
 import argparse
+import json
 import os
-from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
-from llava.conversation import conv_templates
-from llava.model.builder import load_pretrained_model
-from llava.mm_utils import tokenizer_image_token, get_model_name_from_path
-from PIL import Image
+
 import torch
+from PIL import Image
 from tqdm import tqdm
+
+from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
+from llava.conversation import conv_templates
+from llava.mm_utils import get_model_name_from_path, tokenizer_image_token
+from llava.model.builder import load_pretrained_model
 
 
 class GenerateModel:

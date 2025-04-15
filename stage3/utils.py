@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+
 from common.args import feat_recog_args
 
 
@@ -154,8 +155,8 @@ def circle_weight_array(window_size: int):
 
     # Calculate the center and radius of the inscribed circle
     center = (window_size - 1) / 2
-    outter_radius = window_size // 2
-    inner_radius = int(outter_radius * feat_recog_args.inner_radius_ratio)
+    outter_radius = (window_size // 2) / window_size
+    inner_radius = (window_size // 2) * feat_recog_args.inner_radius_ratio / window_size
 
     total_positive_weight = 0
     total_negative_weight = 0
@@ -163,17 +164,17 @@ def circle_weight_array(window_size: int):
     # Fill the reward array based on distance from the center
     for i in range(window_size):
         for j in range(window_size):
-            # Calculate distance from center
-            distance = np.sqrt((i - center) ** 2 + (j - center) ** 2)
+            # Calculate relative distance (normalized by window_size)
+            distance = np.sqrt((i - center) ** 2 + (j - center) ** 2) / window_size
 
             # Set reward value - positive inside circle, negative outside
             if distance <= inner_radius:
                 # inner circle: exponential decreasing positive reward (1.0 at center, 0.5 at inner edge)
-                pos_weight_array[i, j] = 0.5 * (1 + np.exp(-distance))
+                pos_weight_array[i, j] = 0.5 * (1 + np.exp(-10 * distance))
                 total_positive_weight += pos_weight_array[i, j]
             elif distance <= outter_radius:
                 # outter circle: exponential increaseing negative reward (-0.5 at inner edge, 0 at outer edge)
-                neg_weight_array[i, j] = -0.5 * (np.exp(-(distance - inner_radius)))
+                neg_weight_array[i, j] = -0.5 * (np.exp(-10 * (distance - inner_radius)))
                 total_negative_weight += neg_weight_array[i, j]
 
     return pos_weight_array, neg_weight_array, total_positive_weight, abs(total_negative_weight)

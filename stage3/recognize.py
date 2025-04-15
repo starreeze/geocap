@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from common.args import feat_recog_args
-from feat_recognize.chomata_scan import chomatas_scan
-from feat_recognize.initial_chamber import ProloculusDetector
-from feat_recognize.utils import calculate_angle, resize_img
-from feat_recognize.volution_counter import VolutionCounter
+from stage3.chomata_scan import chomatas_scan
+from stage3.initial_chamber import ProloculusDetector
+from stage3.utils import calculate_angle, resize_img
+from stage3.volution_counter import VolutionCounter
 
 
 def recognize_feature(img_path: str) -> tuple:
@@ -43,10 +43,13 @@ def recognize_feature(img_path: str) -> tuple:
             if x not in unique_x_points:
                 unique_x_points[x] = point
         volution = list(unique_x_points.values())
+        if len(volution) == 1:
+            x, y = volution[0]
+            volution.extend([(x - 1, y), (x + 1, y)])
         volutions_dict[idx] = volution
 
     # Detect chomata
-    chomata_result = chomatas_scan(volutions_dict, img_path)
+    chomata_result = chomatas_scan(volutions_dict, img_path, initial_chamber=center)
     tunnel_angles = calculate_tunnel_angles(chomata_result, center)
     tunnel_angles = dict(sorted(tunnel_angles.items(), key=lambda x: x[0]))
 
@@ -56,8 +59,8 @@ def recognize_feature(img_path: str) -> tuple:
 def calculate_tunnel_angles(chomata_result, center: tuple[int, int]) -> dict[int, float]:
     tunnel_angles = {}
     for idx, chomata_pos in chomata_result.items():
-        if len(chomata_pos) == 2:  # successfully detect 2 chomatas in a voludion
-            tunnel_angle = calculate_angle(center, chomata_pos[0], chomata_pos[1])
+        if len(chomata_pos) > 1:  # successfully detect 2 chomatas in a voludion
+            tunnel_angle = calculate_angle(center, chomata_pos[0][:2], chomata_pos[1][:2])
             if tunnel_angle is None or tunnel_angle < 5:
                 continue
             if abs(idx) not in tunnel_angles:

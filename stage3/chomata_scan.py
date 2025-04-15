@@ -1,12 +1,12 @@
-import scipy.signal
-from svgpathtools import Path, Line
+import math
 
 import cv2
-import math
-import numpy as np
-from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy
+import scipy.signal
+from scipy.signal import find_peaks
+from svgpathtools import Line, Path
 
 
 def chomatas_scan(

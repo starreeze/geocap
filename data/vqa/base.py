@@ -26,10 +26,19 @@ class GeneratorBase:
         "square",
         "spiral",
     ]
+    # parent -> [(child_type, child_desc)]: format to `parent (not/excluding child_desc)`
     shape_hierarchy = {
-        "ellipse": ["circle"],
-        "rectangle": ["square"],
-        "quadrilateral": ["rectangle", "square"],
+        "ellipse": [("circle", "circle")],
+        "rectangle": [("square", "square")],
+        "quadrilateral": [("rectangle", "rectangle"), ("square", "square")],
+        "line": [
+            ("triangle", "polygon edge"),
+            ("quadrilateral", "polygon edge"),
+            ("pentagon", "polygon edge"),
+            ("hexagon", "polygon edge"),
+            ("rectangle", "polygon edge"),
+            ("square", "polygon edge"),
+        ],
     }
     relation_reverse = {
         "tangent": "tangent",
@@ -90,39 +99,38 @@ class GeneratorBase:
             self.data.append(info)
 
     @classmethod
-    def clarify_hierarchical_choices(cls, qa: dict[str, Any]):
-        "Post-process choices to clarify hierarchical types when parent and child types appear together."
-        # however, for existence, we need to handle in the question generation
-        if "choices" not in qa or not isinstance(qa["choices"][0], str):
-            return
+    def clarify_hierarchical_choices(cls, qa: dict[str, Any], image_types: list[str]):
+        """
+        Add clarification to choices to clarify hierarchical types when child types appear in either choices or figure.
+        Clarification is performed by manual call in corresponding perspective.
+        QA will be modified in place.
+        """
         choices: list[str] = qa["choices"]
         for parent, children in cls.shape_hierarchy.items():
             try:
                 parent_idx = choices.index(parent)
             except ValueError:
                 continue
-            # Check if any child type exists in choices
-            overlapping_children = [c for c in children if c in choices]
-            if not overlapping_children:
+            # Check if any child type exists in choices or figure
+            overlapping_child_descs = set([c[1] for c in children if c[0] in choices + image_types])
+            if not overlapping_child_descs:
                 continue
             # Add clarification to parent
-            choices[parent_idx] = f"{parent} ({', '.join(overlapping_children)} excluded)"
+            choices[parent_idx] = f"{parent} ({', '.join(d + 's' for d in overlapping_child_descs)} excluded)"
             # Update answer if needed
             if qa["answer"] == parent:
                 qa["answer"] = choices[parent_idx]
 
     @classmethod
-    def clarify_hierarchical_text(
-        cls, type: str, image_types: list[str], perspective: str = "counting"
-    ) -> str:
+    def clarify_hierarchical_text(cls, type: str, image_types: list[str], add_s: bool = False) -> str:
         if type not in cls.shape_hierarchy:
-            return type + "s" if perspective == "counting" else type
-        overlapping_children = [c for c in cls.shape_hierarchy[type] if c in image_types]
-        if not overlapping_children:
+            return type + "s" if add_s else type
+        overlapping_child_descs = set([c[1] for c in cls.shape_hierarchy[type] if c[0] in image_types])
+        if not overlapping_child_descs:
             return type
-        if perspective == "counting":
-            child_desc = ", ".join(c + "s" for c in overlapping_children)
+        if add_s:
+            child_desc = ", ".join(c + "s" for c in overlapping_child_descs)
             return f"{type}s (excluding {child_desc})"
         else:
-            child_desc = ", ".join(overlapping_children)
+            child_desc = ", ".join(overlapping_child_descs)
             return f"{type} (not {child_desc})"
