@@ -1,4 +1,3 @@
-import json
 import os
 
 import cv2
@@ -7,10 +6,10 @@ import numpy as np
 from matplotlib.patches import Circle
 
 from common.args import feat_recog_args
-from feat_recognize.initial_chamber import ProloculusDetector
-from feat_recognize.recognize import chomatas_scan
-from feat_recognize.utils import resize_img
-from feat_recognize.volution_counter import VolutionCounter
+from stage3.initial_chamber import ProloculusDetector
+from stage3.recognize import chomatas_scan
+from stage3.utils import resize_img
+from stage3.volution_counter import VolutionCounter
 
 
 def visualize_volutions(
@@ -55,7 +54,6 @@ def visualize_volutions(
         img_rgb = resize_img(orig_img_rgb)
         h, w = img_rgb.shape[:2]
         orig_img_gray = cv2.cvtColor(orig_img_rgb, cv2.COLOR_RGB2GRAY)
-        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
 
         # Detect initial chamber
         initial_chamber = proloculus_detector.detect_initial_chamber(img_path)
@@ -112,7 +110,7 @@ def visualize_volutions(
 
         # Visualize volution lines
         if show_volution_lines:
-            colors = plt.cm.jet(np.linspace(0, 1, len(volutions_dict)))
+            colors = plt.cm.jet(np.linspace(0, 1, len(volutions_dict)))  # type: ignore
 
             for i, (vol_idx, points) in enumerate(volutions_dict.items()):
                 # Denormalize coordinates

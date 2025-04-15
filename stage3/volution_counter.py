@@ -1,11 +1,9 @@
-import os
 from typing import Optional
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 
-from feat_recognize.utils import bresenham, fit_line, get_bbox, resize_img, split_into_segments
+from stage3.utils import bresenham, fit_line, resize_img, split_into_segments
 
 
 class VolutionCounter:

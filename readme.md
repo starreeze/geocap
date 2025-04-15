@@ -230,7 +230,7 @@ For specific fossil feature recognition, the following arguments are provided:
 - houghcircle_params: a dictionary of `cv2.HoughCircles` params for initial chamber detection. Higher `param2` results in initial chamber with higher confident level.
 - volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
 
-For more description about feature recognition, please check out [readme.md](feat_recognize/readme.md) in `feat_recognize`.
+For more description about feature recognition, please check out [stage3.md](docs/stage3.md).
 
 ### Eval_Stage3 Module
 

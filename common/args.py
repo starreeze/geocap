@@ -264,9 +264,9 @@ class FeatureRecognizeArgs:
     volution_thres: float = field(default=0.85, metadata={"help": "threshold for volution detection"})
 
     fossil_data_path: str = field(default="dataset/common")
-    desc_llm: str = field(default="qwen25-14")
-    desc_prompt_dir: str = field(default="feat_recognize/prompt.txt")
-    desc_batchsize: int = field(default=4)
+    num_replace_llm: str = field(default="qwen25-14")
+    num_replace_prompt_dir: str = field(default="stage3/prompts/num_replace_icl.txt")
+    num_replace_batchsize: int = field(default=4)
     save_data_path: str = field(default="dataset/")
 
 

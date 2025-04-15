@@ -5,7 +5,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--generated_path", type=str, required=True)
     parser.add_argument("--reference_path", type=str, default="dataset/instructions/instructions_all.jsonl")
-    parser.add_argument("--origin_file_path", type=str, default="eval_data/origin_files/eval_data.json")
     args = parser.parse_args()
 
     generated_path = args.generated_path
@@ -38,8 +37,10 @@ if __name__ == "__main__":
             print(f"Warning: No reference found for image {img_name}")
 
     # Save the evaluation data to a JSON file
-    with open(args.origin_file_path, "w") as f:
+    output_file_name = generated_path.split("\\")[-1].replace(".jsonl", ".json")
+    origin_file_path = f"eval_data/origin_files/{output_file_name}"
+    with open(origin_file_path, "w") as f:
         json.dump(eval_data, f, indent=2)
 
-    print(f"Evaluation data saved to {args.origin_file_path}")
+    print(f"Evaluation data saved to {origin_file_path}")
     print(f"Total evaluation pairs: {len(eval_data)}")
