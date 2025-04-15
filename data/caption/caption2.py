@@ -55,6 +55,8 @@ def gen_user_input_txt_2nd(rule):
     volutions = []
     for shape in rule["shapes"]:
         if re.match("volution [0-9]+", shape["special_info"]) is not None:
+            if shape["type"] == "ellipse":
+                shape["vertices"]=[]
             volutions.append(shape)
             if volution_max == {}:
                 volution_max = shape
@@ -100,28 +102,54 @@ def gen_user_input_txt_2nd(rule):
             volutions,
         )
     )
-    if "tunnel_angles" in rule["numerical_info"] and len(rule["numerical_info"]["tunnel_angles"]) > 0:
-        obj_parts.append(
-            Tunnel(
-                rule, rule["numerical_info"]["visible_chomata_idx"], rule["numerical_info"]["tunnel_angles"]
-            )
-        )
+    
     obj_parts.append(
         Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
     )
     # if len(chomata_shapes) > 0:
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
+    if "tunnel_angles" in rule["numerical_info"] and len(rule["numerical_info"]["tunnel_angles"]) > 0:
+        obj_parts.append(
+            Tunnel(
+                rule, rule["numerical_info"]["visible_chomata_idx"], obj_parts[-1].chomata_whs_relative, rule["numerical_info"]["tunnel_angles"]
+            )
+        )
     if "axial_filling" in rule and len(rule["axial_filling"]) > 0:
         obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
     else:
         obj_parts.append(Deposit([], rule["numerical_info"]["num_volutions"]))
     obj_parts.append(Septa(rule["septa_folds"]))
     txt2 = head_start_2nd + "\n"
+    feature_tagged=[]
     for part in obj_parts:
-        txt += part.genUserInput() + ""
+        feature_tagged.extend(part.genUserInput())
         txt2 += part.genInput() + ""
+    feature_tagged.sort(key=featureSortFunc)
+    for feat in feature_tagged:
+        txt += feat
     return txt2.strip(), txt.strip()
 
+def featureSortFunc(feat):
+    feat_order=[
+        "shell",
+        "length",
+        "width",
+        "ratio",
+        "volution",
+        "proloculus",
+        "axis",
+        "axial filling",
+        "spirotheca",
+        "septa",
+        "chomata",
+        "tunnel shape",
+        "tunnel angle"
+    ]
+    match = re.search(r'<(.*?)>', feat)
+    if match:
+        return feat_order.index(match.group(1))
+    else:
+        raise ValueError(f"feature failed: {feat}")
 
 def main():
     with open(data_args.rules_path, "r") as f:

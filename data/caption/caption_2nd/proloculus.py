@@ -25,7 +25,7 @@ class Proloculus(BaseFeature):
     def genUserInput(self):
         txt = "Proloculus {shape}, ".format(shape=self.getShape())
         txt += "with diameter measuring {diameter} mm. ".format(diameter=self.diameter)
-        return txt
+        return [f"<proloculus>{txt}</proloculus>"]
 
     def genInput(self):
         txt = "initial chamber(proloculus): {length} mm\n".format(length=self.diameter)

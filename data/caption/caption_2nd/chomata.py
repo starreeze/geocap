@@ -838,4 +838,4 @@ class Chomata(BaseFeature):
                 prefix_cond="moderate",
             )
         )
-        return txt
+        return [f"<chomata>{txt}</chomata>"]

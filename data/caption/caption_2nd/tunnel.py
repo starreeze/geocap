@@ -1,14 +1,22 @@
 from data.caption.caption_2nd.params import *
 from data.caption.caption_2nd.base import BaseFeature
 import json
-
+from data.rule.shapes import GSRule
 
 class Tunnel(BaseFeature):
-    def __init__(self, rule000, visible_chomata_idx, tunnel_angles=[]):
+    def __init__(self, rule000, visible_chomata_idx, chomata_whs_relative, tunnel_angles=[]):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
         self.rule = rule000
         self.visible_chomata_idx = visible_chomata_idx
+        self.chomata_whs_relative=chomata_whs_relative
+
+    def getTunnelHeight(self):
+        tunnel_heights=[self.chomata_whs_relative[k][1] for k in self.chomata_whs_relative]
+        res = self.standardRangeFilter(chomata_height_classes, sum(tunnel_heights)/len(tunnel_heights))
+        if res=="moderate":
+            res="height moderate"
+        return res
 
     def genTunnelFeatures(self):
         feat = ""
@@ -21,20 +29,23 @@ class Tunnel(BaseFeature):
                 ):
                     angles_classes.append(k)
                     break
-        if len(angles_classes) == 0:
-            with open("dataset/error2.json", "w") as f:
-                json.dump(self.rule, f, indent=4)
-            exit()
+        tunnel_height = self.getTunnelHeight()
         if angles_classes[0] == "narrow" and angles_classes[-1] == "narrow":
-            feat = "Tunnels low, narrow. "
+            feat = f"Tunnels {tunnel_height}, narrow. "
         elif angles_classes[0] == "narrow" and angles_classes[-1] == "broad":
-            feat = "Tunnels low and narrow in inner volutions, and broad in outer volutions. "
+            feat = f"Tunnels {tunnel_height} and narrow in inner volutions, but broad in outer volutions. "
         elif angles_classes[0] == "broad" and angles_classes[-1] == "broad":
-            feat = "Tunnels low, broad. "
+            feat = f"Tunnels {tunnel_height}, broad. "
         elif angles_classes[0] == "moderate" and angles_classes[-1] == "broad":
-            feat = "Tunnels broad in outer volutions and moderate in inner volutions. "
+            feat = f"Tunnels {tunnel_height}, broad in outer volutions and moderate in inner volutions. "
         elif angles_classes[0] == "narrow" and angles_classes[-1] == "moderate":
-            feat = "Tunnels narrow in inner volutions and moderate in outer volutions. "
+            feat = f"Tunnels {tunnel_height}, narrow in inner volutions and moderate in outer volutions. "
+        elif angles_classes[0] == "moderate" and angles_classes[-1] == "narrow":
+            feat = f"Tunnels {tunnel_height}, narrower in outer volutions compared to inner volutions. "
+        elif angles_classes[0] == "broad" and (angles_classes[-1] == "moderate" or angles_classes[-1] == "narrow"):
+            feat = f"Tunnels {tunnel_height}, broader in inner volutions compared to outer volutions. "
+        else:
+            feat = f"Tunnels {tunnel_height}, width moderate. "
         return feat
 
     def genTunnelAngleDescription(self):
@@ -59,10 +70,14 @@ class Tunnel(BaseFeature):
         return txt
 
     def genUserInput(self):
-        txt = ""
+        tagged=[]
+        txt = "<tunnel shape>"
         txt += self.genTunnelFeatures()
-        txt += self.genTunnelAngleDescription()
-        return txt
+        txt+="</tunnel shape>"
+        tagged.append(txt)
+        txt = f"<tunnel angle>{self.genTunnelAngleDescription()}</tunnel angle>"
+        tagged.append(txt)
+        return tagged
 
     def genInput(self):
         txt = "tunnel angles: "
