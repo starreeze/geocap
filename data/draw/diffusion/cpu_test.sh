@@ -1,0 +1,1 @@
+python cpu_get_sim.py --rules /home/nfs04/hanyt/geocap/dataset/rules-$1.json --save_path /home/nfs04/hanyt/geocap/dataset/$1/best_match.txt
