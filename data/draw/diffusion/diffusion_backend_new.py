@@ -1,7 +1,7 @@
 import concurrent.futures
 import os, json, sys
 import numpy as np
-from typing import Any
+from typing import Any, Sized
 import matplotlib.pyplot as plt
 import matplotlib.patches as pch
 from PIL import Image, ImageDraw, ImageFilter
@@ -383,11 +383,11 @@ class Figure_Engine:
         return None
 
     def __keep_memory(self, index, x, y):
-        assert (isinstance(x, float) and isinstance(y, float)) or (len(x) == len(y))
+        assert (isinstance(x, float) and isinstance(y, float)) or (len(x) == len(y))  # type: ignore
         # Suppose the center is the same
         if index != None and index >= 0:
             angle_value = []
-            for x0, y0 in zip(x, y):
+            for x0, y0 in zip(x, y):  # type: ignore
                 x0 -= self.center[0]
                 y0 -= self.center[1]
                 if x0 == 0:

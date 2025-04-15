@@ -14,9 +14,9 @@ def convertPos(X, Y):
     if type(X) == list and type(Y) == list:
         return [int(x * size_[0]) for x in X], [int((1 - y) * size_[0]) for y in Y]
     elif type(X) == np.ndarray and type(Y) == np.ndarray:
-        return (X * size_[0]).astype(int), ((1 - Y) * size_[0]).astype(int)
+        return (X * size_[0]).astype(int), ((1 - Y) * size_[0]).astype(int)  # type: ignore
     elif (type(X) == float and type(Y) == float) or ((type(X) == np.float64 and type(Y) == np.float64)):
-        return int(size_[0] * X), int(size_[0] * (1 - Y))
+        return int(size_[0] * X), int(size_[0] * (1 - Y))  # type: ignore
 
 
 def convertLength(W):

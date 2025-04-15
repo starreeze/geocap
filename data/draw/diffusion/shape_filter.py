@@ -189,6 +189,7 @@ def getMostSimilarImages(
         random.shuffle(files)
         files = files[:max_sample]
     global pngs
+    pngs = globals().get("pngs", {})
     try:
         if pngs is None:  # type: ignore
             pass
@@ -205,7 +206,7 @@ def getMostSimilarImages(
         query_ratio = abs((max_y - min_y) / (max_x - min_x))
         ratios = {}
         for png_name in pngs:
-            ratios[png_name] = getReferenceRatios(pngs[png_name])
+            ratios[png_name] = getReferenceRatios(pngs[png_name])  # type: ignore
         candidates = [[png_name, abs(query_ratio - ratios[png_name])] for png_name in ratios]
         candidates.sort(key=lambda x: x[1])
         return [[candidates[i][0], candidates[i][1]] for i in range(n)]
@@ -252,7 +253,7 @@ def getMostSimilarImages(
                 "query_contour": query_contour,
                 "batched_file": file,
             }
-            for file in zip(pngs.keys(), pngs.values())
+            for file in zip(pngs.keys(), pngs.values())  # type: ignore
         ]
         res = iterate_wrapper(
             calculateSimilarityWrapper,
