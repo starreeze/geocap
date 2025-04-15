@@ -10,18 +10,17 @@ from tqdm import tqdm
 from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
-from feat_recognize.recognize import recognize_feature
+from stage3.recognize import recognize_feature
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
-instructions_path = os.path.join("dataset/instructions/instructions_all.jsonl")
-stage3_data_path = os.path.join("dataset/num_replace/stage3.jsonl")
-stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "stage3_paraphrase.jsonl")
-stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "stage3_tag_format.jsonl")
-stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "stage3_add_default_value.jsonl")
+instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_all.jsonl")
+stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jsonl")
+stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
+stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
+stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "add_default_value.jsonl")
 llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
-# internvl_data_path = os.path.join("dataset/end_to_end/stage3_internvl.jsonl")
 
 
 class DataGenerator:
@@ -33,7 +32,7 @@ class DataGenerator:
     def load_llm_generator(self):
         assert not self.loaded_llm
         # Initialize llm
-        model_name, model_id = feat_recog_args.desc_llm.split("-", 1)
+        model_name, model_id = feat_recog_args.num_replace_llm.split("-", 1)
         model_path = model_path_mapping[model_name].format(model_id)
         if "api" in model_name:
             self.llm_generator = generator_mapping[model_name](model_path, max_tokens=4096, temperature=1.0)
@@ -44,7 +43,7 @@ class DataGenerator:
 
         # Initialize prompt
         self.sys_prompt = "You are a helpful assistant."
-        with open(feat_recog_args.desc_prompt_dir, "r") as f:
+        with open(feat_recog_args.num_replace_prompt_dir, "r") as f:
             self.user_prompt = f.read()
 
     def extract_valid_images(self, data_dict: dict):
@@ -252,7 +251,7 @@ class DataGenerator:
     def generate_outputs(self, instructions) -> list[dict[str, str]]:
         if not self.loaded_llm:
             self.load_llm_generator()
-        bs = feat_recog_args.desc_batchsize
+        bs = feat_recog_args.num_replace_batchsize
 
         dataset = []
         messages = []
@@ -293,7 +292,6 @@ def generate_dataset(start_pos=None, end_pos=None, use_vis_tools: bool = True):
 
     # Recognize features and generate instructions
     if not os.path.exists(instructions_path):
-        os.makedirs("./dataset/instructions", exist_ok=True)
         instructions = data_generator.generate_instructions(data_dict, use_vis_tools)
         with open(instructions_path, "w") as f:
             for instruction in instructions:
@@ -313,7 +311,6 @@ def generate_dataset(start_pos=None, end_pos=None, use_vis_tools: bool = True):
     dataset = data_generator.generate_outputs(instructions[start_pos:end_pos])
 
     # Save dataset as jsonl file
-    os.makedirs("dataset/num_replace", exist_ok=True)
     with open(output_path, "w") as f:
         for data in dataset:
             f.write(json.dumps(data) + "\n")
@@ -450,8 +447,8 @@ def format_to_internvl():
 
 
 def main():
-    generate_dataset(use_vis_tools=True)
-    paraphrase()
+    # generate_dataset(use_vis_tools=True)
+    # paraphrase()
     tag_format()
     add_default_value()
     # format_to_llava()

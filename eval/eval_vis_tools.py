@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from common.args import feat_recog_args, fossil_eval_args, logger
-from feat_recognize.recognize import recognize_feature
+from stage3.recognize import recognize_feature
 
 
 class VisToolOutputGenerator:

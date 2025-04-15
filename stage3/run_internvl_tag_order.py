@@ -4,12 +4,11 @@ import os
 
 import torch
 import torchvision.transforms as T
+from internvl_chat.internvl.conversation import get_conv_template
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
-
-from internvl_chat.internvl.conversation import get_conv_template
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)

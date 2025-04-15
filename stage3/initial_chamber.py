@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from common.args import feat_recog_args
-from feat_recognize.utils import circle_weight_array
+from stage3.utils import circle_weight_array
 
 
 class ProloculusDetector:

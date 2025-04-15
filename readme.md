@@ -230,7 +230,7 @@ For specific fossil feature recognition, the following arguments are provided:
 - houghcircle_params: a dictionary of `cv2.HoughCircles` params for initial chamber detection. Higher `param2` results in initial chamber with higher confident level.
 - volution_thres: threshold for volution recognition, between 0 and 1. The lower the thres is, more volutions will be detected. Default is 0.85.
 
-For more description about feature recognition, please check out [readme.md](feat_recognize/readme.md) in `feat_recognize`.
+For more description about feature recognition, please check out [stage3.md](docs/stage3.md).
 
 ### Eval_Stage3 Module
 
@@ -262,5 +262,5 @@ Fork and open a pull request. Follow the instructions below or your PR will fail
 4. Run `flake8` to check your code style and fix all the errors before opening a PR:
    ```shell
    pip install flake8==7.2.0
-   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava,internvl
+   flake8 . --ignore=E402,E731,W503,E203,F403,F405,E501 --exclude=llava
    ```

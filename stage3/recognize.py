@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from common.args import feat_recog_args
-from feat_recognize.chomata_scan import chomatas_scan
-from feat_recognize.initial_chamber import ProloculusDetector
-from feat_recognize.utils import calculate_angle, resize_img
-from feat_recognize.volution_counter import VolutionCounter
+from stage3.chomata_scan import chomatas_scan
+from stage3.initial_chamber import ProloculusDetector
+from stage3.utils import calculate_angle, resize_img
+from stage3.volution_counter import VolutionCounter
 
 
 def recognize_feature(img_path: str) -> tuple:
