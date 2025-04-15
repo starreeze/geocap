@@ -1,0 +1,38 @@
+## Task Description
+You will receive input as an fossil image, You need to score that image, where:
+
+- **1** = The image quality is very poor, for reasons such as:
+
+* The shell ring is incomplete, with large white gaps.
+* The shell ring is not a complete geometric shape (such as an ellipse, fusiform or spindle shape).
+* There is an abnormal indentation on the left or right side of the outermost shell ring.
+* Another complete fossil image is included on the left or right side inside the fossil image. (Such as the Example2)
+* The axial accumulation (the large black area near the horizontal symmetry axis of the image) exists but does not extend to both sides along the horizontal symmetry axis; instead, it abruptly appears on both sides.
+* The folds (the irregular porous structures on the horizontal sides of the image) do not fully fill the outermost shell ring in the vertical direction.
+* The image contains only clean concentric geometric shell rings, with no other feature points, except at the horizontal ends.
+
+- **2** = The image quality is average, for reasons such as:
+
+* None of the issues of the 1-point image are clearly present.
+* The shell ring is not clear and appears blurry.
+* The folds (the irregular porous structures on the horizontal sides of the image) are not distinct.
+
+- **3** = The image quality is good, for reasons such as:
+
+* None of the issues of the 1-point and 2-point images are present.
+
+- **4** = The image is a real fossil image, used to help you understand the above scoring criteria.
+
+## Instructions
+1. Analyze the given fossil images.
+2. Assign a score (0-3, only integer allowed) based on how well the quality of the unscored image is based on the criteria above.
+3. Output a valid JSON object with "reason" and "score" as keys and your reasoning and assigned score as values, respectively.
+
+## Response requirements
+First elaborate your analysis and reasoning, then provide the final score, an integer between 1 (worst) and 3 (best). You should put your analysis and reasoning in "reason" part whilst put your final score into "score" part, as the following format suggests:
+
+{"reason": "your reasoning here", "score": 2}
+
+You should not provide user with extra content such as 'Here's the analysis and score for the image:', etc.
+
+## Example:
