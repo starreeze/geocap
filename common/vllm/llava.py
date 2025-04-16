@@ -50,6 +50,7 @@ class GenerateModel(GenerateModelBase):
                 .to(self.model.device)
             )
             with torch.inference_mode():
+                # please ensure that self.kwargs is passed to the generate function
                 output_ids = self.model.generate(
                     input_ids, images=images_tensor[i : i + 1], use_cache=True, **self.kwargs
                 )
