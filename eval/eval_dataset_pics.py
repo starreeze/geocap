@@ -1,13 +1,13 @@
-from typing import Any
-import os
+import argparse
 import base64
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+import json
+import os
+import time
+
+import jsonlines
 from qwen_vl_utils import process_vision_info
 from tqdm import tqdm
-import argparse
-import time
-import json
-import jsonlines
+from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 
 class MyQwenVLGenerator:
@@ -107,7 +107,7 @@ You will receive input as an fossil image, You need to score that image in "Your
 * The shell ring is incomplete, with large white gaps.
 * The shell ring is not a complete geometric shape (such as an ellipse, fusiform or spindle shape).
 * There is an abnormal indentation on the left or right side of the outermost shell ring.
-* Another complete fossil image is included on the left or right side inside the fossil image. 
+* Another complete fossil image is included on the left or right side inside the fossil image.
 * The axial accumulation (the large black area near the horizontal symmetry axis of the image) exists but does not extend to both sides along the horizontal symmetry axis; instead, it abruptly appears on both sides.
 * The folds (the irregular porous structures on the horizontal sides of the image) do not fully fill the outermost shell ring in the vertical direction.
 * The image contains only clean concentric geometric shell rings, with no other feature points, except at the horizontal ends.
@@ -199,7 +199,7 @@ You should not provide user with extra content such as 'Here's the analysis and 
                 ("text", "Your turn:"),
                 ("image", f"{args.eval_path}/{pic}"),
                 # ("text","User: Please rate this fossil image."),
-                ("text", f"Output: "),
+                ("text", "Output: "),
             ]
         )
     # generator = MyQwenVLGenerator(model="/home/nfs02/model/Qwen2.5-VL-7B-Instruct")

@@ -1,20 +1,18 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import Any
-from copy import deepcopy
 import os
-from tqdm import tqdm
-from multiprocessing import Pool, Pipe
 import random
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 from iterwrap import iterate_wrapper
-from PIL import Image, ImageColor
+from PIL import Image
+from tqdm import tqdm
 
 size_ = (128, 128)
 
 
 def find_contour(img):
-    if type(img) == str:
+    if type(img) is str:
         img_rgb = cv2.imread(img, cv2.IMREAD_UNCHANGED)
     else:
         img_rgb = np.asarray(Image.fromarray(img).resize(size_, Image.LANCZOS))
@@ -33,7 +31,7 @@ def find_contour_png(png):
         img_gray = png[:, :, 3]
         contours, hierarchy = cv2.findContours(img_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         return max(contours, key=cv2.contourArea)
-    except:
+    except Exception:
         pass
     return None
 
@@ -53,7 +51,7 @@ def calculateSimilarityWrapper(args):
     try:
         if mysc0 is None:  # type: ignore
             pass
-    except:
+    except Exception:
         mysc0 = None
     if mysc0 is None:
         mysc0 = cv2.createShapeContextDistanceExtractor()
@@ -193,7 +191,7 @@ def getMostSimilarImages(
     try:
         if pngs is None:  # type: ignore
             pass
-    except:
+    except Exception:
         pngs = {}
     if pngs == {}:
         for file in files:
@@ -219,16 +217,16 @@ def getMostSimilarImages(
     #         batched_files.append(files[total_sample-batchsize:max_sample])
     # if multi_process:
     #     proc_pool=Pool(batchsize)
-    distances = []
-    contours = []
+    # distances = []
+    # contours = []
     candidates = []
     query_contour = find_contour(pad_query_img(query_img, bbox))
     # query_contour=find_contour(pad_query_img_to_square(Image.fromarray(pad_query_img(query_img,bbox),mode="RGBA")))
-    if type(query_contour) == str:
+    if type(query_contour) is str:
         return [[f, 0] for f in random.choices(files, k=n)]
     if debug:
         plt.figure(figsize=(10, 10))
-        if type(query_img) == str:
+        if type(query_img) is str:
             img_rgb = cv2.imread(query_img, cv2.IMREAD_UNCHANGED)
         else:
             # img_rgb=pad_img_to_square(Image.fromarray(query_img,bbox))

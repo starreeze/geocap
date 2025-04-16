@@ -85,8 +85,8 @@ class Volution(BaseFeature):
 
     def genInput(self):
         txt = "number of volutions(whorls): {num}\n".format(num=self.num)
-        if self.chamber_heights != None:
+        if self.chamber_heights is not None:
             txt += "heights of chambers: {nums}\n".format(nums=self.chamber_heights)
-        if self.growth_rate != None:
+        if self.growth_rate is not None:
             txt += "rates of growth: {nums}\n".format(nums=self.growth_rate)
         return txt

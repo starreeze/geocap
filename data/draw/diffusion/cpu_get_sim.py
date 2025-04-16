@@ -1,26 +1,27 @@
-from shape_filter import size_, getMostSimilarImages
-import json
-from iterwrap import iterate_wrapper
-from multiprocessing import Pool, Pipe, cpu_count
-from tqdm import tqdm
-import numpy as np
-import re
-import cv2
 import argparse
+import json
 import os
+import re
+from multiprocessing import Pipe, Pool, cpu_count
+
+import cv2
+import numpy as np
+from iterwrap import iterate_wrapper
+from shape_filter import getMostSimilarImages, size_
+from tqdm import tqdm
 
 
 def convertPos(X, Y):
-    if type(X) == list and type(Y) == list:
+    if type(X) is list and type(Y) is list:
         return [int(x * size_[0]) for x in X], [int((1 - y) * size_[0]) for y in Y]
-    elif type(X) == np.ndarray and type(Y) == np.ndarray:
+    elif type(X) is np.ndarray and type(Y) is np.ndarray:
         return (X * size_[0]).astype(int), ((1 - Y) * size_[0]).astype(int)  # type: ignore
-    elif (type(X) == float and type(Y) == float) or ((type(X) == np.float64 and type(Y) == np.float64)):
+    elif (type(X) is float and type(Y) is float) or ((type(X) is np.float64 and type(Y) is np.float64)):
         return int(size_[0] * X), int(size_[0] * (1 - Y))  # type: ignore
 
 
 def convertLength(W):
-    if type(W) == float:
+    if type(W) is float:
         return int(W * size_[0])
 
 
@@ -210,7 +211,7 @@ def draw(cv2img, shape):
 
 def generate_basic_shape_wrapper(data_dict):
     shapes = data_dict["shapes"]
-    ni = data_dict["ni"]
+    # ni = data_dict["ni"]
     cv2img0 = np.zeros((size_[0], size_[1], 4), dtype=np.uint8)
     volution_max = {}
     filtered_shapes = []
@@ -320,7 +321,7 @@ if __name__ == "__main__":
                                 proc1_pbar.update()
                             # sys.stdout.write("created!\n")
                             # sys.stdout.flush()
-                        except:
+                        except Exception:
                             pass
                     print("genBasicShape done!")
                     # res=iterate_wrapper(

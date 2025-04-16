@@ -1,35 +1,37 @@
-import gradio as gr
-import torch
-import torch.nn.functional as F
-from safetensors.numpy import save_file, load_file
-from omegaconf import OmegaConf
-from transformers import AutoConfig
-import cv2
-from PIL import Image
-import numpy as np
+# flake8: noqa
 import json
 import os
 
+import cv2
+import gradio as gr
+import numpy as np
+import torch
+import torch.nn.functional as F
+from dataset.data_utils import *
+
 #
 from diffusers import (
-    StableDiffusionPipeline,
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipelineLegacy,
-    StableDiffusionInpaintPipeline,
-    DDIMScheduler,
     AutoencoderKL,
+    DDIMScheduler,
+    DDPMScheduler,
+    DPMSolverMultistepScheduler,
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionInpaintPipelineLegacy,
+    StableDiffusionPipeline,
+    UNet2DConditionModel,
 )
-from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel, DDIMScheduler
-from diffusers import DDIMScheduler, DDPMScheduler, DPMSolverMultistepScheduler
 from diffusers.image_processor import VaeImageProcessor
+from mimicbrush import MimicBrush_RefNet
+from models.depth_guider import DepthGuider
 
 #
 from models.pipeline_mimicbrush import MimicBrushPipeline
 from models.ReferenceNet import ReferenceNet
-from models.depth_guider import DepthGuider
-from mimicbrush import MimicBrush_RefNet
-from dataset.data_utils import *
-
+from omegaconf import OmegaConf
+from PIL import Image
+from safetensors.numpy import load_file, save_file
+from transformers import AutoConfig
 
 val_configs = OmegaConf.load("./configs/inference.yaml")
 
@@ -37,9 +39,9 @@ val_configs = OmegaConf.load("./configs/inference.yaml")
 import sys
 
 sys.path.append("./depthanything")
-from torchvision.transforms import Compose
+from depthanything.depth_anything.util.transform import NormalizeImage, PrepareForNet, Resize
 from depthanything.fast_import import depth_anything_model
-from depthanything.depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
+from torchvision.transforms import Compose
 
 transform = Compose(
     [

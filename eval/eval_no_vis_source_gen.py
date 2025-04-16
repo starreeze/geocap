@@ -1,6 +1,6 @@
 import json
-import jsonlines
 
+import jsonlines
 from tqdm import tqdm
 
 # from common.llm import generator_mapping, model_path_mapping
@@ -36,7 +36,7 @@ User: The following is an image of a paleontological fossil, please provide a de
         ),
     ]
     generator = APIGenerator("gpt-4o", sys_prompt=sys_prompt)
-    pics, questions, references = [], [], []
+    # pics, questions, references = [], [], []
     with open("dataset/instructions_no_vis_gpt4o.jsonl", "r") as f:
         processed = 900
     with open("dataset/instructions_no_vis_tools.jsonl", "r") as f:

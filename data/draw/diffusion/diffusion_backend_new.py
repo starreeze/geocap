@@ -1,18 +1,19 @@
-import concurrent.futures
-import os, json, sys
-import numpy as np
-from typing import Any, Sized
-import matplotlib.pyplot as plt
-import matplotlib.patches as pch
-from PIL import Image, ImageDraw, ImageFilter
+import argparse
+import json
+import os
 import random
-import cv2
+import re
 from io import BytesIO
+from typing import Any
+
+import cv2
+import matplotlib.patches as pch
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
 
 # from shape_filter import getMostSimilarImages
 from tqdm import tqdm
-import re
-import argparse
 
 # from concurrent.futures import ThreadPoolExecutor
 # import concurrent
@@ -46,9 +47,9 @@ class Figure_Engine:
         width, color, trans = self.__get_essential_info(shape, width, color, trans)
         try:
             index = self.__special_info_validator(shape["special_info"])
-        except:
+        except Exception:
             index = None
-        assert index == None or (-1 <= index and index <= 20)
+        assert index is None or (-1 <= index and index <= 20)
         if shape["type"] == "fusiform_1":
             x_offset = shape["x_offset"]
             y_offset = shape["y_offset"]
@@ -327,13 +328,13 @@ class Figure_Engine:
     def __get_width(self, shape):
         try:
             return shape["width"]
-        except:
+        except Exception:
             return 3
 
     def __get_color(self, shape):
         try:
             return shape["color"]
-        except:
+        except Exception:
             return (random.random(), random.random(), random.random())
 
     def __get_transparency(self, shape):
@@ -344,7 +345,7 @@ class Figure_Engine:
                 trans = (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 trans = (0, 0, 0, 1)
-        except:
+        except Exception:
             trans = (0, 0, 0, 0)  # no
         return trans
 
@@ -385,7 +386,7 @@ class Figure_Engine:
     def __keep_memory(self, index, x, y):
         assert (isinstance(x, float) and isinstance(y, float)) or (len(x) == len(y))  # type: ignore
         # Suppose the center is the same
-        if index != None and index >= 0:
+        if index is not None and index >= 0:
             angle_value = []
             for x0, y0 in zip(x, y):  # type: ignore
                 x0 -= self.center[0]
@@ -420,7 +421,7 @@ def generate_basic_shape_wrapper(data_dict):
     shapes = data_dict["shapes"]
     ni = data_dict["ni"]
     figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
-    fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
+    # fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
     volution_max = {}
     filtered_shapes = []
 
@@ -447,7 +448,7 @@ def generate_basic_shape_wrapper(data_dict):
 
 def generate_basic_shape(shapes: list, ni: dict) -> tuple:
     figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
-    fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
+    # fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
     for shape in shapes:
         figure.draw(shape)
     basic_img = figure.transfer_to_cv2()
@@ -502,7 +503,7 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
                     color="black",
                     linewidth=5,
                 )
-    if debug != None:
+    if debug is not None:
         mask.savefig(f"{debug}_Mask_original.png")
     buf = BytesIO()
     mask.savefig(buf, format="png")
@@ -577,7 +578,7 @@ def diffuse(
         ref_image = cv2.imread(best_ref_poles, cv2.IMREAD_UNCHANGED)
         ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2BGR)
 
-    if debug != None:
+    if debug is not None:
         cv2.imwrite(f"{debug}_Image.png", img)
         cv2.imwrite(f"{debug}_Reference.png", ref_image)
 
@@ -586,7 +587,7 @@ def diffuse(
     )
 
     synthesis = crop_padding_and_resize(img, synthesis)
-    if debug != None:
+    if debug is not None:
         cv2.imwrite(f"{debug}_SYNTH_1.png", synthesis)
 
     return synthesis.astype(np.uint8)
@@ -598,8 +599,8 @@ def generate_septa(septas: list, debug=None) -> np.ndarray:
     for septa in septas:
         figure.draw(septa, color=fixed_color)
     cv2_fig = figure.transfer_to_cv2()
-    if debug != None:
-        cv2.imwrite(f"test_septa_xkcd.jpg", cv2_fig)
+    if debug is not None:
+        cv2.imwrite("test_septa_xkcd.jpg", cv2_fig)
     cv2_fig = Image.fromarray(cv2.cvtColor(cv2_fig, cv2.COLOR_BGR2RGB))
     cv2_fig = cv2_fig.convert("L")
     cv2_fig = cv2_fig.convert("RGB")
@@ -722,7 +723,7 @@ def main():
 
 if __name__ == "__main__":
     # os.environ['CUDA_VISIBLE_DEVICES'] = "1,3,4"
-    from run_gradio3_demo import inference_single_image, crop_padding_and_resize
+    from run_gradio3_demo import crop_padding_and_resize, inference_single_image
 
     np.random.seed(0)
     random.seed(0)

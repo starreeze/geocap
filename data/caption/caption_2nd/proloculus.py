@@ -1,5 +1,3 @@
-import math
-
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.params import *
 
@@ -12,7 +10,6 @@ class Proloculus(BaseFeature):
         self.diameter = round(diameter * shell_world_pixel / shell_pixel_div_mm, 2)
 
     def getShape(self):
-        type = self.type
         txt = ""
         # center, weight = self.getCenterAndWeight(self.shape)
         txt += self.standardRangeFilter(

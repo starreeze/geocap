@@ -1,16 +1,13 @@
 "construct descriptions according to generated rules"
 
-import hashlib
 import json
-import math
-import os
 import random
 import re
 from typing import Any
 
 from tqdm import tqdm
 
-from common.args import caption_args, data_args, run_args
+from common.args import data_args, run_args
 from data.caption.caption_2nd.chomata import Chomata
 from data.caption.caption_2nd.deposit import Deposit
 from data.caption.caption_2nd.proloculus import Proloculus
@@ -30,7 +27,7 @@ def caption(rules: list[dict[str, Any]], generator, output_path: str):
     # rule_str=json.dumps(rules)
     # rules=rules[100:200]
     rule_strs = []
-    input_texts: list[str] = []
+    # input_texts: list[str] = []
     idx = 0
     for rule in tqdm(rules):
         input_str, rule_str = gen_user_input_txt_2nd(rule)

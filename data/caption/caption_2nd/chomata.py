@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.misc import derivative
-from scipy.signal import find_peaks
 
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.custom_shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2
@@ -634,7 +633,6 @@ class Chomata(BaseFeature):
     def genChomataSize(self) -> str:
         if len(self.chomata_shapes) <= 0:
             return ""
-        total = 0
         chomata_sizes_by_volution = {}
         for k in self.chomata_sizes_relative:
             chomata_sizes_by_volution[k] = self.chomata_sizes_relative[k]
@@ -815,7 +813,6 @@ class Chomata(BaseFeature):
                 heights.append(height)
                 widths.append(width)
             else:
-                txt = "skip"
                 break
         # for i in range(len(heights)-1):
         #     heights[i]=heights[i+1]-heights[i]
