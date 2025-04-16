@@ -381,7 +381,7 @@ def chomatas_scan(
                     T0 = x0 / line_n
                     p0 = path.point(T0)
                     cho_px = math.floor(p0.real)
-                    cho_py = math.floor(p0.imag)
+                    # cho_py = math.floor(p0.imag)
                     distance0 = (
                         abs(initial_chamber[0] - cho_px)
                     ) + 1  # *0.8+(abs(initial_chamber[1]-cho_py))*0.2
@@ -506,7 +506,7 @@ def chomatas_scan(
         return final_chomatas if len(final_chomatas) > 2 else final_chomatas
 
     def parsePathUsingLines(points):
-        if type(points) == Path:
+        if type(points) is Path:
             return points
         path0 = []
         for i in range(len(points) - 1):

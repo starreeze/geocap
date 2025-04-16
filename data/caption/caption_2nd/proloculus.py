@@ -1,5 +1,3 @@
-import math
-
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.params import *
 
@@ -12,7 +10,6 @@ class Proloculus(BaseFeature):
         self.diameter = round(diameter * shell_world_pixel / shell_pixel_div_mm, 2)
 
     def getShape(self):
-        type = self.type
         txt = ""
         # center, weight = self.getCenterAndWeight(self.shape)
         txt += self.standardRangeFilter(
@@ -26,7 +23,7 @@ class Proloculus(BaseFeature):
     def genUserInput(self):
         txt = "Proloculus {shape}, ".format(shape=self.getShape())
         txt += "with diameter measuring {diameter} mm. ".format(diameter=self.diameter)
-        return txt
+        return [f"<proloculus>{txt}</proloculus>"]
 
     def genInput(self):
         txt = "initial chamber(proloculus): {length} mm\n".format(length=self.diameter)
