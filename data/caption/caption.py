@@ -622,17 +622,17 @@ def decide_rel_pos(center_positions):
 
 
 def gen_relative_position(center_positions):
-    mass_center = points_center(center_positions)
-    points_x = [point[0] for point in center_positions]
-    points_y = [point[1] for point in center_positions]
-    edge_left = min(points_x)
-    edge_right = max(points_x)
-    edge_top = max(points_y)
-    edge_bottom = min(points_y)
-    x1 = (edge_left + mass_center[0]) / 2
-    x2 = (edge_right + mass_center[0]) / 2
-    y1 = (edge_bottom + mass_center[1]) / 2
-    y2 = (edge_top + mass_center[1]) / 2
+    # mass_center = points_center(center_positions)
+    # points_x = [point[0] for point in center_positions]
+    # points_y = [point[1] for point in center_positions]
+    # edge_left = min(points_x)
+    # edge_right = max(points_x)
+    # edge_top = max(points_y)
+    # edge_bottom = min(points_y)
+    # x1 = (edge_left + mass_center[0]) / 2
+    # x2 = (edge_right + mass_center[0]) / 2
+    # y1 = (edge_bottom + mass_center[1]) / 2
+    # y2 = (edge_top + mass_center[1]) / 2
     return decide_rel_pos(center_positions)
 
 

@@ -104,13 +104,23 @@ class Shell(BaseFeature):
             return "straight"
 
     def genUserInput(self):
-        txt = "Shell {shape}, ".format(shape=self.getShape())
-        txt += "with {slope} slopes and {pole} ends, ".format(slope=self.getSlope(), pole=self.getPole())
-        txt += "the axial length is {length} mm, ".format(length=self.length)
-        txt += "and the sagittal width is {width} mm, ".format(width=self.width)
-        txt += "width a ratio of length to width of {ratio}. ".format(ratio=self.length_width_ratio)
-        txt += "Axis {convexity}. ".format(convexity=self.getAxis())
-        return txt
+        tagged = []
+        txt = "<shell>Shell {shape}, ".format(shape=self.getShape())
+        txt += "with {slope} slopes and {pole} ends. </shell>".format(
+            slope=self.getSlope(), pole=self.getPole()
+        )
+        tagged.append(txt)
+        txt = "<length>The axial length is {length} mm, </length>".format(length=self.length)
+        tagged.append(txt)
+        txt = "<width>and the sagittal width is {width} mm, </width>".format(width=self.width)
+        tagged.append(txt)
+        txt = "<ratio>width a ratio of length to width of {ratio}. </ratio>".format(
+            ratio=self.length_width_ratio
+        )
+        tagged.append(txt)
+        txt = "<axis>Axis {convexity}. </axis>".format(convexity=self.getAxis())
+        tagged.append(txt)
+        return tagged
 
     def genInput(self):
         txt = "length: {length} mm, ".format(length=self.length)

@@ -78,7 +78,7 @@ class Septa(BaseFeature):
         self.txt += txt
 
     def genUserInput(self):
-        return self.txt
+        return [f"<septa>{self.txt}</septa>"]
 
     def genInput(self):
         return self.txt2

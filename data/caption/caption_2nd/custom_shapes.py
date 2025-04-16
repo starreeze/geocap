@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.random import normal, randint, uniform
-from scipy.integrate import quad
 
-from common.args import rule_args
-from data.rule.utils import distance_2points, distance_point_to_line, polar_angle
+from data.rule.utils import distance_point_to_line
 
 
 @dataclass

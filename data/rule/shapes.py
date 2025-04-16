@@ -936,11 +936,12 @@ class ShapeGenerator:
 
     def generate_initial_chamber(self) -> Ellipse:
         center = (0.5 + normal(0, 0.002), 0.5 + normal(0, 0.002))
-        size = np.random.choice(["small", "large"], p=[0.6, 0.4])
-        if size == "small":
-            major_axis = normal(0.009, 0.001)
-        elif size == "large":
-            major_axis = normal(0.028, 0.003)
+        # size = np.random.choice(["small", "large"], p=[0.6, 0.4])
+        # if size == "small":
+        #     major_axis = normal(0.009, 0.001)
+        # elif size == "large":
+        #     major_axis = normal(0.028, 0.003)
+        major_axis = max(0.03, normal(0.03, 6e-3))
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber"
