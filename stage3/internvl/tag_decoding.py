@@ -4,11 +4,13 @@ import os
 
 import torch
 import torchvision.transforms as T
-from internvl_chat.internvl.conversation import get_conv_template
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
+
+from common.args import fossil_eval_args
+from stage3.internvl.conversation import get_conv_template
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
@@ -131,13 +133,11 @@ def split_model(model_name):
 
 
 def main():
-    path = "internvl_chat/work_dirs/foscap/stage3_only_latest"
-    output_path = "./outputs/stage3_only_latest.jsonl"
-
-    test_path = "/home/nfs05/xiangch/geocap/dataset/latest/stage3_internvl_test.jsonl"
+    testset_path = "/home/nfs05/xiangch/geocap/dataset/latest/stage3_internvl_test.jsonl"
     image_root = "/home/nfs05/xiangch/geocap/dataset/common/images/"
+    path = fossil_eval_args.foscap_model_path
+    output_path = os.path.join("eval_data/outputs", path.split("/")[-1] + ".jsonl")
 
-    # device_map = split_model('InternVL2_5-8B')
     model = AutoModel.from_pretrained(
         path,
         torch_dtype=torch.bfloat16,
@@ -151,7 +151,7 @@ def main():
     model.img_context_token_id = tokenizer.convert_tokens_to_ids("<IMG_CONTEXT>")
 
     test_data = []
-    with open(test_path, "r") as f_in:
+    with open(testset_path, "r") as f_in:
         for line in f_in:
             data = json.loads(line)
             test_data.append(data)
@@ -161,7 +161,8 @@ def main():
         "<length>",
         "<width>",
         "<ratio>",
-        "<volution>",
+        "<number of volutions>",
+        "<heights of volutions>",
         "<proloculus>",
         "<axis>",
         "<axial filling>",

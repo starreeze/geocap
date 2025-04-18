@@ -11,6 +11,7 @@ from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
 from stage3.recognize import recognize_feature
+from stage3.utils import get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
@@ -118,16 +119,25 @@ class DataGenerator:
                     next_points = volutions_dict[idx - 1]
                 elif idx < 0 and idx + 1 in volutions_dict:
                     next_points = volutions_dict[idx + 1]
+                elif idx == 1:
+                    initial_chamber_upper = get_circle_points(
+                        center=initial_chamber[:2], radius=initial_chamber[2] // 2, angle_range=[225, 315]
+                    )
+                    next_points = initial_chamber_upper
+                elif idx == -1:
+                    initial_chamber_lower = get_circle_points(
+                        center=initial_chamber[:2], radius=initial_chamber[2] // 2, angle_range=[45, 135]
+                    )
+                    next_points = initial_chamber_lower
                 else:
-                    continue
+                    raise ValueError(f"Invalid idx: {idx}")
+
                 y_mean = np.mean([point[1] for point in points])
                 next_y_mean = np.mean([point[1] for point in next_points])
-                if abs(idx) - 1 not in volution_heights:
-                    volution_heights[abs(idx) - 1] = abs(y_mean - next_y_mean)
+                if abs(idx) not in volution_heights:
+                    volution_heights[abs(idx)] = abs(y_mean - next_y_mean)
                 else:
-                    volution_heights[abs(idx) - 1] = (
-                        volution_heights[abs(idx) - 1] + abs(y_mean - next_y_mean)
-                    ) / 2
+                    volution_heights[abs(idx)] = (volution_heights[abs(idx)] + abs(y_mean - next_y_mean)) / 2
             # Sort volution_heights by key in ascending order
             volution_heights = dict(sorted(volution_heights.items(), key=lambda item: item[0]))
             new_image_info["volution_heights"] = volution_heights
@@ -448,7 +458,7 @@ def format_to_internvl():
 
 def main():
     # generate_dataset(use_vis_tools=True)
-    # paraphrase()
+    paraphrase()
     tag_format()
     add_default_value()
     # format_to_llava()
