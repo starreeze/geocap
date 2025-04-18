@@ -7,7 +7,7 @@ If you have changes in mind, please contribute back so the community can benefit
 
 import dataclasses
 from enum import IntEnum, auto
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class SeparatorStyle(IntEnum):
@@ -44,19 +44,19 @@ class Conversation:
     # The system message
     system_message: str = ""
     # The names of two roles
-    roles: Tuple[str] = ("USER", "ASSISTANT")
+    roles: Tuple[str, str] = ("USER", "ASSISTANT")
     # All messages. Each item is (role, message).
-    messages: List[List[str]] = ()
+    messages: List[List[str]] = []
     # The number of few shot examples
     offset: int = 0
     # The separator style and configurations
     sep_style: SeparatorStyle = SeparatorStyle.ADD_COLON_SINGLE
     sep: str = "\n"
-    sep2: str = None
+    sep2: Optional[str] = None
     # Stop criteria (the default one is EOS token)
-    stop_str: Union[str, List[str]] = None
+    stop_str: Optional[Union[str, List[str]]] = None
     # Stops generation if meeting any token in this list
-    stop_token_ids: List[int] = None
+    stop_token_ids: Optional[List[int]] = None
 
     def get_prompt(self) -> str:
         """Get the prompt for generation."""
@@ -235,7 +235,7 @@ class Conversation:
             ret = system_prompt + self.sep
             for role, message in self.messages:
                 if message:
-                    if type(message) is tuple:
+                    if isinstance(message, tuple):
                         message, _, _ = message
                     ret += role + message + self.sep
                 else:
