@@ -1,0 +1,18 @@
+Task:
+You are provided with a description of a fossil image. For numerical values appearing in the numerical information, replace the corresponding values in the description with those from the numerical information.
+
+Requirements:
+1. Replace any approximate values in the description with the exact values provided
+2. Replace any ranges with the exact numerical value provided and do not use word like 'varies from'
+3. Keep the original descriptive language intact where no numerical values are involved
+4. Maintain the scientific tone and accuracy of the description
+5. For tunnel angles, strictly replace any values in the description with those from numerical information, even if they differ from the original description; if tunnel is not included in the original description, do not add any information about tunnel angles in the processed description
+6. Your response should contain only a modified description, without any additional analysis or using any brackets for additional explanations.
+
+Description:
+{desc}
+
+Numerical information:
+{numerical_info}
+
+Processed description:

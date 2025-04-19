@@ -275,15 +275,13 @@ class FossilEvalArgs:
     read_extractions_from_file: bool = field(default=False)
     extract_only: bool = field(default=False)
     eval_llm: str = field(default="qwen25-14")
-    manual_fix_mode: str = field(default="reference")  # because it is more likely to trigger failsafe
-    manual_fix_index: int = field(default=-1)
-    manual_fix_content: str = field(default="")
-
     eval_result_dir: str = field(default="eval_data/deepseek_eval/internvl")
     eval_reference_file: str = field(default="eval_data/deepseek_eval/extracted_reference_info.json")
     eval_origin_file: str = field(default="eval_data/origin_files/internvl.json")
     eval_start_pos: int = field(default=0)
     eval_end_pos: int = field(default=20000)
+
+    foscap_model_path: str = field(default="internvl_chat/work_dirs/foscap/foscap_final")
 
 
 types = (DataArgs, RunArgs, RuleArgs, DrawArgs, CaptionArgs, VQAArgs, FeatureRecognizeArgs, FossilEvalArgs)
