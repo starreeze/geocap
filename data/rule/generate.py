@@ -93,7 +93,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
             septa_folds, num_septa = septa_generator.generate_septa(
                 volutions, volution_type, int(num_volutions), axial_filling, poles_folds, global_gap
             )
-            shapes.extend(septa_folds)
+            # shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
         else:
             septa_folds = []
