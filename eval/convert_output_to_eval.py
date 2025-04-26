@@ -4,7 +4,7 @@ import json
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--generated_path", type=str, required=True)
-    parser.add_argument("--reference_path", type=str, default="dataset/instructions/instructions_all.jsonl")
+    parser.add_argument("--reference_path", type=str, default="dataset/latest/instructions_all.jsonl")
     args = parser.parse_args()
 
     generated_path = args.generated_path
