@@ -399,6 +399,14 @@ class Figure:
                 for curve in curves:
                     self.__handle_curve(curve, line_width)
 
+            case "curve":
+                curve = rule["control_points"]
+                try:
+                    line_width = rule["width"]
+                except:
+                    pass  # keep the original data
+                self.__handle_curve(curve, line_width)
+
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
 

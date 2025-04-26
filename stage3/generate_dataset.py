@@ -171,24 +171,39 @@ class DataGenerator:
         # Add default value if fail to detect
         for i in range(1, num_volutions + 1):
             if i not in tunnel_angles:
-                tunnel_angles[i] = 30
+                tunnel_angles[i] = 25
 
         # Process out of range values
         in_range_angles = [angle for angle in tunnel_angles.values() if low_thres < angle < high_thres]
         if in_range_angles:
             avg_angles = int(sum(in_range_angles) / len(in_range_angles))
         else:
-            avg_angles = 30
+            avg_angles = 25
         for i, angle in tunnel_angles.items():
             if angle < low_thres or angle > high_thres:
                 tunnel_angles[i] = avg_angles
 
         tunnel_angles = dict(sorted(tunnel_angles.items(), key=lambda x: x[0]))
-        # Outer volution has bigger tunnel angles
-        for i, angle in tunnel_angles.items():
-            if i == 1:
-                continue
-            tunnel_angles[i] = max(angle, tunnel_angles[i - 1] - 5)
+
+        # Create a more reliable baseline based on all angles
+        # Calculate a smooth increasing trend for tunnel angles
+        min_angle = min(tunnel_angles.values())
+        max_angle = max(tunnel_angles.values())
+        total_volutions = max(tunnel_angles.keys())
+
+        # If there's a clear increasing trend in the data, preserve it
+        # Otherwise, apply a gentle increasing gradient
+        if max_angle > min_angle and total_volutions > 1:
+            # Calculate average increase per volution
+            avg_increase = (max_angle - min_angle) / (total_volutions - 1)
+
+            # Apply smoothed values
+            base_angle = min(tunnel_angles.values())
+            for i in tunnel_angles.keys():
+                # Gradually increase angle with volution number
+                expected_angle = base_angle + (i - 1) * avg_increase
+                # Blend original and expected values (50% original, 50% expected)
+                tunnel_angles[i] = int(0.5 * tunnel_angles[i] + 0.5 * expected_angle)
 
         return tunnel_angles
 

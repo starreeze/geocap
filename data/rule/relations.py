@@ -803,8 +803,8 @@ class CustomedShapeGenerator:
         _stop = False
         for i in range(max_num_volutions):
             self.customed_shape = volutions[-1]
-            # scale_factor = 1.5 * (0.99**i)
-            scale_factor = 1.3 * (0.99**i)
+            scale_factor = 1.4 * (0.98**i)
+            # scale_factor = 1.3 * (0.99**i)
             # scale_factor = normal(1.5, 0.1) * (0.98**i)
 
             if "concentric" in volution_type:

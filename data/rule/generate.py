@@ -87,8 +87,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
         poles_folds = shape_generator.generate_poles_folds(num_volutions, axial_filling, rule_args)
 
         # Generate other septa folds
-        have_septa_folds = choice([True, False])
-
+        have_septa_folds = choice([True, False], p=[0.7, 0.3])
         if have_septa_folds:
             global_gap = normal(0.7, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(

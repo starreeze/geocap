@@ -658,7 +658,7 @@ class Curve:
         self.curve_points = self._compute_curve_points(p0, p1, p2, p3)
 
     def to_dict(self):
-        return {"type": "curves"} | asdict(self)
+        return {"type": "curve"} | asdict(self)
 
     def _compute_curve_points(self, p0, p1, p2, p3):
         """Computes points along the cubic Bézier curve"""
@@ -941,7 +941,9 @@ class ShapeGenerator:
         #     major_axis = normal(0.009, 0.001)
         # elif size == "large":
         #     major_axis = normal(0.028, 0.003)
-        major_axis = max(0.03, normal(0.03, 6e-3))
+
+        # major_axis = max(0.03, normal(0.03, 6e-3))
+        major_axis = uniform(0.03, 0.05)
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber"
@@ -950,16 +952,21 @@ class ShapeGenerator:
     def generate_axial_filling(self, num_volutions: int, rule_args) -> list[dict]:
         axial_filling = []
 
+        # Generate shared parameters to ensure symmetry
+        start_volution = randint(0, max(1, num_volutions // 4))
+
+        if rule_args.overlap_axial_and_poles_folds:
+            end_volution = num_volutions - 1
+        else:
+            end_volution = randint(num_volutions // 2, num_volutions)
+
+        # Generate a single angle parameter to ensure symmetry
+        angle_offset = normal(0.1, 0.02) * np.pi
+
         for i in range(2):
-            start_volution = randint(0, max(1, num_volutions // 4))
-
-            if rule_args.overlap_axial_and_poles_folds:
-                end_volution = num_volutions - 1
-            else:
-                end_volution = randint(num_volutions // 2, num_volutions)
-
-            start_angle_main = -normal(0.1, 0.02) * np.pi + i * np.pi
-            end_angle_main = normal(0.1, 0.02) * np.pi + i * np.pi
+            # Use the same angle_offset for both sides, just offset by π
+            start_angle_main = -angle_offset + i * np.pi
+            end_angle_main = angle_offset + i * np.pi
 
             axial_filling_main = {
                 "type": "main",
@@ -974,18 +981,18 @@ class ShapeGenerator:
             max_extend_angle1 = (start_angle_main - (i - 0.5) * np.pi) % (2 * np.pi)
             axial_filling_extend1 = {
                 "type": "extension",
-                "start_angle": start_angle_main - max_extend_angle1 * normal(0.6, 0.1),
+                "start_angle": start_angle_main - max_extend_angle1 * normal(0.5, 0.1),
                 "end_angle": start_angle_main,
                 "start_volution": 0,
-                "end_volution": randint(min(end_volution + 1, num_volutions - 1), num_volutions),
+                "end_volution": randint(num_volutions - 2, num_volutions),
             }
             max_extend_angle2 = ((0.5 - i) * np.pi - end_angle_main) % (2 * np.pi)
             axial_filling_extend2 = {
                 "type": "extension",
                 "start_angle": end_angle_main,
-                "end_angle": end_angle_main + max_extend_angle2 * normal(0.6, 0.1),
+                "end_angle": end_angle_main + max_extend_angle2 * normal(0.5, 0.1),
                 "start_volution": 0,
-                "end_volution": randint(min(end_volution + 1, num_volutions - 1), num_volutions),
+                "end_volution": randint(num_volutions - 2, num_volutions),
             }
             axial_filling.append(axial_filling_extend1)
             axial_filling.append(axial_filling_extend2)
@@ -994,18 +1001,19 @@ class ShapeGenerator:
 
     def generate_poles_folds(self, num_volutions: int, axial_filling: list, rule_args) -> list[dict]:
         poles_folds = []
+
+        if not rule_args.overlap_axial_and_poles_folds and axial_filling:
+            start_volution = axial_filling[0]["end_volution"]
+        else:
+            start_volution = randint(num_volutions - 3, num_volutions - 1)
+        end_volution = num_volutions - 1
+        start_angle = -normal(0.3, 0.03) * np.pi
+        end_angle = normal(0.3, 0.03) * np.pi
         for i in range(2):
-            if not rule_args.overlap_axial_and_poles_folds and axial_filling:
-                start_volution = axial_filling[3 * i]["end_volution"]
-            else:
-                start_volution = randint(num_volutions // 2, num_volutions - 1)
-            end_volution = num_volutions - 1
-            start_angle = -normal(0.2, 0.03) * np.pi + i * np.pi
-            end_angle = normal(0.2, 0.03) * np.pi + i * np.pi
             poles_folds.append(
                 {
-                    "start_angle": start_angle,
-                    "end_angle": end_angle,
+                    "start_angle": start_angle + i * np.pi,
+                    "end_angle": end_angle + i * np.pi,
                     "start_volution": start_volution,
                     "end_volution": end_volution,
                 }
