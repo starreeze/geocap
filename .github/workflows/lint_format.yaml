@@ -26,6 +26,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install black==24.10.0 flake8==7.2.0 isort==6.0.1
 
+      - name: Find and check text files for CRLF
+        run: |
+          # Find all non-binary files (files with charset defined)
+          find . -type f ! -path "*/\\.*" ! -path "*/\\$*\\$" | while read -r file; do
+            mime=$(file --mime "$file")
+            if echo "$mime" | grep -q "charset=" && ! echo "$mime" | grep -q "binary"; then
+              # File is likely a text file
+              if grep -U $'\r' "$file"; then
+                echo "❌ ERROR: CRLF line endings found in text file: $file"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "✅ All text files use LF line endings."
+
       - name: Run lint and format
         run: |
           export IGNORE_DIRS="llava"
