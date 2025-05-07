@@ -3,9 +3,11 @@ import argparse
 import json
 import os
 import sys
+
 import torch
 from PIL import Image
 from tqdm import tqdm
+
 from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 from llava.conversation import conv_templates
 from llava.mm_utils import get_model_name_from_path, tokenizer_image_token
@@ -64,7 +66,7 @@ def main():
         conv.append_message(conv.roles[1], None)
         prompt_text = conv.get_prompt()
 
-        input_ids = (tokenizer_image_token(prompt_text, model.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt").unsqueeze(0).to(model.model.device))  # type: ignore
+        input_ids = tokenizer_image_token(prompt_text, model.tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt").unsqueeze(0).to(model.model.device)  # type: ignore
 
         images = input_sample.get("images", [])
         if images:

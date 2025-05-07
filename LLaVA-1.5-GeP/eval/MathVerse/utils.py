@@ -5,7 +5,6 @@ import re
 import time
 
 
-
 def create_dir(output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
