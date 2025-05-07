@@ -4,6 +4,9 @@ import pickle
 import re
 import time
 
+import openai
+from openai import OpenAI
+
 
 def create_dir(output_dir):
     if not os.path.exists(output_dir):
