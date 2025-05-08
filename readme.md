@@ -34,7 +34,7 @@ GePBench is a large-scale, highly customizable multimodal benchmark on geometric
 
 ### Test Data
 
-We provide a standard open test set on [TODO]. Please download and unzip to `./dataset`. `tree dataset --filelimit 10` should result in this:
+We provide a standard open test set on [huggingface](https://huggingface.co/datasets/starreeze/gepbench/blob/main/gepbench.zip). Please download and unzip to `./dataset`. `tree dataset --filelimit 10` should result in this:
 
 ```
 dataset
