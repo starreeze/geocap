@@ -75,7 +75,7 @@ class GSRule(ABC):
 class Polygon(GSRule):
     points: list[tuple[float, float]]
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self):
         assert all(isinstance(point, tuple) for point in self.points), "Points must be tuples"
@@ -282,7 +282,7 @@ class Ellipse(GSRule):
     minor_axis: float = 0
     rotation: float = 0  # e.g., pi/3
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self):
         # Calculate points on the ellipse in counterclockwise order
@@ -466,7 +466,7 @@ class Fusiform(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self):
         self.center = (self.x_offset, self.y_symmetric_axis)
@@ -560,7 +560,7 @@ class Fusiform_2(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self, first_init=True):
         self.center = (self.x_symmetric_axis, self.y_offset)
@@ -644,7 +644,7 @@ class Curve:
 
     control_points: list[tuple[float, float]]
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self):
         self.num_points = 100
@@ -700,7 +700,7 @@ class CustomedShape(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "no"
 
     def __post_init__(self):
         # Verify that the shape is closed
