@@ -6,10 +6,10 @@ import os
 from typing import Any
 
 import torch
+from common.args import vqa_args
 from PIL import Image
 from tqdm import tqdm
 
-from common.args import vqa_args
 from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 from llava.conversation import SeparatorStyle, conv_templates
 from llava.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token

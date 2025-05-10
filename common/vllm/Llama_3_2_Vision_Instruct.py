@@ -1,25 +1,9 @@
-# from transformers.image_utils import load_image
-import gc
 import importlib.util
 import os
-import random
-from datetime import datetime
-from typing import Any
 
-import numpy as np
 import torch
 from PIL import Image
-from qwen_vl_utils import process_vision_info
-from tqdm import tqdm
-from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForVision2Seq,
-    AutoProcessor,
-    AutoTokenizer,
-    MllamaForConditionalGeneration,
-    Qwen2VLForConditionalGeneration,
-)
+from transformers import AutoProcessor, MllamaForConditionalGeneration
 
 from .base import GenerateModelBase
 
@@ -39,7 +23,11 @@ class GenerateModel(GenerateModelBase):
         else:
             attn_impl = "sdpa"
         self.model = MllamaForConditionalGeneration.from_pretrained(
-            self.path, torch_dtype=torch.bfloat16, trust_remote_code=True, device_map="auto"
+            self.path,
+            torch_dtype=torch.bfloat16,
+            trust_remote_code=True,
+            device_map="auto",
+            attn_implementation=attn_impl,
         ).eval()
         # self.model.to(self.device)
         self.processor = AutoProcessor.from_pretrained(self.path, trust_remote_code=True)
