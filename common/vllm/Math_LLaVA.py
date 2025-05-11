@@ -83,7 +83,7 @@ class GenerateModel(GenerateModelBase):
             if type(image_tensor) is list:
                 image_tensor = [image.to(self.device, dtype=torch.float16) for image in image_tensor]
             elif isinstance(image_tensor, torch.Tensor):
-                image_tensor = image_tensor.to(self.device, dtype=torch.float16)
+                image_tensor = image_tensor.to(self.device, dtype=torch.float16)  # pyright: ignore
             prompt = f"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###Human: <image>\nHint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion:\n{prompts[i].replace('Please directly answer A, B, C or D and nothing else.', '')}###Assistant: "
             input_ids = (
                 tokenizer_image_token(prompt, self.tokenizer, return_tensors="pt")

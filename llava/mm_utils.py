@@ -168,7 +168,7 @@ def expand2square(pil_img, background_color):
         return result
 
 
-def process_images(images, image_processor, model_cfg):
+def process_images(images, image_processor, model_cfg) -> torch.Tensor | list[torch.Tensor]:
     image_aspect_ratio = getattr(model_cfg, "image_aspect_ratio", None)
     new_images = []
     if image_aspect_ratio == "pad":
