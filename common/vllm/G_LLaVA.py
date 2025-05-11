@@ -82,7 +82,7 @@ class GenerateModel(GenerateModelBase):
             image_tensor = process_images([image], self.image_processor, self.model.config)
             if type(image_tensor) is list:
                 image_tensor = [image.to(self.device, dtype=torch.float16) for image in image_tensor]
-            else:
+            elif isinstance(image_tensor, torch.Tensor):
                 image_tensor = image_tensor.to(self.device, dtype=torch.float16)
             prompt = f"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions. USER: <image>\n\nFirst perform reasoning, then finally select the answer from the choices in the following format: Answer: xxx.\nQuestion:{prompts[i].replace('Please directly answer A, B, C or D and nothing else.', '')} ASSISTANT:"
             print(prompt)
