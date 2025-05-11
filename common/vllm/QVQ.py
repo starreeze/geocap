@@ -2,9 +2,10 @@ import importlib.util
 import os
 
 import torch
-from common.args import vqa_args
 from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+
+from common.args import vqa_args
 
 from .base import GenerateModelBase
 

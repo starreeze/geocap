@@ -2,8 +2,9 @@ import importlib.util
 import os
 
 import torch
-from common.args import vqa_args
 from PIL import Image
+
+from common.args import vqa_args
 from qwen2vlm import Qwen2vlmForConditionalGeneration, Qwen2vlmProcessor
 
 from .base import GenerateModelBase

@@ -3,9 +3,9 @@
 # @Author  : Zhangtai.Wu (wzt_1824769368@163.com)
 
 import torch
-from common.args import vqa_args
 from PIL import Image
 
+from common.args import vqa_args
 from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 from llava.conversation import conv_templates
 from llava.mm_utils import get_model_name_from_path, tokenizer_image_token

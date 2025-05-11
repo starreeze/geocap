@@ -8,9 +8,9 @@ import warnings
 
 import requests
 import torch
-from common.args import vqa_args
 from PIL import Image
 
+from common.args import vqa_args
 from llava.constants import (
     DEFAULT_IM_END_TOKEN,
     DEFAULT_IM_START_TOKEN,

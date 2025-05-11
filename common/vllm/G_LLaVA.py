@@ -4,10 +4,10 @@ from io import BytesIO
 
 import requests
 import torch
-from common.args import vqa_args
 from PIL import Image
 from transformers import AutoTokenizer
 
+from common.args import vqa_args
 from llava import LlavaLlamaForCausalLM
 from llava.constants import DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IMAGE_PATCH_TOKEN
 from llava.mm_utils import process_images, tokenizer_image_token
