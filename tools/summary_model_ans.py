@@ -1,6 +1,6 @@
+import argparse
 import json
 import os
-import argparse
 
 __curdir__ = os.path.dirname(__file__)
 working_dir = os.path.join(__curdir__, ".analyse_results")
