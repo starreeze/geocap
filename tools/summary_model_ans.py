@@ -8,12 +8,15 @@ os.makedirs(working_dir, exist_ok=True)
 
 perspectives = ["counting", "existing", "location", "reference", "relation", "size"]
 std_ans_dict = {}
+
+
 def collect_std_ans(questions_path):
     global std_ans_dict
     if os.path.exists(os.path.join(working_dir, "std_ans.json")):
         with open(os.path.join(working_dir, "std_ans.json"), "r") as f:
             std_ans_dict = {
-                perspective: {tuple(k): v for k, v in sub_dict} for perspective, sub_dict in json.load(f).items()
+                perspective: {tuple(k): v for k, v in sub_dict}
+                for perspective, sub_dict in json.load(f).items()
             }
     else:
         std_ans_dict = {}
@@ -64,7 +67,9 @@ def summary_model_ans(results_path):
             with open(os.path.join(model_results_path, perspective + ".jsonl"), "r") as f:
                 while line := f.readline():
                     item = json.loads(line)
-                    model_ans_dict[perspective][item["image_id"], item["question_id"]][model_idx] = item["pred"]
+                    model_ans_dict[perspective][item["image_id"], item["question_id"]][model_idx] = item[
+                        "pred"
+                    ]
 
     with open(os.path.join(working_dir, "model_ans.json"), "w") as f:
         json.dump(
@@ -76,7 +81,10 @@ def summary_model_ans(results_path):
             f,
         )
 
-parser = argparse.ArgumentParser(description="Collect the standard answer and all models' evaluation results.")
+
+parser = argparse.ArgumentParser(
+    description="Collect the standard answer and all models' evaluation results."
+)
 parser.add_argument("--questions_path", type=str, required=True, help="Path to questions directory")
 parser.add_argument(
     "--results_path", type=str, required=True, help="Path to the directory of models' evaluation."
