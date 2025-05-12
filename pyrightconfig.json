@@ -3,7 +3,8 @@
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
-        "llava"
+        "llava",
+        "qwen2vlm"
     ],
     "reportMissingImports": false,
     "reportMissingModuleSource": false

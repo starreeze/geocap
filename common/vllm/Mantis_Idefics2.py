@@ -1,29 +1,11 @@
-# from transformers.image_utils import load_image
-import gc
-import importlib.util
 import os
-import random
-from datetime import datetime
-from typing import Any
 
-import numpy as np
-import torch
 from PIL import Image
-from qwen_vl_utils import process_vision_info
-from tqdm import tqdm
-from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForVision2Seq,
-    AutoProcessor,
-    AutoTokenizer,
-    MllamaForConditionalGeneration,
-    Qwen2VLForConditionalGeneration,
-)
+from transformers import AutoModelForVision2Seq, AutoProcessor
 
 from .base import GenerateModelBase
 
-enable_flash_attn = True
+# enable_flash_attn = True
 
 
 class GenerateModel(GenerateModelBase):
@@ -34,10 +16,10 @@ class GenerateModel(GenerateModelBase):
         self.device = device
         if not (os.path.exists(self.path) and os.path.isdir(self.path) and len(os.listdir(self.path)) > 0):
             raise ValueError(f"The model spec {model} is not supported!")
-        if importlib.util.find_spec("flash_attn") is not None and enable_flash_attn:
-            attn_impl = "flash_attention_2"
-        else:
-            attn_impl = "sdpa"
+        # if importlib.util.find_spec("flash_attn") is not None and enable_flash_attn:
+        #     attn_impl = "flash_attention_2"
+        # else:
+        #     attn_impl = "sdpa"
         self.model = AutoModelForVision2Seq.from_pretrained(self.path, trust_remote_code=True).eval()
         self.model.to(self.device)
         self.processor = AutoProcessor.from_pretrained(self.path, trust_remote_code=True)
