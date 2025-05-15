@@ -1,5 +1,4 @@
 import json
-import random
 
 input_files = [
     "/captions-easy/n0_018k.jsonl",

@@ -178,3 +178,47 @@ def circle_weight_array(window_size: int):
                 total_negative_weight += neg_weight_array[i, j]
 
     return pos_weight_array, neg_weight_array, total_positive_weight, abs(total_negative_weight)
+
+
+def get_circle_points(center: tuple, radius: int, angle_range: list[int]) -> list[tuple]:
+    """
+    Get points on a circle with a given center and radius.
+
+    Args:
+        center (tuple): The center of the circle (x, y)
+        radius (int): The radius of the circle
+        angle_range (list[int]): The range of angles to generate points for
+
+    Returns:
+        list[tuple]: A list of points on the circle
+    """
+    points = []
+    x_center, y_center = center
+
+    # Convert angle range from degrees to radians
+    start_angle_rad = np.radians(angle_range[0])
+    end_angle_rad = np.radians(angle_range[1])
+    assert start_angle_rad < end_angle_rad, "Start angle must be less than end angle"
+
+    # Calculate number of points based on radius (more points for larger radius)
+    # This ensures smooth circle approximation
+    angles = np.linspace(start_angle_rad, end_angle_rad, 30)
+
+    # Generate points along the arc
+    for angle in angles:
+        # Calculate point coordinates
+        x = int(x_center + radius * np.cos(angle))
+        y = int(y_center + radius * np.sin(angle))
+
+        points.append((x, y))
+
+    # Remove points with same x
+    points_with_unique_x = []
+    for point in points:
+        if point[0] not in [p[0] for p in points_with_unique_x]:
+            points_with_unique_x.append(point)
+
+    # Sort points by x
+    points_with_unique_x.sort(key=lambda x: x[0])
+
+    return points_with_unique_x

@@ -87,8 +87,7 @@ def generate_fossil_rules() -> list[dict[str, list]]:
         poles_folds = shape_generator.generate_poles_folds(num_volutions, axial_filling, rule_args)
 
         # Generate other septa folds
-        have_septa_folds = choice([True, False])
-
+        have_septa_folds = choice([True, False], p=[0.7, 0.3])
         if have_septa_folds:
             global_gap = normal(0.7, 0.1)
             septa_folds, num_septa = septa_generator.generate_septa(
@@ -127,6 +126,10 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
     a list of samples where each consists a list of shapes and a list of relations.
     """
     idx, target_num_samples = idx_target
+    # Set random seed for each process
+    seed = os.getpid() + 1
+    np.random.seed(seed)
+
     results = []
     shape_generator = ShapeGenerator(rule_args)
     relation_generator = RelationGenerator(rule_args)
@@ -203,6 +206,9 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
 
 def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
     """Multiprocessing version"""
+
+    seed = os.getpid()
+    np.random.seed(seed)
 
     target_num_samples = {}
     for i, num_samples in enumerate(data_args.num_samples_per_num_shapes):

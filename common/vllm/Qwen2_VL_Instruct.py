@@ -1,25 +1,9 @@
-# from transformers.image_utils import load_image
-import gc
 import importlib.util
 import os
-import random
-from datetime import datetime
-from typing import Any
 
-import numpy as np
 import torch
-from PIL import Image
 from qwen_vl_utils import process_vision_info
-from tqdm import tqdm
-from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForVision2Seq,
-    AutoProcessor,
-    AutoTokenizer,
-    MllamaForConditionalGeneration,
-    Qwen2VLForConditionalGeneration,
-)
+from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
 from .base import GenerateModelBase
 

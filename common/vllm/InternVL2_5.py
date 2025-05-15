@@ -1,31 +1,12 @@
-# from transformers.image_utils import load_image
-import gc
 import importlib.util
 import os
-import random
-from datetime import datetime
-from typing import Any
 
-import numpy as np
-import torch
 from PIL import Image
-from qwen_vl_utils import process_vision_info
-from tqdm import tqdm
-from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForVision2Seq,
-    AutoProcessor,
-    AutoTokenizer,
-    MllamaForConditionalGeneration,
-    Qwen2VLForConditionalGeneration,
-)
 
 from .base import GenerateModelBase
 
 enable_flash_attn = True
 
-import torch
 import torchvision.transforms as T
 from torchvision.transforms.functional import InterpolationMode
 
@@ -166,7 +147,7 @@ class GenerateModel(GenerateModelBase):
             self.path,
             torch_dtype=torch.bfloat16,
             low_cpu_mem_usage=True,
-            use_flash_attn=enable_flash_attn,
+            use_flash_attn=importlib.util.find_spec("flash_attn") is not None and enable_flash_attn,
             trust_remote_code=True,
             device_map=device_map,
         ).eval()

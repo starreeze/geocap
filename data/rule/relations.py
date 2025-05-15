@@ -803,8 +803,8 @@ class CustomedShapeGenerator:
         _stop = False
         for i in range(max_num_volutions):
             self.customed_shape = volutions[-1]
-            # scale_factor = 1.5 * (0.99**i)
-            scale_factor = 1.3 * (0.99**i)
+            scale_factor = 1.4 * (0.98**i)
+            # scale_factor = 1.3 * (0.99**i)
             # scale_factor = normal(1.5, 0.1) * (0.98**i)
 
             if "concentric" in volution_type:
@@ -1074,10 +1074,12 @@ class SeptaGenerator:
                 elif "ellipse" in septa_type:
                     if in_axial_extension_volution and in_axial_extension_angle:
                         mode = np.random.choice(["inner", "outer"])
+                        fill_mode = "white"
                     else:
                         mode = "inner"
+                        fill_mode = "border"
                     septa = self.one_ellipse_septa(
-                        interval, center, fossil_center, theta, mode=mode, fill_mode="white"
+                        interval, center, fossil_center, theta, mode=mode, fill_mode=fill_mode
                     )
 
                 septa.special_info = f"septa of volution {i//step}"
@@ -1107,7 +1109,7 @@ class SeptaGenerator:
         theta: float,
         mode: Literal["outer", "inner"] = "inner",
         size: Literal["big", "small"] = "small",
-        fill_mode: Literal["no", "white", "black"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "no",
     ) -> Ellipse:
         if size == "big":
             major_axis = uniform(0.7 * interval, 0.8 * interval)
@@ -1139,7 +1141,7 @@ class SeptaGenerator:
         next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
         mode: Literal["outer", "inner"] = "inner",
         size: Literal["big", "small"] = "small",
-        fill_mode: Literal["no", "white", "black"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "no",
     ) -> Polygon:
         p1 = volution.get_point(theta + uniform(0.05, 0.1))
         p2 = volution.get_point(theta - uniform(0.05, 0.1))
@@ -1213,7 +1215,7 @@ class SeptaGenerator:
         theta: float,
         volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
         next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
-        fill_mode: Literal["no", "white", "black"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "no",
     ):
         n = len(volution.curve_points)
         p1 = volution.get_point(theta + uniform(0.03, 0.05))

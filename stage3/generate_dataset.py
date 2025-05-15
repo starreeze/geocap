@@ -11,6 +11,7 @@ from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
 from stage3.recognize import recognize_feature
+from stage3.utils import get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
@@ -118,16 +119,25 @@ class DataGenerator:
                     next_points = volutions_dict[idx - 1]
                 elif idx < 0 and idx + 1 in volutions_dict:
                     next_points = volutions_dict[idx + 1]
+                elif idx == 1:
+                    initial_chamber_upper = get_circle_points(
+                        center=initial_chamber[:2], radius=initial_chamber[2] // 2, angle_range=[225, 315]
+                    )
+                    next_points = initial_chamber_upper
+                elif idx == -1:
+                    initial_chamber_lower = get_circle_points(
+                        center=initial_chamber[:2], radius=initial_chamber[2] // 2, angle_range=[45, 135]
+                    )
+                    next_points = initial_chamber_lower
                 else:
-                    continue
+                    raise ValueError(f"Invalid idx: {idx}")
+
                 y_mean = np.mean([point[1] for point in points])
                 next_y_mean = np.mean([point[1] for point in next_points])
-                if abs(idx) - 1 not in volution_heights:
-                    volution_heights[abs(idx) - 1] = abs(y_mean - next_y_mean)
+                if abs(idx) not in volution_heights:
+                    volution_heights[abs(idx)] = abs(y_mean - next_y_mean)
                 else:
-                    volution_heights[abs(idx) - 1] = (
-                        volution_heights[abs(idx) - 1] + abs(y_mean - next_y_mean)
-                    ) / 2
+                    volution_heights[abs(idx)] = (volution_heights[abs(idx)] + abs(y_mean - next_y_mean)) / 2
             # Sort volution_heights by key in ascending order
             volution_heights = dict(sorted(volution_heights.items(), key=lambda item: item[0]))
             new_image_info["volution_heights"] = volution_heights
@@ -161,24 +171,39 @@ class DataGenerator:
         # Add default value if fail to detect
         for i in range(1, num_volutions + 1):
             if i not in tunnel_angles:
-                tunnel_angles[i] = 30
+                tunnel_angles[i] = 25
 
         # Process out of range values
         in_range_angles = [angle for angle in tunnel_angles.values() if low_thres < angle < high_thres]
         if in_range_angles:
             avg_angles = int(sum(in_range_angles) / len(in_range_angles))
         else:
-            avg_angles = 30
+            avg_angles = 25
         for i, angle in tunnel_angles.items():
             if angle < low_thres or angle > high_thres:
                 tunnel_angles[i] = avg_angles
 
         tunnel_angles = dict(sorted(tunnel_angles.items(), key=lambda x: x[0]))
-        # Outer volution has bigger tunnel angles
-        for i, angle in tunnel_angles.items():
-            if i == 1:
-                continue
-            tunnel_angles[i] = max(angle, tunnel_angles[i - 1] - 5)
+
+        # Create a more reliable baseline based on all angles
+        # Calculate a smooth increasing trend for tunnel angles
+        min_angle = min(tunnel_angles.values())
+        max_angle = max(tunnel_angles.values())
+        total_volutions = max(tunnel_angles.keys())
+
+        # If there's a clear increasing trend in the data, preserve it
+        # Otherwise, apply a gentle increasing gradient
+        if max_angle > min_angle and total_volutions > 1:
+            # Calculate average increase per volution
+            avg_increase = (max_angle - min_angle) / (total_volutions - 1)
+
+            # Apply smoothed values
+            base_angle = min(tunnel_angles.values())
+            for i in tunnel_angles.keys():
+                # Gradually increase angle with volution number
+                expected_angle = base_angle + (i - 1) * avg_increase
+                # Blend original and expected values (50% original, 50% expected)
+                tunnel_angles[i] = int(0.5 * tunnel_angles[i] + 0.5 * expected_angle)
 
         return tunnel_angles
 
@@ -227,7 +252,7 @@ class DataGenerator:
 
         width_mm = image_info["img_width"] * image_info["pixel_mm"]
         height_mm = image_info["img_height"] * image_info["pixel_mm"]
-        instruction += f"The resolution of the fossil image is {image_info['img_width']}\u00D7{image_info['img_height']}, "  # \u00D7 -> ×
+        instruction += f"The resolution of the fossil image is {image_info['img_width']}\u00d7{image_info['img_height']}, "  # \u00D7 -> ×
         instruction += f"and the width and height of the image are {width_mm:.3f} mm and {height_mm:.3f} mm, respectively."
 
         return instruction
@@ -448,7 +473,7 @@ def format_to_internvl():
 
 def main():
     # generate_dataset(use_vis_tools=True)
-    # paraphrase()
+    paraphrase()
     tag_format()
     add_default_value()
     # format_to_llava()
