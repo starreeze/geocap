@@ -1,3 +1,4 @@
+# flake8: noqa
 import argparse
 import json
 import os
@@ -11,6 +12,7 @@ import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+from scipy.interpolate import RBFInterpolator, interp1d
 
 # from shape_filter import getMostSimilarImages
 from tqdm import tqdm
@@ -47,9 +49,9 @@ class Figure_Engine:
         width, color, trans = self.__get_essential_info(shape, width, color, trans)
         try:
             index = self.__special_info_validator(shape["special_info"])
-        except Exception:
+        except:
             index = None
-        assert index is None or (-1 <= index and index <= 20)
+        assert index == None or (-1 <= index and index <= 20)
         if shape["type"] == "fusiform_1":
             x_offset = shape["x_offset"]
             y_offset = shape["y_offset"]
@@ -328,13 +330,13 @@ class Figure_Engine:
     def __get_width(self, shape):
         try:
             return shape["width"]
-        except Exception:
+        except:
             return 3
 
     def __get_color(self, shape):
         try:
             return shape["color"]
-        except Exception:
+        except:
             return (random.random(), random.random(), random.random())
 
     def __get_transparency(self, shape):
@@ -345,7 +347,7 @@ class Figure_Engine:
                 trans = (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 trans = (0, 0, 0, 1)
-        except Exception:
+        except:
             trans = (0, 0, 0, 0)  # no
         return trans
 
@@ -362,7 +364,7 @@ class Figure_Engine:
     def transfer_to_cv2(self):
         buf = BytesIO()
         # buf2=BytesIO()
-        self.image.savefig(buf, format="png")
+        self.image.savefig(buf, format="png", facecolor="#FFFFFF")
         # self.image.savefig(buf2,transparent=True,format="png")
         buf.seek(0)
         # buf2.seek(0)
@@ -384,11 +386,11 @@ class Figure_Engine:
         return None
 
     def __keep_memory(self, index, x, y):
-        assert (isinstance(x, float) and isinstance(y, float)) or (len(x) == len(y))  # type: ignore
+        assert (isinstance(x, float) and isinstance(y, float)) or (len(x) == len(y))
         # Suppose the center is the same
-        if index is not None and index >= 0:
+        if index != None and index >= 0:
             angle_value = []
-            for x0, y0 in zip(x, y):  # type: ignore
+            for x0, y0 in zip(x, y):
                 x0 -= self.center[0]
                 y0 -= self.center[1]
                 if x0 == 0:
@@ -421,7 +423,7 @@ def generate_basic_shape_wrapper(data_dict):
     shapes = data_dict["shapes"]
     ni = data_dict["ni"]
     figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
-    # fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
+    fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
     volution_max = {}
     filtered_shapes = []
 
@@ -446,14 +448,290 @@ def generate_basic_shape_wrapper(data_dict):
     return query_img
 
 
+def generate_basic_shape_separately(shapes: list, ni: dict):
+    figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
+    fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
+    volution_max = {}
+    filtered_shapes = []
+
+    def get_volution_index(shape):
+        a = shape["special_info"]
+        return int(a[len("volution ") :])
+
+    for shape in shapes:
+        if re.match("volution [0-9]+", shape["special_info"]) is not None:
+            if volution_max == {}:
+                volution_max = shape
+            else:
+                if get_volution_index(shape) > get_volution_index(volution_max):
+                    volution_max = shape
+        elif re.match("initial chamber", shape["special_info"]) is not None:
+            filtered_shapes.append(shape)
+    for shape in shapes:
+        if shape["special_info"] == volution_max["special_info"]:
+            filtered_shapes.append(shape)
+    for shape in filtered_shapes:
+        figure.draw(shape)
+    basic_img_before = figure.transfer_to_cv2()
+    for shape in shapes:
+        figure.draw(shape)
+    basic_img_after = figure.transfer_to_cv2_wrapper()
+    figure.close()
+    return basic_img_before, basic_img_after, figure.volution_memory, figure.max_volution
+
+
+def get_contour(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contour = max(contours, key=cv2.contourArea)
+    return contour.reshape(-1, 2)
+
+
+def match_point_count(src_pts, dst_pts):
+    # 确保两个轮廓点数一致：插值处理
+    n_src, n_dst = len(src_pts), len(dst_pts)
+    if n_src == n_dst:
+        return src_pts, dst_pts
+
+    # 较少点的作为目标数量
+    target_n = min(n_src, n_dst)
+
+    def interpolate(pts, new_n):
+        x = pts[:, 0]
+        y = pts[:, 1]
+        t = np.linspace(0, 1, len(pts))
+        t_new = np.linspace(0, 1, new_n)
+
+        fx = interp1d(t, x, kind="linear")
+        fy = interp1d(t, y, kind="linear")
+
+        new_x = fx(t_new)
+        new_y = fy(t_new)
+        return np.column_stack((new_x, new_y))
+
+    if n_src > n_dst:
+        src_pts = interpolate(src_pts, target_n)
+        dst_pts = dst_pts
+    else:
+        dst_pts = interpolate(dst_pts, target_n)
+        src_pts = src_pts
+
+    return src_pts.astype(np.float32), dst_pts.astype(np.float32)
+
+
+def apply_tps_warp(img_src, img_dst, src_pts, dst_pts):
+    # 构造TPS变换器
+    tps = RBFInterpolator(src_pts, dst_pts, kernel="thin_plate_spline", neighbors=100)
+
+    h, w = img_dst.shape[:2]
+    grid_x, grid_y = np.meshgrid(np.arange(w), np.arange(h))
+    grid_points = np.column_stack((grid_x.ravel(), grid_y.ravel()))
+
+    warped_points = tps(grid_points)
+    map_xy = warped_points.reshape((h, w, 2)).astype(np.float32)
+    # map_xy[..., 0] = np.clip(map_xy[..., 0], 0, img_src.shape[1] - 1)
+    # map_xy[..., 1] = np.clip(map_xy[..., 1], 0, img_src.shape[0] - 1)
+
+    # 应用变换
+    warped_img = cv2.remap(
+        img_src, map_xy, None, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT
+    )
+    return warped_img
+
+
+def paste_masked_region(image1, image2, mask):
+    """
+    将 image1 中 mask 区域的内容粘贴到 image2 的相同位置上
+    :param image1: 源图像 (BGR格式)
+    :param image2: 目标图像 (BGR格式)
+    :param mask: 单通道二值 mask 图像 (0 或 255)
+    :return: 融合后的图像
+    """
+    # 确保 mask 是单通道的
+    if len(mask.shape) != 2:
+        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+
+    # 创建 mask 的布尔掩码
+    mask_bool = mask.astype(bool)
+
+    # 创建输出图像，初始化为 image2
+    output = image2.copy()
+
+    # 替换 image2 中 mask 区域为 image1 的内容
+    output[mask_bool] = image1[mask_bool]
+
+    return output
+
+
+def resample_contour_uniform(contour, target_points):
+    # 将轮廓点展平
+    points = contour.squeeze()
+    if len(contour) == target_points:
+        return contour
+
+    # 计算轮廓周长
+    distances = np.sqrt(np.sum(np.diff(points, axis=0) ** 2, axis=1))
+    cum_dist = np.insert(np.cumsum(distances), 0, 0)
+    total_length = cum_dist[-1]
+
+    # 计算新的采样点位置
+    sample_distances = np.linspace(0, total_length, target_points)
+
+    # 线性插值获取新点
+    new_points = []
+    for dist in sample_distances:
+        idx = np.searchsorted(cum_dist, dist) - 1
+        idx = max(0, min(idx, len(points) - 2))
+
+        # 计算插值比例
+        ratio = (dist - cum_dist[idx]) / (cum_dist[idx + 1] - cum_dist[idx])
+
+        # 线性插值
+        new_point = points[idx] + ratio * (points[idx + 1] - points[idx])
+        new_points.append(new_point)
+
+    return np.array(new_points).reshape(-1, 1, 2).astype(np.int32)
+
+
+def tpsAxialFilling(base_image, axial_mask_left, axial_mask_right, ref_img_name, debug=None):
+    contour_left = get_contour(255 - axial_mask_left)
+    contour_right = get_contour(255 - axial_mask_right)
+    contour_ref_left = get_contour(cv2.imread(f"axial_fillings/masks/{ref_img_name}-axial_filling_left.png"))
+    contour_ref_right = get_contour(
+        cv2.imread(f"axial_fillings/masks/{ref_img_name}-axial_filling_right.png")
+    )
+
+    ref_img = cv2.imread(f"axial_fillings/{ref_img_name}.png")
+
+    # 匹配点数
+    # num_points_left = min(len(contour_left), len(contour_ref_left))
+    # contour_left = resample_contour_uniform(contour_left,num_points_left)
+    # contour_ref_left = resample_contour_uniform(contour_ref_left,num_points_left)
+
+    # num_points_right = min(len(contour_right), len(contour_ref_right))
+    # contour_right = resample_contour_uniform(contour_right,num_points_right)
+    # contour_ref_right = resample_contour_uniform(contour_ref_right,num_points_right)
+
+    contour_left, contour_ref_left = match_point_count(contour_left, contour_ref_left)
+    contour_right, contour_ref_right = match_point_count(contour_right, contour_ref_right)
+
+    warped_left = apply_tps_warp(ref_img, axial_mask_left, contour_ref_left, contour_left)
+    warped_right = apply_tps_warp(ref_img, axial_mask_right, contour_ref_right, contour_right)
+
+    paste1 = paste_masked_region(warped_left, base_image, 255 - axial_mask_left)
+    paste2 = paste_masked_region(warped_right, paste1, axial_mask_right)
+
+    if debug != None:
+        cv2.imwrite(f"{debug}_axial_left.png", paste1)
+        cv2.imwrite(f"{debug}_axial_right.png", paste2)
+
+    return paste2
+
+
 def generate_basic_shape(shapes: list, ni: dict) -> tuple:
     figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
-    # fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
+    fixed_color = np.random.randn(3) / 6 + np.array((0.1, 0.1, 0.1))
     for shape in shapes:
         figure.draw(shape)
     basic_img = figure.transfer_to_cv2()
     figure.close()
     return basic_img, figure.volution_memory, figure.max_volution
+
+
+def generate_basic_mask_separately(volution_memory: dict, filling: list, debug=None):
+    from bisect import bisect
+
+    mask_left = plt.figure(figsize=(12.8, 12.8), dpi=100)
+    ax1 = mask_left.add_subplot()
+    plt.subplots_adjust(0, 0, 1, 1)
+    ax1.set_xlim(0, 1)
+    ax1.set_ylim(0, 1)
+
+    mask_right = plt.figure(figsize=(12.8, 12.8), dpi=100)
+    ax2 = mask_right.add_subplot()
+    plt.subplots_adjust(0, 0, 1, 1)
+    ax2.set_xlim(0, 1)
+    ax2.set_ylim(0, 1)
+    # volution_memory structure:
+    # -1 -> initial chamber, (x,y) as the middle point
+    # other numbers -> volutions, (x, y, angle) as the points of the volutions, sorted by angle[0:2pi~6.28]
+    current_mask = mask_left
+    for fill in filling:  # experiment suggests that diffusing these together works better
+        start_angle = fill["start_angle"]
+        current_ax = ax1 if start_angle > (np.pi / 2) else ax2
+        if start_angle < 0:
+            start_angle += 2 * np.pi
+        end_angle = fill["end_angle"]
+        if end_angle < 0:
+            end_angle += 2 * np.pi
+        start_volution = volution_memory[fill["start_volution"]]  # shape: x,y,a
+        end_volution = volution_memory[fill["end_volution"]]
+        if start_angle < end_angle:
+            angles = np.linspace(start_angle, end_angle, 1200)
+        else:  # start_angle > end_angle, ignore ==
+            angles1 = np.linspace(start_angle, np.pi * 2, 600)
+            angles2 = np.linspace(0, end_angle, 600)
+            angles = np.concatenate([angles1, angles2])
+        for angle in angles:
+            if angle < 0:
+                angle += 2 * np.pi
+            elif angle > 2 * np.pi:
+                angle -= 2 * np.pi
+            index_at_start = bisect(start_volution[2], angle)
+            index_at_end = bisect(end_volution[2], angle)
+            try:
+                current_ax.plot(
+                    [start_volution[0][index_at_start], end_volution[0][index_at_end]],  # x
+                    [start_volution[1][index_at_start], end_volution[1][index_at_end]],  # y
+                    color="black",
+                    linewidth=5,
+                )
+            except IndexError:
+                current_ax.plot(
+                    [start_volution[0][index_at_start - 1], end_volution[0][index_at_end - 1]],  # x
+                    [start_volution[1][index_at_start - 1], end_volution[1][index_at_end - 1]],  # y
+                    color="black",
+                    linewidth=5,
+                )
+    if debug != None:
+        mask_left.savefig(f"{debug}_Mask_original_left.png")
+        mask_right.savefig(f"{debug}_Mask_original_right.png")
+    buf = BytesIO()
+    mask_left.savefig(buf, format="png", facecolor="#FFFFFF")
+    buf.seek(0)
+
+    img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    img1 = cv2.imdecode(img_array, 1)
+
+    plt.close(mask_left)
+
+    buf = BytesIO()
+    mask_right.savefig(buf, format="png", facecolor="#FFFFFF")
+    buf.seek(0)
+
+    img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    img2 = cv2.imdecode(img_array, 1)
+
+    plt.close(mask_right)
+
+    height, width = img1.shape[:2]
+
+    color = (255, 255, 255)
+
+    rect_thickness = 5
+
+    cv2.rectangle(img1, (0, 0), (width, rect_thickness), color, -1)
+    cv2.rectangle(img1, (0, height - rect_thickness), (width, height), color, -1)
+    cv2.rectangle(img1, (0, 0), (rect_thickness, height), color, -1)
+    cv2.rectangle(img1, (width - rect_thickness, 0), (width, height), color, -1)
+
+    cv2.rectangle(img2, (0, 0), (width, rect_thickness), color, -1)
+    cv2.rectangle(img2, (0, height - rect_thickness), (width, height), color, -1)
+    cv2.rectangle(img2, (0, 0), (rect_thickness, height), color, -1)
+    cv2.rectangle(img2, (width - rect_thickness, 0), (width, height), color, -1)
+
+    return img1, img2
 
 
 def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.ndarray:
@@ -503,7 +781,7 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
                     color="black",
                     linewidth=5,
                 )
-    if debug is not None:
+    if debug != None:
         mask.savefig(f"{debug}_Mask_original.png")
     buf = BytesIO()
     mask.savefig(buf, format="png")
@@ -543,14 +821,39 @@ def get_random_match(dir: str):
     return lucky_guy
 
 
+def processRefImage(ref_image):
+    height, width = ref_image.shape[:2]
+
+    # 计算中间位置的x坐标
+    center_x = width // 2
+
+    # 定义线的起点和终点坐标
+    # 起点: (center_x, 0) - 图像顶部
+    # 终点: (center_x, height-1) - 图像底部
+    start_point = (center_x, 0)
+    end_point = (center_x, height - 1)
+
+    # 定义线的颜色 (BGR格式)，默认为红色
+    color = (255, 255, 255)
+
+    # 定义线的粗细，默认为1像素
+    thickness = 50
+
+    # 在图像上绘制线
+    image_with_line = cv2.line(ref_image, start_point, end_point, color, thickness)
+
+    return image_with_line
+
+
 def diffuse(
     img: np.ndarray,
     mask: np.ndarray,
-    best_ref_poles: str,
+    best_ref_poles: dict,
     ref_path: str,
     num_refs: int,
     mode: str,
     debug=None,
+    sample=None,
 ) -> np.ndarray:
 
     def get_random_ref_image(ref_path: list) -> np.ndarray:
@@ -575,10 +878,35 @@ def diffuse(
     elif mode == "poles":
         # ref_paths = [os.path.join(ref_path, f"ref_{x:08}.png") for x in range(num_refs)]
         # ref_image = get_best_match(img, ref_paths)
-        ref_image = cv2.imread(best_ref_poles, cv2.IMREAD_UNCHANGED)
-        ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2BGR)
+        ref_image = cv2.imread(best_ref_poles["best_ref"], cv2.IMREAD_UNCHANGED)
+        target_width = abs(best_ref_poles["bbox"][0][0] - best_ref_poles["bbox"][1][0])
+        target_height = abs(best_ref_poles["bbox"][0][1] - best_ref_poles["bbox"][1][1])
+        original_height, original_width = ref_image.shape[:2]
+        original_ratio = original_width / original_height
+        target_ratio = target_width / target_height
 
-    if debug is not None:
+        # 计算新尺寸
+        if original_ratio < target_ratio:
+            # 原始图像更"瘦高"，需要放大宽度
+            new_width = int(original_height * target_ratio)
+            new_height = original_height
+        else:
+            # 原始图像更"矮胖"，需要放大高度
+            new_width = original_width
+            new_height = int(original_width / target_ratio)
+
+        # 使用INTER_CUBIC插值进行放大（保持高质量）
+        ref_image = cv2.resize(ref_image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
+        # query_image_outer = generate_basic_shape_wrapper({
+        #     "shapes":sample["shapes"], "ni":sample["numerical_info"]
+        # })
+        # ref_image = getTPSReference(query_image_outer,ref_image)
+        transparent_mask = ref_image[:, :, 3] == 0  # alpha通道为0的像素
+        ref_image[transparent_mask] = [255, 255, 255, 255]  # 一次性设置RGBA
+        ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2BGR)
+        ref_image = processRefImage(ref_image)
+
+    if debug != None:
         cv2.imwrite(f"{debug}_Image.png", img)
         cv2.imwrite(f"{debug}_Reference.png", ref_image)
 
@@ -587,7 +915,7 @@ def diffuse(
     )
 
     synthesis = crop_padding_and_resize(img, synthesis)
-    if debug is not None:
+    if debug != None:
         cv2.imwrite(f"{debug}_SYNTH_1.png", synthesis)
 
     return synthesis.astype(np.uint8)
@@ -599,8 +927,8 @@ def generate_septa(septas: list, debug=None) -> np.ndarray:
     for septa in septas:
         figure.draw(septa, color=fixed_color)
     cv2_fig = figure.transfer_to_cv2()
-    if debug is not None:
-        cv2.imwrite("test_septa_xkcd.jpg", cv2_fig)
+    if debug != None:
+        cv2.imwrite(f"test_septa_xkcd.jpg", cv2_fig)
     cv2_fig = Image.fromarray(cv2.cvtColor(cv2_fig, cv2.COLOR_BGR2RGB))
     cv2_fig = cv2_fig.convert("L")
     cv2_fig = cv2_fig.convert("RGB")
@@ -616,7 +944,7 @@ def generate_one_img(
     debug_folder = keyword
     if not os.path.exists(f"{debug_folder}/DEBUG"):
         os.makedirs(f"{debug_folder}/DEBUG", exist_ok=True)
-    basic_img, volution_memory, max_volution = generate_basic_shape(
+    basic_img_before, basic_img_after, volution_memory, max_volution = generate_basic_shape_separately(
         sample["shapes"], sample["numerical_info"]
     )
     if best_ref is None:
@@ -630,16 +958,27 @@ def generate_one_img(
     else:
         best_ref_poles = best_ref
     basic_mask = generate_basic_mask(volution_memory, sample["axial_filling"])
-    # diffused_basic_img = diffuse(basic_img, basic_mask, best_ref_poles, ref_path, num_refs, mode = 'axial',debug=f'{debug_folder}/DEBUG/{idx}_pre')
+    # basic_mask_left,basic_mask_right=generate_basic_mask_separately(volution_memory, sample["axial_filling"],debug=f'{debug_folder}/DEBUG/{idx}_post')
+
     diffused_basic_img = diffuse(
-        basic_img, basic_mask, best_ref_poles, ref_path, num_refs, mode="axial", debug=None
+        basic_img_before, basic_mask, best_ref_poles, ref_path, num_refs, mode="axial", debug=None
     )
+    # diffused_basic_img = tpsAxialFilling(basic_img_before,basic_mask_left,basic_mask_right,"Chusenella_absidata_1_4", debug=f'{debug_folder}/DEBUG/{idx}_post')
+
+    diffused_basic_img[basic_img_after[:, :, 3] > 0] = basic_img_after[basic_img_after[:, :, 3] > 0][:, :3]
     # septa_overlayer = generate_septa(sample["septa_folds"])
     # diffused_basic_img = np.minimum(diffused_basic_img,septa_overlayer)
     poles_mask = generate_basic_mask(volution_memory, sample["poles_folds"], debug=None)
     # diffused_img = diffuse(diffused_basic_img, poles_mask, best_ref_poles, ref_path, num_refs, mode = 'poles',debug=f'{debug_folder}/DEBUG/{idx}_post')
     diffused_img = diffuse(
-        diffused_basic_img, poles_mask, best_ref_poles, ref_path, num_refs, mode="poles", debug=None
+        diffused_basic_img,
+        poles_mask,
+        best_ref_poles,
+        ref_path,
+        num_refs,
+        mode="poles",
+        debug=None,
+        sample=sample,
     )
     septa_overlayer = generate_septa(sample["septa_folds"])
     blended_img = np.minimum(diffused_img, septa_overlayer)
@@ -696,9 +1035,7 @@ def main():
     best_ref_list = []
     with open(args.best_match, "r") as f:
         # "stage2_100k_bestmatch_part2.json"
-        for line in f:
-            line = line.strip()
-            best_ref_list.append(line)
+        best_ref_list = json.load(f)
     if args.end_pos is not None:
         samples = samples[args.start_pos : args.end_pos]
         best_ref_list = best_ref_list[args.start_pos : args.end_pos]
