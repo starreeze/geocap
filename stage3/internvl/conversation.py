@@ -8,7 +8,7 @@ If you have changes in mind, please contribute back so the community can benefit
 import dataclasses
 from enum import IntEnum, auto
 from typing import Any, Dict, List, Optional, Tuple, Union
-
+from dataclasses import field
 
 class SeparatorStyle(IntEnum):
     """Separator styles."""
@@ -46,7 +46,7 @@ class Conversation:
     # The names of two roles
     roles: Tuple[str, str] = ("USER", "ASSISTANT")
     # All messages. Each item is (role, message).
-    messages: Optional[List[List[str]]] = None
+    messages: List[List[str]] = field(default_factory=list)
     # The number of few shot examples
     offset: int = 0
     # The separator style and configurations
