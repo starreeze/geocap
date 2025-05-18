@@ -98,7 +98,8 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
 
 
 def generate_septa(septas: list, debug=None) -> tuple:
-    def fill_septas(xs, ys, centers, cv2_fig: np.ndarray):
+    def fill_septas(xs, ys, centers, cv2_fig: np.ndarray, alpha_channel:np.ndarray):
+        gray_cv2_fig = cv2.cvtColor(cv2_fig, cv2.COLOR_BGR2GRAY)
         for x, y, center in zip(xs, ys, centers):
             if center is None:
                 continue
@@ -129,12 +130,14 @@ def generate_septa(septas: list, debug=None) -> tuple:
                     # print(type(cv2_fig[dx][dy]),cv2_fig[dx][dy])
                     # print(dx,dy)
                     # assert 0
-                    if cv2_fig[dy][dx][0] < 127 and cv2_fig[dy][dx][1] < 127 and cv2_fig[dy][dx][2] < 127:
+                    if gray_cv2_fig[dy][dx] < 127:
                         # print(cv2_fig[dx][dy])
                         break
                     # print(f"Converted {(dx,dy)} from {cv2_fig[dx][dy]} to 0")
                     alpha_channel[dy][dx] = 255
                     history.append((dx, dy))
+        whiteboard = np.full(alpha_channel.shape, 255, dtype=alpha_channel.dtype)
+        alpha_channel = np.where(gray_cv2_fig < 32, whiteboard, alpha_channel)
         return alpha_channel
 
     figure = Figure_Engine(xkcd=True)
@@ -165,7 +168,7 @@ def generate_septa(septas: list, debug=None) -> tuple:
     cv2_fig = cv2_fig.convert("RGB")
     cv2_fig = np.asarray(cv2_fig)
     cv2_fig = cv2.cvtColor(cv2_fig, cv2.COLOR_RGB2BGR)
-    alpha_channel = fill_septas(xs, ys, centers, cv2_fig)
+    alpha_channel = fill_septas(xs, ys, centers, cv2_fig, alpha_channel)
     figure.close()
     cv2.imwrite("DEBUG_HERE_2.png", alpha_channel)
     return cv2_fig, alpha_channel
@@ -216,10 +219,9 @@ def generate_one_img(
     # diffused_img = diffuse(diffused_basic_img, poles_mask, best_ref_poles, ref_path, num_refs, mode = 'poles',debug=None)
     diffused_img = redraw_basic_shapes(diffused_img, sample["shapes"])
     septa_overlayer, alpha_mask = generate_septa(sample["septa_folds"])
-
-    base_blend = np.minimum(diffused_img, septa_overlayer)
+    
     alpha_mask = alpha_mask[..., None]
-    blended_img = np.where(alpha_mask, septa_overlayer, base_blend)
+    blended_img = np.where(alpha_mask==255, septa_overlayer, diffused_img)
 
     blended_img = cv2.cvtColor(blended_img, cv2.COLOR_BGR2GRAY)
     img_path = f"{keyword}/{img_path}"
