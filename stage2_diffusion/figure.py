@@ -122,7 +122,7 @@ class Figure_Engine:
         major: float,
         minor: float,
         alpha: float,
-        line_width: int,
+        line_width: float,
         color: Any,
         transparency: tuple = (0, 0, 0, 1),
         index=None,
@@ -172,7 +172,7 @@ class Figure_Engine:
 
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
-        self.__keep_memory(index, np.concatenate([x, x]), np.concatenate([y1, y2]))
+        self.__keep_memory(index, list(np.concatenate([x, x])), list(np.concatenate([y1, y2])))
 
     def __handle_fusiform_2(
         self,
@@ -221,12 +221,12 @@ class Figure_Engine:
 
         self.__keep_memory(
             index,
-            np.concatenate([x, x, x_start_lst, x_end_lst]),
-            np.concatenate([y1, y2, y_start_lst, y_end_lst]),
+            list(np.concatenate([x, x, x_start_lst, x_end_lst])),
+            list(np.concatenate([y1, y2, y_start_lst, y_end_lst])),
         )
 
     def __handle_curve(
-        self, control_points, width: int = 5, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
+        self, control_points, width: float = 5.0, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
     ):
         curve_points = []
         t_values = np.linspace(0, 1, 600)
@@ -263,16 +263,20 @@ class Figure_Engine:
     def __get_width(self, shape):
         try:
             return shape["width"]
-        except Exception as e:
-            print(e)
-            return 2
+        except Exception:
+            return 1.8
 
     def __get_color(self, shape):
         try:
             return shape["color"]
-        except Exception as e:
-            print(e)
-            return (random.random(), random.random(), random.random())
+        except Exception:
+            try:
+                if shape["fill_mode"] == "border":
+                    return (0, 0, 0, 1)
+                else:
+                    return (1, 1, 1, 1)
+            except Exception:
+                return (random.random(), random.random(), random.random())
 
     def __get_transparency(self, shape):
         try:
@@ -282,8 +286,7 @@ class Figure_Engine:
                 trans = (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 trans = (0, 0, 0, 1)
-        except Exception as e:
-            print(e)
+        except Exception:
             trans = (0, 0, 0, 0)  # no
         return trans
 
