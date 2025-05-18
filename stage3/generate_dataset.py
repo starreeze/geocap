@@ -252,7 +252,7 @@ class DataGenerator:
 
         width_mm = image_info["img_width"] * image_info["pixel_mm"]
         height_mm = image_info["img_height"] * image_info["pixel_mm"]
-        instruction += f"The resolution of the fossil image is {image_info['img_width']}\u00D7{image_info['img_height']}, "  # \u00D7 -> ×
+        instruction += f"The resolution of the fossil image is {image_info['img_width']}\u00d7{image_info['img_height']}, "  # \u00D7 -> ×
         instruction += f"and the width and height of the image are {width_mm:.3f} mm and {height_mm:.3f} mm, respectively."
 
         return instruction

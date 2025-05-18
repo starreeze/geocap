@@ -1,4 +1,5 @@
 "draw geometry shapes according to generated rules"
+
 import json
 import random
 from typing import Any
