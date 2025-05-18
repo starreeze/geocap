@@ -263,19 +263,19 @@ class Figure_Engine:
     def __get_width(self, shape):
         try:
             return shape["width"]
-        except Exception as e:
+        except Exception:
             return 1.8
 
     def __get_color(self, shape):
         try:
             return shape["color"]
-        except Exception as e:
+        except Exception:
             try:
                 if shape["fill_mode"] == "border":
-                    return (0,0,0,1)
+                    return (0, 0, 0, 1)
                 else:
-                    return (1,1,1,1)
-            except Exception as e:
+                    return (1, 1, 1, 1)
+            except Exception:
                 return (random.random(), random.random(), random.random())
 
     def __get_transparency(self, shape):
@@ -286,7 +286,7 @@ class Figure_Engine:
                 trans = (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 trans = (0, 0, 0, 1)
-        except Exception as e:
+        except Exception:
             trans = (0, 0, 0, 0)  # no
         return trans
 

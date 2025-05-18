@@ -98,7 +98,7 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
 
 
 def generate_septa(septas: list, debug=None) -> tuple:
-    def fill_septas(xs, ys, centers, cv2_fig: np.ndarray, alpha_channel:np.ndarray):
+    def fill_septas(xs, ys, centers, cv2_fig: np.ndarray, alpha_channel: np.ndarray):
         gray_cv2_fig = cv2.cvtColor(cv2_fig, cv2.COLOR_BGR2GRAY)
         for x, y, center in zip(xs, ys, centers):
             if center is None:
@@ -219,9 +219,9 @@ def generate_one_img(
     # diffused_img = diffuse(diffused_basic_img, poles_mask, best_ref_poles, ref_path, num_refs, mode = 'poles',debug=None)
     diffused_img = redraw_basic_shapes(diffused_img, sample["shapes"])
     septa_overlayer, alpha_mask = generate_septa(sample["septa_folds"])
-    
+
     alpha_mask = alpha_mask[..., None]
-    blended_img = np.where(alpha_mask==255, septa_overlayer, diffused_img)
+    blended_img = np.where(alpha_mask == 255, septa_overlayer, diffused_img)
 
     blended_img = cv2.cvtColor(blended_img, cv2.COLOR_BGR2GRAY)
     img_path = f"{keyword}/{img_path}"
