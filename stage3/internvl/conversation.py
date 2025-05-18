@@ -10,6 +10,7 @@ from enum import IntEnum, auto
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import field
 
+
 class SeparatorStyle(IntEnum):
     """Separator styles."""
 
