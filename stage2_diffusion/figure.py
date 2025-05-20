@@ -300,18 +300,18 @@ class Figure_Engine:
 
         return query_img
 
-    def transfer_to_cv2(self):
+    def transfer_to_cv2(self, transparent=True):
         buf = BytesIO()
-        # buf2=BytesIO()
-        self.image.savefig(buf, format="png", transparent=True)
-        # self.image.savefig(buf2,transparent=True,format="png")
+        if transparent:
+            self.image.savefig(buf, format="png", transparent=True)
+        else:
+            for ax in self.image.axes:
+                ax.set_facecolor("none")  # 移除 Axes 背景色
+            self.image.savefig(buf, format="png", transparent=False, facecolor="#FFFFFF")
         buf.seek(0)
-        # buf2.seek(0)
 
         img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
-        # query_img_array=np.frombuffer(buf2.getvalue(),dtype=np.uint8)
-        # query_img=cv2.imdecode(query_img_array,cv2.IMREAD_UNCHANGED)
         return img
 
     def __special_info_validator(self, special_info):
