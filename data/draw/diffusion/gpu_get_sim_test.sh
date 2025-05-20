@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=4 python gpu_get_sim.py --rules /home/nfs05/xiangch/geocap/dataset/rules_stage2/$1.json --save_path /home/nfs05/xiangch/geocap/dataset/rules_stage2/$1/best_match.txt

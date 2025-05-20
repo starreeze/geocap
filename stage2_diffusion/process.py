@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import random
+import re
 from io import BytesIO
 
 import cv2
@@ -11,7 +12,6 @@ from diffuser import diffuse
 from figure import Figure_Engine
 from PIL import Image
 from tqdm import tqdm
-import re
 
 
 def generate_basic_shape(shapes: list, ni: dict) -> tuple:
@@ -97,15 +97,18 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
 
     return img
 
+
 def generate_basic_shape_separately(shapes: list, ni: dict):
     figure = Figure_Engine(max_volution=int(ni["num_volutions"]), center=ni["center"])
     fixed_color = np.abs(np.random.randn(3) / 10 + np.array((0.1, 0.1, 0.1)))
     face_color = np.array([fixed_color[0], fixed_color[1], fixed_color[2], 1])
     volution_max = {}
-    filtered_shapes=[]
+    filtered_shapes = []
+
     def get_volution_index(shape):
         a = shape["special_info"]
         return int(a[len("volution ") :])
+
     for shape in shapes:
         if re.match("volution [0-9]+", shape["special_info"]) is not None:
             if volution_max == {}:
@@ -113,7 +116,7 @@ def generate_basic_shape_separately(shapes: list, ni: dict):
             else:
                 if get_volution_index(shape) > get_volution_index(volution_max):
                     volution_max = shape
-        elif re.match("initial chamber",shape["special_info"]) is not None:
+        elif re.match("initial chamber", shape["special_info"]) is not None:
             filtered_shapes.append(shape)
     for shape in shapes:
         if shape["special_info"] == volution_max["special_info"]:
@@ -126,6 +129,7 @@ def generate_basic_shape_separately(shapes: list, ni: dict):
     basic_img_after = figure.transfer_to_cv2()
     figure.close()
     return basic_img_before, basic_img_after, figure.volution_memory, figure.max_volution
+
 
 def generate_septa(septas: list, debug=None) -> tuple:
     def fill_septas(xs, ys, centers, cv2_fig: np.ndarray, alpha_channel: np.ndarray):
@@ -222,8 +226,16 @@ def generate_one_img(
     )
     best_ref_poles = best_ref
     basic_mask = generate_basic_mask(volution_memory, sample["axial_filling"])
-    diffused_basic_img = diffuse(basic_img_before, basic_mask, best_ref_poles, ref_path, num_refs, mode = 'axial',debug=f"{debug_folder}/DEBUG/{idx}_pre",)
-    diffused_basic_img[basic_img_after[:,:,3]>0]=basic_img_after[basic_img_after[:,:,3]>0][:,:3]
+    diffused_basic_img = diffuse(
+        basic_img_before,
+        basic_mask,
+        best_ref_poles,
+        ref_path,
+        num_refs,
+        mode="axial",
+        debug=f"{debug_folder}/DEBUG/{idx}_pre",
+    )
+    diffused_basic_img[basic_img_after[:, :, 3] > 0] = basic_img_after[basic_img_after[:, :, 3] > 0][:, :3]
     # diffused_basic_img = diffuse(basic_img, basic_mask, best_ref_poles, ref_path, num_refs, mode = 'axial',debug=None)
     # septa_overlayer = generate_septa(sample["septa_folds"])
     # diffused_basic_img = np.minimum(diffused_basic_img,septa_overlayer)
