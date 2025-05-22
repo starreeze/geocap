@@ -251,22 +251,19 @@ class Figure_Engine:
         return curve_points[:, 0], curve_points[:, 1], center
 
     def __get_essential_info(self, shape, width, color, trans):
-        if width is None:
-            width = self.__get_width(shape)
-        if color is None:
-            color = self.__get_color(shape)
-        color = np.clip(color, 0, 1)
-        if trans is None:
-            trans = self.__get_transparency(shape)
-        return width, color, trans
+        w = self.__get_width(shape, width)
+        c = self.__get_color(shape, color)
+        c = np.clip(c, 0, 1)
+        t = self.__get_transparency(shape, trans)
+        return w, c, t
 
-    def __get_width(self, shape):
+    def __get_width(self, shape, width: float):
         try:
             return shape["width"]
         except Exception:
-            return 1.8
+            return 1.8 if width is None else width
 
-    def __get_color(self, shape):
+    def __get_color(self, shape, color):
         try:
             return shape["color"]
         except Exception:
@@ -276,19 +273,20 @@ class Figure_Engine:
                 else:
                     return (1, 1, 1, 1)
             except Exception:
-                return (random.random(), random.random(), random.random())
+                return (random.random(), random.random(), random.random()) if color is None else color
 
-    def __get_transparency(self, shape):
+    def __get_transparency(self, shape, t):
         try:
             if shape["fill_mode"] == "no":
-                trans = (0, 0, 0, 0)
+                return (0, 0, 0, 0)
             elif shape["fill_mode"] == "white":
-                trans = (1, 1, 1, 1)
+                return (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
-                trans = (0, 0, 0, 1)
+                return (0, 0, 0, 1)
+            else:
+                return (0, 0, 0, 0)
         except Exception:
-            trans = (0, 0, 0, 0)  # no
-        return trans
+            return (0, 0, 0, 0) if t is None else t  # no
 
     def transfer_to_cv2_wrapper(self):
         buf2 = BytesIO()
