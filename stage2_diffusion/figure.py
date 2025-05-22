@@ -122,7 +122,7 @@ class Figure_Engine:
         major: float,
         minor: float,
         alpha: float,
-        line_width: int,
+        line_width: float,
         color: Any,
         transparency: tuple = (0, 0, 0, 1),
         index=None,
@@ -226,7 +226,7 @@ class Figure_Engine:
         )
 
     def __handle_curve(
-        self, control_points, width: int = 5, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
+        self, control_points, width: float = 3.0, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
     ):
         curve_points = []
         t_values = np.linspace(0, 1, 600)
