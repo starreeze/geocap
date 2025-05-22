@@ -129,7 +129,7 @@ class Figure_Engine:
     ):
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
-        with plt.xkcd(randomness=20):
+        with plt.xkcd(randomness=15):
             self.ax.add_patch(
                 pch.Ellipse(
                     (ellipse_x, ellipse_y),
@@ -226,7 +226,7 @@ class Figure_Engine:
         )
 
     def __handle_curve(
-        self, control_points, width: float = 5.0, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
+        self, control_points, width: float = 3.0, color=(0, 0, 0, 1), index=None, trans=(0, 0, 0, 1)
     ):
         curve_points = []
         t_values = np.linspace(0, 1, 600)
@@ -240,7 +240,7 @@ class Figure_Engine:
             )
             curve_points.append(tuple(point))
         curve_points = np.array(curve_points)
-        with plt.xkcd(randomness=20):
+        with plt.xkcd(randomness=15):
             self.ax.plot(
                 curve_points[:, 0], curve_points[:, 1], linewidth=width * (self.shape[0] / 640), color=color
             )
@@ -298,18 +298,18 @@ class Figure_Engine:
 
         return query_img
 
-    def transfer_to_cv2(self, transparent=True):
+    def transfer_to_cv2(self):
         buf = BytesIO()
-        if transparent:
-            self.image.savefig(buf, format="png", transparent=True)
-        else:
-            for ax in self.image.axes:
-                ax.set_facecolor("none")  # 移除 Axes 背景色
-            self.image.savefig(buf, format="png", transparent=False, facecolor="#FFFFFF")
+        # buf2=BytesIO()
+        self.image.savefig(buf, format="png", transparent=True)
+        # self.image.savefig(buf2,transparent=True,format="png")
         buf.seek(0)
+        # buf2.seek(0)
 
         img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
+        # query_img_array=np.frombuffer(buf2.getvalue(),dtype=np.uint8)
+        # query_img=cv2.imdecode(query_img_array,cv2.IMREAD_UNCHANGED)
         return img
 
     def __special_info_validator(self, special_info):

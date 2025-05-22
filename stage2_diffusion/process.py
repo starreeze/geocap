@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import random
-import re
 from io import BytesIO
 
 import cv2
@@ -216,6 +215,14 @@ def generate_septa(septas: list, debug=None) -> tuple:
     return cv2_fig, alpha_channel
 
 
+def post_processing(img: np.ndarray):
+    img = cv2.convertScaleAbs(img, alpha=1.5, beta=0)
+    laplacian = cv2.Laplacian(img, cv2.CV_64F)
+    laplacian = np.uint8(np.absolute(laplacian))
+    sharpened = cv2.addWeighted(img, 1, laplacian, 1, 0)
+    return sharpened
+
+
 def generate_one_img(
     idx,
     sample,
@@ -229,13 +236,13 @@ def generate_one_img(
     debug_folder = keyword
     if not os.path.exists(f"{debug_folder}/DEBUG"):
         os.makedirs(f"{debug_folder}/DEBUG", exist_ok=True)
-    basic_img_before, basic_img_after, volution_memory, max_volution = generate_basic_shape_separately(
+    basic_img, volution_memory, max_volution = generate_basic_shape(
         sample["shapes"], sample["numerical_info"]
     )
     best_ref_poles = best_ref
     basic_mask = generate_basic_mask(volution_memory, sample["axial_filling"])
     diffused_basic_img = diffuse(
-        basic_img_before,
+        basic_img,
         basic_mask,
         best_ref_poles,
         ref_path,
@@ -243,7 +250,6 @@ def generate_one_img(
         mode="axial",
         debug=f"{debug_folder}/DEBUG/{idx}_pre",
     )
-    diffused_basic_img[basic_img_after[:, :, 3] > 0] = basic_img_after[basic_img_after[:, :, 3] > 0][:, :3]
     # diffused_basic_img = diffuse(basic_img, basic_mask, best_ref_poles, ref_path, num_refs, mode = 'axial',debug=None)
     # septa_overlayer = generate_septa(sample["septa_folds"])
     # diffused_basic_img = np.minimum(diffused_basic_img,septa_overlayer)
@@ -271,6 +277,7 @@ def generate_one_img(
     img_path = f"{keyword}/{img_path}"
     if not os.path.exists(f"{keyword}"):
         os.mkdir(f"{keyword}")
+    cv2.imwrite(img_path, final_img)
     cv2.imwrite(img_path, final_img)
 
 
