@@ -283,9 +283,12 @@ class Figure_Engine:
                 return (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 return (0, 0, 0, 1)
+            elif shape["fill_mode"] == "border":
+                return (0, 0, 0, 0)
+            else:
+                raise Exception("Invalid fill_mode arg")
         except Exception:
-            return (0, 0, 0, 0)  # no
-        return trans if trans is not None else (0, 0, 0, 0)
+            return trans if trans is not None else (0, 0, 0, 0)
 
     def transfer_to_cv2_wrapper(self):
         buf2 = BytesIO()
