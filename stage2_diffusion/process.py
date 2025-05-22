@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import random
+import re
 from io import BytesIO
 
 import cv2
@@ -95,14 +96,6 @@ def generate_basic_mask(volution_memory: dict, filling: list, debug=None) -> np.
     plt.close(mask)
 
     return img
-
-
-def post_processing(img: np.ndarray):
-    img = cv2.convertScaleAbs(img, alpha=1.5, beta=0)
-    laplacian = cv2.Laplacian(img, cv2.CV_64F)
-    laplacian = np.uint8(np.absolute(laplacian))
-    sharpened = cv2.addWeighted(img, 1, laplacian, 1, 0)
-    return sharpened
 
 
 def generate_basic_shape_separately(shapes: list, ni: dict):

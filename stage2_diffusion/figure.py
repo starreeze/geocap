@@ -298,10 +298,10 @@ class Figure_Engine:
 
         return query_img
 
-    def transfer_to_cv2(self):
+    def transfer_to_cv2(self, transparent=True):
         buf = BytesIO()
         # buf2=BytesIO()
-        self.image.savefig(buf, format="png", transparent=True)
+        self.image.savefig(buf, format="png", transparent=transparent)
         # self.image.savefig(buf2,transparent=True,format="png")
         buf.seek(0)
         # buf2.seek(0)
