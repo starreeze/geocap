@@ -1070,7 +1070,7 @@ class SeptaGenerator:
                 interval, center = self.get_interval_center(volution, next_volution, theta)
                 septa_type = np.random.choice(["curve", "ellipse"])
                 if "curve" in septa_type:
-                    septa = self.one_curve_septa(interval, theta, volution, next_volution, fill_mode="white")
+                    septa = self.one_curve_septa(interval, theta, volution, next_volution, fill_mode="border")
                 elif "ellipse" in septa_type:
                     if in_axial_extension_volution and in_axial_extension_angle:
                         mode = np.random.choice(["inner", "outer"])
