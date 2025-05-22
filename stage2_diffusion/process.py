@@ -208,6 +208,14 @@ def generate_septa(septas: list, debug=None) -> tuple:
     return cv2_fig, alpha_channel
 
 
+def post_processing(img: np.ndarray):
+    img = cv2.convertScaleAbs(img, alpha=1.5, beta=0)
+    laplacian = cv2.Laplacian(img, cv2.CV_64F)
+    laplacian = np.uint8(np.absolute(laplacian))
+    sharpened = cv2.addWeighted(img, 1, laplacian, 1, 0)
+    return sharpened
+
+
 def generate_one_img(
     idx,
     sample,
@@ -259,10 +267,11 @@ def generate_one_img(
     blended_img = np.where(alpha_mask == 255, septa_overlayer, diffused_img)
 
     blended_img = cv2.cvtColor(blended_img, cv2.COLOR_BGRA2GRAY)
+    final_img = post_processing(blended_img)
     img_path = f"{keyword}/{img_path}"
     if not os.path.exists(f"{keyword}"):
         os.mkdir(f"{keyword}")
-    cv2.imwrite(img_path, blended_img)
+    cv2.imwrite(img_path, final_img)
 
 
 def main():
