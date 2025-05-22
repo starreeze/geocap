@@ -55,12 +55,12 @@ def diffuse(
         ref_image = cv2.imread(random.choice(ref_path))
         return ref_image
 
-    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGRA2RGB))
+    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     pil_img = pil_img.convert("L").convert("RGB")
     img = np.asarray(pil_img)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
-    pil_mask = Image.fromarray(cv2.cvtColor(mask, cv2.COLOR_BGRA2RGB))
+    pil_mask = Image.fromarray(cv2.cvtColor(mask, cv2.COLOR_BGR2RGB))
     pil_mask = pil_mask.convert("L")
     mask = np.asarray(pil_mask)
     mask = 255 - mask
@@ -75,7 +75,7 @@ def diffuse(
         ref_image = cv2.imread(best_ref_poles["best_ref"], cv2.IMREAD_UNCHANGED)
         transparent_mask = ref_image[:, :, 3] == 0  # alpha通道为0的像素
         ref_image[transparent_mask] = [255, 255, 255, 255]  # 一次性设置RGBA
-        ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2RGB)
+        ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2BGR)
         target_width = abs(best_ref_poles["bbox"][0][0] - best_ref_poles["bbox"][1][0])
         target_height = abs(best_ref_poles["bbox"][0][1] - best_ref_poles["bbox"][1][1])
         original_height, original_width = ref_image.shape[:2]
