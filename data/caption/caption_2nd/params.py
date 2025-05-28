@@ -32,6 +32,12 @@ proloculus_size_classes = {
 
 proloculus_shape_classes = {"spherical": [0, 0.33], "normal": [0.33, 0.67], "kidney-shaped": [0.67, 1]}
 
+volution_coiled_classes = {
+    "tightly coiled": [0, 0.150],
+    "moderately coiled": [0.150, 0.2],
+    "lossely expanded": [0.2, 999],
+}
+
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
 
 chomata_size_classes = {"small": [0, 0.06], "moderate": [0.06, 0.1], "massive": [0.1, 9999]}

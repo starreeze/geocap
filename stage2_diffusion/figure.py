@@ -251,22 +251,19 @@ class Figure_Engine:
         return curve_points[:, 0], curve_points[:, 1], center
 
     def __get_essential_info(self, shape, width, color, trans):
-        if width is None:
-            width = self.__get_width(shape)
-        if color is None:
-            color = self.__get_color(shape)
-        color = np.clip(color, 0, 1)
-        if trans is None:
-            trans = self.__get_transparency(shape)
-        return width, color, trans
+        w = self.__get_width(shape, width)
+        c = self.__get_color(shape, color)
+        c = np.clip(c, 0, 1)
+        t = self.__get_transparency(shape, trans)
+        return w, c, t
 
-    def __get_width(self, shape):
+    def __get_width(self, shape, width: float):
         try:
             return shape["width"]
         except Exception:
-            return 1.8
+            return 1.8 if width is None else width
 
-    def __get_color(self, shape):
+    def __get_color(self, shape, color):
         try:
             return shape["color"]
         except Exception:
@@ -276,19 +273,22 @@ class Figure_Engine:
                 else:
                     return (1, 1, 1, 1)
             except Exception:
-                return (random.random(), random.random(), random.random())
+                return (random.random(), random.random(), random.random()) if color is None else color
 
-    def __get_transparency(self, shape):
+    def __get_transparency(self, shape, trans):
         try:
             if shape["fill_mode"] == "no":
-                trans = (0, 0, 0, 0)
+                return (0, 0, 0, 0)
             elif shape["fill_mode"] == "white":
-                trans = (1, 1, 1, 1)
+                return (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
-                trans = (0, 0, 0, 1)
+                return (0, 0, 0, 1)
+            elif shape["fill_mode"] == "border":
+                return (0, 0, 0, 0)
+            else:
+                raise Exception("Invalid fill_mode arg")
         except Exception:
-            trans = (0, 0, 0, 0)  # no
-        return trans
+            return trans if trans is not None else (0, 0, 0, 0)
 
     def transfer_to_cv2_wrapper(self):
         buf2 = BytesIO()
@@ -300,18 +300,18 @@ class Figure_Engine:
 
         return query_img
 
-    def transfer_to_cv2(self):
+    def transfer_to_cv2(self, transparent=True):
         buf = BytesIO()
-        # buf2=BytesIO()
-        self.image.savefig(buf, format="png", transparent=True)
-        # self.image.savefig(buf2,transparent=True,format="png")
+        if transparent:
+            self.image.savefig(buf, format="png", transparent=True)
+        else:
+            for ax in self.image.axes:
+                ax.set_facecolor("none")  # 移除 Axes 背景色
+            self.image.savefig(buf, format="png", transparent=False, facecolor="#FFFFFF")
         buf.seek(0)
-        # buf2.seek(0)
 
         img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
-        # query_img_array=np.frombuffer(buf2.getvalue(),dtype=np.uint8)
-        # query_img=cv2.imdecode(query_img_array,cv2.IMREAD_UNCHANGED)
         return img
 
     def __special_info_validator(self, special_info):
