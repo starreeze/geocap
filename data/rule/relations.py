@@ -1109,7 +1109,7 @@ class SeptaGenerator:
         theta: float,
         mode: Literal["outer", "inner"] = "inner",
         size: Literal["big", "small"] = "small",
-        fill_mode: Literal["no", "white", "black", "border"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "border",
     ) -> Ellipse:
         if size == "big":
             major_axis = uniform(0.7 * interval, 0.8 * interval)
@@ -1141,7 +1141,7 @@ class SeptaGenerator:
         next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
         mode: Literal["outer", "inner"] = "inner",
         size: Literal["big", "small"] = "small",
-        fill_mode: Literal["no", "white", "black", "border"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "border",
     ) -> Polygon:
         p1 = volution.get_point(theta + uniform(0.05, 0.1))
         p2 = volution.get_point(theta - uniform(0.05, 0.1))
@@ -1215,7 +1215,7 @@ class SeptaGenerator:
         theta: float,
         volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
         next_volution: Ellipse | Fusiform | Fusiform_2 | CustomedShape,
-        fill_mode: Literal["no", "white", "black", "border"] = "no",
+        fill_mode: Literal["no", "white", "black", "border"] = "border",
     ):
         n = len(volution.curve_points)
         p1 = volution.get_point(theta + uniform(0.03, 0.05))
