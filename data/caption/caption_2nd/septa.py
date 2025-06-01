@@ -65,8 +65,8 @@ class Septa(BaseFeature):
                 for i in range(len(tags)):
                     if tags[i] in self.refined_septa_folds[k]:
                         outer[i] += len(self.refined_septa_folds[k][tags[i]])
-        inner_r = [k / sum(inner) for k in inner]
-        outer_r = [k / sum(outer) for k in outer]
+        inner_r = [sum(inner) / (len(self.refined_septa_folds) / 2)]
+        outer_r = [sum(outer) / (len(self.refined_septa_folds) / 2)]
         adj1 = self.overridedLambdaFilter(septa_shape_classes, inner_r)
         adj2 = self.overridedLambdaFilter(septa_shape_classes, outer_r)
         if adj1 != adj2:
@@ -78,6 +78,8 @@ class Septa(BaseFeature):
         self.txt += txt
 
     def genUserInput(self):
+        if self.txt == "":
+            self.txt = "Septa straight. "
         return [f"<septa>{self.txt}</septa>"]
 
     def genInput(self):
