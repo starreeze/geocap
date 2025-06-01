@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from common.args import fossil_eval_args, logger
 from common.llm import generator_mapping, model_path_mapping
-from eval.statistics import statistics
+from eval.cal_score import statistics
 from eval.utils import calculate_score, extract_range_or_num, extract_tunnel_shape, find_first_json_block
 
 characteristics = [

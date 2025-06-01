@@ -75,7 +75,7 @@ class GSRule(ABC):
 class Polygon(GSRule):
     points: list[tuple[float, float]]
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self):
         assert all(isinstance(point, tuple) for point in self.points), "Points must be tuples"
@@ -282,7 +282,7 @@ class Ellipse(GSRule):
     minor_axis: float = 0
     rotation: float = 0  # e.g., pi/3
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self):
         # Calculate points on the ellipse in counterclockwise order
@@ -466,7 +466,7 @@ class Fusiform(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self):
         self.center = (self.x_offset, self.y_symmetric_axis)
@@ -560,7 +560,7 @@ class Fusiform_2(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self, first_init=True):
         self.center = (self.x_symmetric_axis, self.y_offset)
@@ -644,7 +644,7 @@ class Curve:
 
     control_points: list[tuple[float, float]]
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self):
         self.num_points = 100
@@ -700,7 +700,7 @@ class CustomedShape(GSRule):
     center: tuple[float, float] = field(init=False)
     ratio: float = field(init=False)
     special_info: str = ""
-    fill_mode: Literal["no", "white", "black", "border"] = "no"
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
 
     def __post_init__(self):
         # Verify that the shape is closed
@@ -947,7 +947,7 @@ class ShapeGenerator:
         minor_axis = uniform(0.8 * major_axis, major_axis)
         rotation = uniform(0, np.pi)
         special_info = "initial chamber"
-        return Ellipse(center, major_axis, minor_axis, rotation, special_info)
+        return Ellipse(center, major_axis, minor_axis, rotation, special_info, fill_mode="border")
 
     def generate_axial_filling(self, num_volutions: int, rule_args) -> list[dict]:
         axial_filling = []
@@ -958,7 +958,7 @@ class ShapeGenerator:
         if rule_args.overlap_axial_and_poles_folds:
             end_volution = num_volutions - 1
         else:
-            end_volution = randint(num_volutions // 2, num_volutions)
+            end_volution = randint(num_volutions // 2, num_volutions - 1)
 
         # Generate a single angle parameter to ensure symmetry
         angle_offset = normal(0.1, 0.02) * np.pi

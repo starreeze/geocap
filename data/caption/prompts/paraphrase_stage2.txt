@@ -2,8 +2,9 @@ Task:
 The following is a description of a fossil image, please paraphrase the description.
 
 Requirements:
-1. Paraphrase the description while maintaining the scientific tone and numerical values
-2. Your response should contain only the paraphrased description, without any additional statements or explanations
+1. Paraphrase the description while maintaining the scientific tone and numerical values.
+2. Your response should contain only the paraphrased description, without any additional statements or explanations.
+3. IMPORTANT!!! There will be some tags in the description, including <shell></shell>, <length></length>, <width></width>, <ratio></ratio>, <volution></volution>, <proloculus></proloculus>, <axis></axis>, <axial filling></axial filling>, <septa></septa>, <chomata></chomata>, <tunnel shape></tunnel shape>, <tunnel angle></tunnel angle>, etc. Your response should retain all the tags from the original text. The number and position of the tags in the original text should not be changed in your response.
 
 Input text:
 {text}
