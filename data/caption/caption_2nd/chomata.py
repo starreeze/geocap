@@ -639,21 +639,32 @@ class Chomata(BaseFeature):
         a = list(chomata_sizes_by_volution.keys())
         a.sort()
         weight_list = [chomata_sizes_by_volution[i] for i in a]
-        size_inner = self.standardRangeFilter(chomata_size_classes, weight_list[0])
-        size_outer = self.standardRangeFilter(chomata_size_classes, weight_list[-1])
+        inner_weights = []
+        outer_weights = []
+        for i in a:
+            if i < self.volution_num / 2:
+                inner_weights.append(chomata_sizes_by_volution[i])
+            else:
+                outer_weights.append(chomata_sizes_by_volution[i])
+        size_inner = self.standardRangeFilter(
+            chomata_size_classes, sum(inner_weights) / len(inner_weights) if len(inner_weights) > 0 else 0
+        )
+        size_outer = self.standardRangeFilter(
+            chomata_size_classes, sum(outer_weights) / len(outer_weights) if len(outer_weights) > 0 else 0
+        )
         size_mid = -1
         if len(weight_list) >= 3:
-            size_mid = self.standardRangeFilter(chomata_size_classes, weight_list[len(weight_list) // 2])
+            size_mid = -1
         if size_mid == -1:
             if size_inner == size_outer:
                 return size_inner
-            elif size_inner != "moderate" and size_outer != "moderate":
-                return "{inner} in inner volutions and {outer} in outer volutions".format(
+            elif ("moderate" not in size_inner) and ("moderate" not in size_outer):
+                return "{inner} in inner volutions while {outer} in outer volutions".format(
                     inner=size_inner, outer=size_outer
                 )
-            elif size_inner != "moderate":
+            elif "moderate" not in size_inner:
                 return "{inner} in inner volutions".format(inner=size_inner)
-            elif size_outer != "moderate":
+            elif "moderate" not in size_outer:
                 return "{outer} in outer volutions".format(outer=size_outer)
         else:
             if size_outer == size_inner and size_inner == size_mid:
@@ -691,21 +702,41 @@ class Chomata(BaseFeature):
         a = list(chomata_heights_by_volution.keys())
         a.sort()
         weight_list = [chomata_heights_by_volution[i] for i in a]
-        height_inner = self.standardRangeFilter(chomata_height_classes, weight_list[0])
-        height_outer = self.standardRangeFilter(chomata_height_classes, weight_list[-1])
+        inner_heights = []
+        outer_heights = []
+        for i in a:
+            if i < self.volution_num / 2:
+                inner_heights.append(chomata_heights_by_volution[i])
+            else:
+                outer_heights.append(chomata_heights_by_volution[i])
+        height_inner = self.standardRangeFilter(
+            chomata_height_classes, sum(inner_heights) / len(inner_heights) if len(inner_heights) > 0 else 0
+        )
+        height_outer = self.standardRangeFilter(
+            chomata_height_classes, sum(outer_heights) / len(outer_heights) if len(outer_heights) > 0 else 0
+        )
+        # height_inner = self.standardRangeFilter(chomata_height_classes, weight_list[0])
+        # height_outer = self.standardRangeFilter(chomata_height_classes, weight_list[-1])
         height_mid = -1
         if len(weight_list) >= 3:
-            height_mid = self.standardRangeFilter(chomata_height_classes, weight_list[len(weight_list) // 2])
+            # height_mid = self.standardRangeFilter(chomata_height_classes, weight_list[len(weight_list) // 2])
+            height_mid = -1
+        if "absent" in height_inner and "absent" in height_outer:
+            return ""
+        elif "absent" in height_inner:
+            return "{outer} in outer volutions".format(outer=height_outer)
+        elif "absent" in height_outer:
+            return "{inner} in inner volutions".format(inner=height_inner)
         if height_mid == -1:
             if height_inner == height_outer:
                 return height_inner
-            elif height_inner != "moderate" and height_outer != "moderate":
+            elif ("moderate" not in height_inner) and ("moderate" not in height_outer):
                 return "{inner} in inner volutions and {outer} in outer volutions".format(
                     inner=height_inner, outer=height_outer
                 )
-            elif height_inner != "moderate":
+            elif "moderate" not in height_inner:
                 return "{inner} in inner volutions".format(inner=height_inner)
-            elif height_outer != "moderate":
+            elif "moderate" not in height_outer:
                 return "{outer} in outer volutions".format(outer=height_outer)
         else:
             if height_outer == height_inner and height_inner == height_mid:
@@ -741,21 +772,41 @@ class Chomata(BaseFeature):
         a = list(chomata_widths_by_volution.keys())
         a.sort()
         weight_list = [chomata_widths_by_volution[i] for i in a]
-        width_inner = self.standardRangeFilter(chomata_width_classes, weight_list[0])
-        width_outer = self.standardRangeFilter(chomata_width_classes, weight_list[-1])
+        inner_widths = []
+        outer_widths = []
+        for i in a:
+            if i < self.volution_num / 2:
+                inner_widths.append(chomata_widths_by_volution[i])
+            else:
+                outer_widths.append(chomata_widths_by_volution[i])
+        width_inner = self.standardRangeFilter(
+            chomata_width_classes, sum(inner_widths) / len(inner_widths) if len(inner_widths) > 0 else 0
+        )
+        width_outer = self.standardRangeFilter(
+            chomata_width_classes, sum(outer_widths) / len(outer_widths) if len(outer_widths) > 0 else 0
+        )
+        # width_inner = self.standardRangeFilter(chomata_width_classes, weight_list[0])
+        # width_outer = self.standardRangeFilter(chomata_width_classes, weight_list[-1])
         width_mid = -1
         if len(weight_list) >= 3:
-            width_mid = self.standardRangeFilter(chomata_width_classes, weight_list[len(weight_list) // 2])
+            # width_mid = self.standardRangeFilter(chomata_width_classes, weight_list[len(weight_list) // 2])
+            width_mid = -1
+        if "absent" in width_inner and "absent" in width_outer:
+            return ""
+        elif "absent" in width_inner:
+            return "{outer} in outer volutions".format(outer=width_outer)
+        elif "absent" in width_outer:
+            return "{inner} in inner volutions".format(inner=width_inner)
         if width_mid == -1:
             if width_inner == width_outer:
                 return width_inner
-            elif width_inner != "moderate" and width_outer != "moderate":
+            elif ("moderate" not in width_inner) and ("moderate" not in width_outer):
                 return "{inner} in inner volutions and {outer} in outer volutions".format(
                     inner=width_inner, outer=width_outer
                 )
-            elif width_inner != "moderate":
+            elif "moderate" not in width_inner:
                 return "{inner} in inner volutions".format(inner=width_inner)
-            elif width_outer != "moderate":
+            elif "moderate" not in width_outer:
                 return "{outer} in outer volutions".format(outer=width_outer)
         else:
             if width_outer == width_inner and width_inner == width_mid:

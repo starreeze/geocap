@@ -40,11 +40,26 @@ volution_coiled_classes = {
 
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
 
-chomata_size_classes = {"small": [0, 0.06], "moderate": [0.06, 0.1], "massive": [0.1, 9999]}
+chomata_size_classes = {
+    "absent": [0, 0.0001],
+    "small": [0.0001, 0.03],
+    "moderate": [0.03, 0.05],
+    "massive": [0.05, 9999],
+}
 
-chomata_height_classes = {"low": [0, 0.4], "moderate": [0.4, 0.6], "high": [0.6, 999]}
+chomata_height_classes = {
+    "absent": [0, 0.0001],
+    "low": [0.0001, 0.4],
+    "moderate": [0.4, 0.6],
+    "high": [0.6, 999],
+}
 
-chomata_width_classes = {"narrow": [0, 0.1], "moderate": [0.1, 0.2], "broad": [0.2, 999]}
+chomata_width_classes = {
+    "absent": [0, 0.0001],
+    "narrow": [0.0001, 0.1],
+    "moderate": [0.1, 0.2],
+    "broad": [0.2, 999],
+}
 
 chomata_development_classes = {
     "absence": [-1, 0.1],
@@ -57,12 +72,11 @@ chomata_development_classes = {
 deposit_development_classes = {"absence": [-1, 0.2], "normal": [0.2, 0.5], "well developed": [0.5, 999]}
 
 septa_shape_classes = {
-    "slightly fluted": lambda x: True,
-    "straight": lambda x: x[0] >= 0.7,
-    "undulant": lambda x: x[1] >= 0.7,
-    "fluted": lambda x: x[1] + x[2] >= 0.7 and x[2] >= 0.35,
-    "strongly fluted": lambda x: x[2] >= 0.7,
-    "irregularly fluted": lambda x: x[2] >= 0.9,
+    "straight": lambda x: x[0] <= 1,
+    "slightly fluted": lambda x: x[0] > 1 and x[0] <= 6,
+    "fluted": lambda x: x[0] > 6 and x[0] <= 10,
+    "strongly fluted": lambda x: x[0] > 10 and x[0] <= 15,
+    "irregularly fluted": lambda x: x[0] > 15,
 }
 
 ordinal_numbers = [
