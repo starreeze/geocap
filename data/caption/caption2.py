@@ -1,5 +1,6 @@
 "construct descriptions according to generated rules"
 
+import hashlib
 import json
 import random
 import re
@@ -79,6 +80,11 @@ def gen_user_input_txt_2nd(rule):
         volution_max["height"] = volution_max["width"] / volution_max["ratio"]
         volution_max["vertices"] = []
         volution_max["control_points"] = []
+
+    random.seed(hashlib.md5(json.dumps(rule).encode()).hexdigest())
+
+    random_pixel_div_mm_offset = random.randint(-40, 150)
+
     obj_parts.append(
         Shell(
             volution_max["type"],
@@ -88,6 +94,7 @@ def gen_user_input_txt_2nd(rule):
             volution_max["control_points"],
             volution_max["vertices"],
             initial_chamber["center"],
+            random_pixel_div_mm_offset=random_pixel_div_mm_offset,
         )
     )
     obj_parts.append(
@@ -98,11 +105,17 @@ def gen_user_input_txt_2nd(rule):
                 for i in range(int(rule["numerical_info"]["num_volutions"]))
             ],
             volutions,
+            random_pixel_div_mm_offset=random_pixel_div_mm_offset,
         )
     )
 
     obj_parts.append(
-        Proloculus("", initial_chamber, (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2)
+        Proloculus(
+            "",
+            initial_chamber,
+            (initial_chamber["major_axis"] + initial_chamber["minor_axis"]) / 2,
+            random_pixel_div_mm_offset=random_pixel_div_mm_offset,
+        )
     )
     # if len(chomata_shapes) > 0:
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))

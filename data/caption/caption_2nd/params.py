@@ -17,9 +17,19 @@ shell_equator_classes = {"inflated": [90, 9999], "normal": [0, 90]}
 
 shell_slope_classes = {"convex": [0, 0.5], "concave": [0.5, 1]}
 
-shell_pole_classes = {"bluntly rounded": [100, 999], "bluntly pointed": [80, 100], "elongated": [0, 80]}
+shell_pole_classes = {
+    "bluntly rounded": [130, 999],
+    "bluntly pointed": [110, 130],
+    "sharply pointed": [0, 110],
+}
 
-shell_fusiform_pole_classes = {"bluntly rounded": [0, 6], "elongated": [6.1, 99]}
+shell_ellipse_pole_classes = {"bluntly rounded": [0, 4], "bluntly pointed": [4, 6], "elongated": [6, 99]}
+
+shell_fusiform_pole_classes = {
+    "bluntly rounded": [0, 6],
+    "elongated": [6.1, 99],
+    "sharply pointed": [100, 114],
+}
 
 shell_axis_classes = {"straight": [178, 180], "other": [0, 178]}
 
@@ -35,7 +45,7 @@ proloculus_shape_classes = {"spherical": [0, 0.33], "normal": [0.33, 0.67], "kid
 volution_coiled_classes = {
     "tightly coiled": [0, 0.150],
     "moderately coiled": [0.150, 0.2],
-    "lossely expanded": [0.2, 999],
+    "loosely expanded": [0.2, 999],
 }
 
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
