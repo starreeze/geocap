@@ -3,12 +3,13 @@ from data.caption.caption_2nd.params import *
 
 
 class Volution(BaseFeature):
-    def __init__(self, n_volutions, thickness_table=[], volutions_table=[]):
+    def __init__(self, n_volutions, thickness_table=[], volutions_table=[], random_pixel_div_mm_offset=0):
         self.num = n_volutions
         self.thickness_table = thickness_table
         self.volutions_table = volutions_table
         self.chamber_heights = None
         self.growth_rate = None
+        self.random_pixel_div_mm_offset = random_pixel_div_mm_offset
 
     def genWallThickness(self):
         if len(self.thickness_table) == 0:
@@ -46,7 +47,7 @@ class Volution(BaseFeature):
                         )
                         / 2
                         * shell_world_pixel
-                        / shell_pixel_div_mm,
+                        / (shell_pixel_div_mm + self.random_pixel_div_mm_offset),
                         3,
                     ),
                     0.001,
