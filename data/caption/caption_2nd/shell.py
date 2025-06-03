@@ -3,13 +3,18 @@ from data.caption.caption_2nd.params import *
 
 
 class Shell(BaseFeature):
-    def __init__(self, type, ratio, length, width, curves, vertices, center):
+    def __init__(self, type, ratio, length, width, curves, vertices, center, random_pixel_div_mm_offset=0):
         self.type = type
         self.ratio = round(ratio, 1)
         self.w = length
         self.h = width
-        self.length = "{:.2f}".format(round(length * shell_world_pixel / shell_pixel_div_mm, 2))
-        self.width = "{:.2f}".format(round(width * shell_world_pixel / shell_pixel_div_mm, 2))
+        self.random_pixel_div_mm_offset = random_pixel_div_mm_offset
+        self.length = "{:.2f}".format(
+            round(length * shell_world_pixel / (shell_pixel_div_mm + random_pixel_div_mm_offset), 2)
+        )
+        self.width = "{:.2f}".format(
+            round(width * shell_world_pixel / (shell_pixel_div_mm + random_pixel_div_mm_offset), 2)
+        )
         self.length_width_ratio = "{:.2f}".format(round(length / width, 2))
         self.curves = curves
         self.vertices = vertices
@@ -21,8 +26,8 @@ class Shell(BaseFeature):
         txt = ""
         txt += self.standardRangeFilter(
             shell_size_classes,
-            (self.w * shell_world_pixel / shell_pixel_div_mm)
-            * (self.h * shell_world_pixel / shell_pixel_div_mm),
+            (self.w * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset))
+            * (self.h * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset)),
         )
         txt += " "
         if "fusiform" in type:
@@ -77,11 +82,16 @@ class Shell(BaseFeature):
             b2 = self.curves[2][1]
             angle1 = self.calculate_angle(a1, top1, b1)
             angle2 = self.calculate_angle(a2, top2, b2)
-            return self.standardRangeFilter(shell_pole_classes, (angle1 + angle2) / 2)
+            right = self.standardRangeFilter(shell_pole_classes, angle1)
+            left = self.standardRangeFilter(shell_pole_classes, angle2)
+            if right == left:
+                return f"{right} ends"
+            else:
+                return f"{right} right pole and {left} left pole"
         elif "ellipse" in self.type:
-            return self.standardRangeFilter(shell_pole_classes, 998)
+            return f"{self.standardRangeFilter(shell_ellipse_pole_classes, self.ratio)} ends"
         elif "fusiform" in self.type:
-            return self.standardRangeFilter(shell_fusiform_pole_classes, self.ratio)
+            return f"{self.standardRangeFilter(shell_fusiform_pole_classes, 113)} ends"
 
     def getAxis(self):
         if "curves" in self.type:
@@ -106,9 +116,7 @@ class Shell(BaseFeature):
     def genUserInput(self):
         tagged = []
         txt = "<shell>Shell {shape}, ".format(shape=self.getShape())
-        txt += "with {slope} slopes and {pole} ends. </shell>".format(
-            slope=self.getSlope(), pole=self.getPole()
-        )
+        txt += "with {slope} slopes and {pole}. </shell>".format(slope=self.getSlope(), pole=self.getPole())
         tagged.append(txt)
         txt = "<length>The axial length is {length} mm, </length>".format(length=self.length)
         tagged.append(txt)
@@ -118,8 +126,8 @@ class Shell(BaseFeature):
             ratio=self.length_width_ratio
         )
         tagged.append(txt)
-        txt = "<axis>Axis {convexity}. </axis>".format(convexity=self.getAxis())
-        tagged.append(txt)
+        # txt = "<axis>Axis {convexity}. </axis>".format(convexity=self.getAxis())
+        # tagged.append(txt)
         return tagged
 
     def genInput(self):
