@@ -2,7 +2,6 @@ import json
 import os
 
 from tqdm import tqdm
-from iterwrap import iterate_wrapper
 
 from common.args import caption_args
 from common.llm import APIGenerator

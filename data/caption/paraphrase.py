@@ -1,6 +1,5 @@
 import json
 import sys
-from tqdm import tqdm
 
 from common.args import caption_args, data_args, run_args
 from common.llm import generator_mapping, model_path_mapping
@@ -47,7 +46,6 @@ class Paraphraser:
         responses = self.llm_generator(messages, batch_size=min(len(texts), caption_args.caption_batchsize))
 
         outputs = []
-        total_batches = (len(messages) + caption_args.caption_batchsize - 1) // caption_args.caption_batchsize
         for batch in responses:
             outputs.extend(batch)
 
