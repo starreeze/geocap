@@ -1,7 +1,7 @@
 import json
 import os
 
-from iterwrap import iterate_wrapper
+from tqdm import tqdm
 
 from common.args import caption_args
 from common.llm import APIGenerator
@@ -39,16 +39,10 @@ def main():
         data_dict = json.load(f)
 
     filtered_data_dict = data_dict
-    fos_name_list = []
-    desc_list = []
-    for fos_name, data in data_dict.items():
+    for fos_name, data in tqdm(data_dict.items(), desc="Filtering descriptions"):
         desc = data["desc"]
-        fos_name_list.append(fos_name)
-        desc_list.append(desc)
-
-    filtered_desc_list = iterate_wrapper(desc_filter, desc_list)
-    for fos_name, desc in zip(fos_name_list, filtered_desc_list):
-        filtered_data_dict[fos_name]["desc"] = desc
+        filtered_desc = desc_filter(desc)
+        filtered_data_dict[fos_name]["desc"] = filtered_desc
 
     output_path = os.path.join("dataset/common/filtered_data.json")
     with open(output_path, "w") as f:
