@@ -94,9 +94,9 @@ class DataGenerator:
 
         # Classify overall size by area
         area = new_image_info["width"] * new_image_info["length"]
-        if area < 12:
+        if area < 10:
             new_image_info["overall_size"] = "small"
-        elif area < 24:
+        elif area < 20:
             new_image_info["overall_size"] = "medium"
         else:
             new_image_info["overall_size"] = "large"
