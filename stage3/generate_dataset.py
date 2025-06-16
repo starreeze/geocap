@@ -20,7 +20,7 @@ stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jso
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
 stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "add_default_value.jsonl")
-# llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
+llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
 
 
