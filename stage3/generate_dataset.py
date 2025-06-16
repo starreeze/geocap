@@ -20,7 +20,7 @@ stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jso
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
 stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "add_default_value.jsonl")
-llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
+# llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
 
 
@@ -91,6 +91,29 @@ class DataGenerator:
         if new_image_info["width"] == 0:
             print(image_info)
         new_image_info["ratio"] = new_image_info["length"] / new_image_info["width"]
+
+        # Classify overall size by area
+        area = new_image_info["width"] * new_image_info["length"]
+        if area < 12:
+            new_image_info["overall_size"] = "small"
+        elif area < 24:
+            new_image_info["overall_size"] = "medium"
+        else:
+            new_image_info["overall_size"] = "large"
+
+        # Classify overall shape by ratio
+        # TODO: add more shapes
+        ratio2shape = {
+            "lenticular": [0.2, 0.8],
+            "spherical": [0.8, 1.2],
+            "inflated fusiform": [1.2, 1.9],
+            "fusiform": [2.0, 3.1],
+            "elongate fusiform": [3.1, 99],
+        }
+        for shape, ratio_range in ratio2shape.items():
+            if ratio_range[0] <= new_image_info["ratio"] < ratio_range[1]:
+                new_image_info["overall_shape"] = shape
+                break
 
         if use_vis_tools:
             # Recognize fossil features
@@ -207,11 +230,14 @@ class DataGenerator:
 
         return tunnel_angles
 
-    def _generate_instruction(self, image_info: dict) -> str:
+    def get_one_instruction(self, image_info: dict) -> str:
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
         instruction += "Here is some information about the fossil:\n"
-        # overall shape
+        # overall size and shape
         instruction += f"length: {image_info['length']:.3f} mm. , width(diameter): {image_info['width']:.3f} mm. ratio: {image_info['ratio']:.3f}\n"
+        instruction += (
+            f"overall size: {image_info['overall_size']}, overall shape: {image_info['overall_shape']}\n"
+        )
         instruction += f"number of volutions(whorls): {image_info['num_volutions']}\n"
 
         # thickness of spirotheca
@@ -247,7 +273,7 @@ class DataGenerator:
 
         return instruction
 
-    def _generate_naive_instruction(self, image_info: dict):
+    def get_one_novis_instruction(self, image_info: dict):
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
 
         width_mm = image_info["img_width"] * image_info["pixel_mm"]
@@ -265,9 +291,9 @@ class DataGenerator:
         for image_info in tqdm(self.images):
             new_image_info = self.recognize_features(image_info, use_vis_tools)
             if use_vis_tools:
-                instruction = self._generate_instruction(new_image_info)
+                instruction = self.get_one_instruction(new_image_info)
             else:
-                instruction = self._generate_naive_instruction(new_image_info)
+                instruction = self.get_one_novis_instruction(new_image_info)
             sample = {"image": image_info["image"], "input": instruction, "output": image_info["desc"]}
             instructions.append(sample)
 
