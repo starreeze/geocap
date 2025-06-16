@@ -60,6 +60,9 @@ Reference:8, 12, 16, 20, 33, 41, and 33 microns
 - height_of_volution
 Generated:45, 68, 92, 125, 150, and 180 microns
 Reference:increases with increasing radius
+- endothyroid
+Generated:endothyroid coiling in the inner whorls not observed
+Reference:endothyroid coiling in the inner whorls not observed
 - septa_folds
 Generated:slightly fluted near the poles, planar across central regions
 Reference:irregular but tend to be tightly fluted across the entire length of the test
@@ -81,6 +84,7 @@ Reference:light to moderately developed
   "axis_shape": {"reason": "Both Generated and Reference describe the axis as 'straight', so they are perfectly aligned.", "rating": 10},
   "thickness_of_spircotheca": {"reason": "Generated states 5 to 30 microns, which approximately falls within the Reference sequence of 8, 12, 16, 20, 33, 41, and 33 microns.", "rating": 7},
   "height_of_volution": {"reason": "Generated provides specific measurements (45, 68, 92, 125, 150, and 180 microns) while Reference states 'increases with increasing radius'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
+  "endothyroid": {"reason": "Both Generated and Reference describe the endothyroid as 'endothyroid coiling in the inner whorls not observed', so they are perfectly aligned.", "rating": 10},
   "septa_folds": {"reason": "Generated describes the septa as 'slightly fluted near the poles, planar across central regions', while Reference describes the septa as 'irregular but tend to be tightly fluted across the entire length of the test'. The generated description is partial match with the reference description.", "rating": 7},
   "tunnel_angles": {"reason": "Generated states 17, 22, 26, and 32 degrees, which are close to the reference angles of 20\u00b0 and 30\u00b0.", "rating": 8},
   "chomata": {"reason": "Reference describes the chomata as 'high, narrow, steep-sided, slightly asymmetrical ridges which extend about half the distance to the tops of the chambers', while Generated describes the chomata as 'well-developed, prominent, extending to nearly half the height of the chambers in inner volutions'. The height of chomata is consistent with the reference, but there are missing details in the Generated description.", "rating": 7},
@@ -106,6 +110,9 @@ Reference:varies in thickness throughout any given volution
 - height_of_volution
 Generated:85, 85, 96, 116, 132, and 190 microns
 Reference:33, 49, 66, 114, 148, 197, and 213 microns
+- endothyroid
+Generated:endothyroid coiling in the inner whorls not observed
+Reference:first whorl endothyroid
 - septa_folds
 Generated:pronounced but irregular fluting throughout
 Reference:closely spaced, with high and narrowly irregular fluting throughout the length of the shell
@@ -127,6 +134,7 @@ Reference:present, especially in the inner volutions, but it is irregular and do
   "axis_shape": {"reason": "Generated is empty, rate as 0", "rating": 0},
   "thickness_of_spircotheca": {"reason": "Generated provides specific measurements (7, 9, 13, 17, 16, and 8 microns) while Reference states 'varies in thickness throughout any given volution'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
   "height_of_volution": {"reason": "Generated provides specific measurements (85, 85, 96, 116, 132, and 190 microns) while Reference states '33, 49, 66, 114, 148, 197, and 213 microns'. Some of the generated sequence are close to the reference.", "rating": 6},
+  "endothyroid": {"reason": "Generated describes the endothyroid as 'endothyroid coiling in the inner whorls not observed', while Reference describes the endothyroid as 'first whorl endothyroid'. The generated description is not consistent with the reference description.", "rating": 0},
   "septa_folds": {"reason": "Generated describes the septa as 'pronounced but irregular fluting throughout', while Reference describes the septa as 'closely spaced, with high and narrowly irregular fluting throughout the length of the shell'. The Generated is approximately correct but some details are missing.", "rating": 8},
   "tunnel_angles": {"reason": "Generated provides specific measurements (39, 50, 45, 86, 59, 18 degrees) while Reference states 'moderately large but increases at a relatively slow rate'. The generated sequence is not consistent with the reference.", "rating": 1},
   "chomata": {"reason": "Reference describes the chomata as 'indistinct', while Generated describes the chomata as 'faint, restricted to proloculus'. These descriptions are consistent.", "rating": 10},

@@ -8,6 +8,7 @@ You are provided with a description of a fossil image with different features wr
    - tunnel shape: "<tunnel shape>Tunnel of moderate height, moderate width</tunnel shape>"
    - chomata: "<chomata>Chomata indistinct</chomata>"
    - axial filling: "<axial filling>Axial filling present</axial filling>"
+   - endothyroid: "<endothyroid>Endothyroid coiling in the inner whorls not observed</endothyroid>"
 
 2. Insert missing features at appropriate locations in the description:
    - Place "axis" near shell description if missing

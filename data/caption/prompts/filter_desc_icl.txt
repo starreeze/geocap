@@ -13,6 +13,7 @@ You are provided with a description of a fossil image. Filter the fossil image d
     - Number of volutions
     - Height/spire
     - Coil tightness
+    - Endothyroid
 - Proloculus/initial chamber
     - Size and shape
 - Axis
@@ -25,6 +26,7 @@ You are provided with a description of a fossil image. Filter the fossil image d
 - Septal counts
 - Axial septulum/septula
 - Composition of spirotheca
+- Supplementary/secondary deposit
 - Aperture
 - Cuniculi
 - Descriptions across multiple specimens
@@ -46,6 +48,12 @@ The shell of Pseudoschwagerina needhami is of medium side and inflated fusiform,
 
 ### Filtered description:
 The shell is of medium side and inflated fusiform, with straight axis of coiling, sharply pointed poles, and broadly convex lateral slopes. Mature specimens contain six to seven volutions and are 5.3 to 6.9 mm. long and 2.1 to 3.0 mm. wide. The form ratio of mature specimens is 2.0 to 2.8, averaging 2.3. The first volution is ellipsoidal, but beyond the second volution the poles become pointed rather slender through the fifth volution. Beyond this volution the chambers are high and the shell is more robust.\n\"The proloculus is minute, with outside diameter of 115 to 165 microns.The shell expands slowly during the first four volutions, but beyond this the chambers increase in height rapidly. Height of chambers in the first to seventh volution is 50, 75, 120, 180, 320, 411, and 444 microns, respectively.\n\"The spirotheca is thin in the first volution, measuring 10 to 17 microns. However, it increases in thickness gradually, being 78 to 102 microns in the sixth volution.The thickness of the spirotheca in the first to seventh volution is 15, 26, 42, 66, 76, 87, and 85 microns, respectively.\nSeptal fluting is well defined in the polar areas and extends to the tops of chambers of outermost volutions. However, in tunnel areas, the fluting is confined mainly to the lower parts of chambers.\n\"The tunnel is narrow in the inner four volutions, increasing in width rapidly beyond the fifth volution.Tunnel angles in the first to seventh volution are 16, 19, 22, 22, 34, 50, and 42 degrees, respectively.The chomata are broad and high in the inner four volutions, and they are narrow and low in the fifth, sixth, and seventh volutions.
+
+### Input description:
+Test rounded subrhomboidal in the outer whorl, with an acute keel, straight sides, and slightly projecting, completely closed axial regions. Ratio of length to diameter 0.55-0.65. Dimensions small: Diameter 0. 30-0.45 mm. ; length 0.20-0.25 mm. Number of whorls four to four and one-half, more frequently four. Initial chamber measures 30-40\u03bc. Spire expanding uniformly, the diameter of the fourth whorl ranging from 0.30 to 0.45 mm. First whorl endothyroid, its axis rotated 90\u00b0 with respect to the axis of the succeeding whorls. wall dark, usually undifferentiated, its thickness in the last whorl in the median region 10-12\u03bc. Septa plane. Number of septa unknown. Aperture slit-like. Supplementary deposits, apparently pseudochomata, weakly and discontinuously developed in the form of low ridges on the two sides of the aperture.
+
+### Filtered description:
+Test rounded subrhomboidal in the outer whorl, with an acute keel, straight sides, and slightly projecting, completely closed axial regions. Ratio of length to diameter 0.55-0.65. Dimensions small: Diameter 0. 30-0.45 mm. ; length 0.20-0.25 mm. Number of whorls four to four and one-half, more frequently four. Initial chamber measures 30-40\u03bc. Spire expanding uniformly, the diameter of the fourth whorl ranging from 0.30 to 0.45 mm. First whorl endothyroid, its axis rotated 90\u00b0 with respect to the axis of the succeeding whorls. wall dark, usually undifferentiated, its thickness in the last whorl in the median region 10-12\u03bc. Septa plane.
 
 ### Input description:
 {text}
