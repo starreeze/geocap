@@ -47,14 +47,14 @@ def to_llava_eval():
 
 def to_internvl(input_path: str, output_path: str):
     file_type = input_path.split(".")[-1]
-    with open(input_path, "r") as f:    
+    with open(input_path, "r") as f:
         if file_type == "jsonl":
             data = [json.loads(line) for line in f]
         elif file_type == "json":
             data = json.load(f)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
-    
+
     assert output_path.endswith(".jsonl")
     with open(output_path, "w") as f:
         for i, d in enumerate(data):

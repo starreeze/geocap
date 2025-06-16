@@ -68,9 +68,11 @@ def main():
 
     output_path = data_args.caption_path.replace(f".{file_ext}", f"_paraphrased.{file_ext}")
     if run_args.end_pos != sys.maxsize:
-        captions = captions[run_args.start_pos:run_args.end_pos]
-        output_path = output_path.replace(f".{file_ext}", f"_{run_args.start_pos}_{run_args.end_pos}.{file_ext}")
-    
+        captions = captions[run_args.start_pos : run_args.end_pos]
+        output_path = output_path.replace(
+            f".{file_ext}", f"_{run_args.start_pos}_{run_args.end_pos}.{file_ext}"
+        )
+
     # Extract and paraphrase outputs
     original_outputs = [caption["output"] for caption in captions]
     paraphrased_outputs = paraphraser(original_outputs)
