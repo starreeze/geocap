@@ -855,8 +855,8 @@ class CustomedShapeGenerator:
         minor_r = initial_chamber.minor_axis * normal(0.8, 0.05)
 
         # add random translation on left and right vertices
-        y_trans_1 = normal(0, 0.2) * minor_r
-        y_trans_2 = normal(0, 0.2) * minor_r
+        y_trans_1 = normal(0, 0.25) * minor_r
+        y_trans_2 = y_trans_1 + normal(0, 0.01) * minor_r
 
         control_points_list = []
         for i in range(4):
