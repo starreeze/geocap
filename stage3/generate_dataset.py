@@ -15,7 +15,7 @@ from stage3.utils import get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
-instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_all.jsonl")
+instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_no_vis.jsonl")
 stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
@@ -390,17 +390,21 @@ def tag_format(start_pos=None, end_pos=None):
     with open(input_data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
-    # Extract and paraphrase outputs
-    original_outputs = [caption["output"] for caption in captions]
-    paraphrased_outputs = paraphraser(original_outputs)
+    # Process in batches and write incrementally
+    batch_size = caption_args.caption_batchsize
+    with open(output_path, "a") as f:
+        for i in tqdm(range(0, len(captions), batch_size), desc="Tag Format"):
+            batch_captions = captions[i : i + batch_size]
+            batch_outputs = [caption["output"] for caption in batch_captions]
 
-    # Replace original outputs with paraphrased ones
-    for caption, paraphrased_output in zip(captions, paraphrased_outputs):
-        caption["output"] = paraphrased_output
+            # Process this batch
+            paraphrased_batch = paraphraser(batch_outputs)
 
-    with open(output_path, "w") as f:
-        for caption in captions:
-            f.write(json.dumps(caption) + "\n")
+            # Write this batch to file immediately
+            for caption, paraphrased_output in zip(batch_captions, paraphrased_batch):
+                caption["output"] = paraphrased_output
+                f.write(json.dumps(caption) + "\n")
+            f.flush()
     torch.cuda.empty_cache()
 
 
@@ -410,10 +414,10 @@ def add_default_value(start_pos=None, end_pos=None):
     # Read original captions
     if start_pos is not None and end_pos is not None:
         input_data_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
         )
         output_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"stage3_add_default_value_{start_pos}_{end_pos}.jsonl"
         )
     else:
         input_data_path = stage3_tag_format_path
@@ -422,17 +426,21 @@ def add_default_value(start_pos=None, end_pos=None):
     with open(input_data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
-    # Extract and paraphrase outputs
-    original_outputs = [caption["output"] for caption in captions]
-    paraphrased_outputs = paraphraser(original_outputs)
+    # Process in batches and write incrementally
+    batch_size = caption_args.caption_batchsize
+    with open(output_path, "a") as f:
+        for i in tqdm(range(0, len(captions), batch_size), desc="Add Default Value"):
+            batch_captions = captions[i : i + batch_size]
+            batch_outputs = [caption["output"] for caption in batch_captions]
 
-    # Replace original outputs with paraphrased ones
-    for caption, paraphrased_output in zip(captions, paraphrased_outputs):
-        caption["output"] = paraphrased_output
+            # Process this batch
+            paraphrased_batch = paraphraser(batch_outputs)
 
-    with open(output_path, "w") as f:
-        for caption in captions:
-            f.write(json.dumps(caption) + "\n")
+            # Write this batch to file immediately
+            for caption, paraphrased_output in zip(batch_captions, paraphrased_batch):
+                caption["output"] = paraphrased_output
+                f.write(json.dumps(caption) + "\n")
+            f.flush()
     torch.cuda.empty_cache()
 
 
@@ -472,12 +480,12 @@ def format_to_internvl():
 
 
 def main():
-    # generate_dataset(use_vis_tools=True)
-    paraphrase()
-    tag_format()
-    add_default_value()
+    generate_dataset(use_vis_tools=False)
+    # paraphrase()
+    # tag_format()
+    # add_default_value()
     # format_to_llava()
-    format_to_internvl()
+    # format_to_internvl()
 
 
 if __name__ == "__main__":

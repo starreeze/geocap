@@ -45,5 +45,37 @@ def to_llava_eval():
         f.write("\n".join([json.dumps(d) for d in target_data]))
 
 
+def to_internvl(input_path: str, output_path: str):
+    file_type = input_path.split(".")[-1]
+    with open(input_path, "r") as f:    
+        if file_type == "jsonl":
+            data = [json.loads(line) for line in f]
+        elif file_type == "json":
+            data = json.load(f)
+        else:
+            raise ValueError(f"Unsupported file type: {file_type}")
+    
+    assert output_path.endswith(".jsonl")
+    with open(output_path, "w") as f:
+        for i, d in enumerate(data):
+            target_data = {
+                "id": i,
+                "image": d["image"],
+                "conversations": [
+                    {"from": "human", "value": "<image>\n" + d["input"]},
+                    {"from": "gpt", "value": d["output"]},
+                ],
+            }
+            f.write(json.dumps(target_data) + "\n")
+
+
+def main():
+    # to_llava()
+
+    input_path = "dataset/stage2_captions/selected_captions_paraphrased.jsonl"
+    output_path = input_path.replace(".jsonl", "_internvl.jsonl")
+    to_internvl(input_path, output_path)
+
+
 if __name__ == "__main__":
-    to_llava()
+    main()
