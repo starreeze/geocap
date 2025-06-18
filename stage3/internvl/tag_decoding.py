@@ -164,6 +164,7 @@ def main():
         "<number of volutions>",
         "<heights of volutions>",
         "<proloculus>",
+        "<endothyroid>",
         "<axis>",
         "<axial filling>",
         "<spirotheca>",

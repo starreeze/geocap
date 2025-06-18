@@ -15,7 +15,7 @@ from stage3.utils import get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
-instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_all.jsonl")
+instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_no_vis.jsonl")
 stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
@@ -91,6 +91,29 @@ class DataGenerator:
         if new_image_info["width"] == 0:
             print(image_info)
         new_image_info["ratio"] = new_image_info["length"] / new_image_info["width"]
+
+        # Classify overall size by area
+        area = new_image_info["width"] * new_image_info["length"]
+        if area < 10:
+            new_image_info["overall_size"] = "small"
+        elif area < 20:
+            new_image_info["overall_size"] = "medium"
+        else:
+            new_image_info["overall_size"] = "large"
+
+        # Classify overall shape by ratio
+        # TODO: add more shapes
+        ratio2shape = {
+            "lenticular": [0.2, 0.8],
+            "spherical": [0.8, 1.2],
+            "inflated fusiform": [1.2, 1.9],
+            "fusiform": [2.0, 3.1],
+            "elongate fusiform": [3.1, 99],
+        }
+        for shape, ratio_range in ratio2shape.items():
+            if ratio_range[0] <= new_image_info["ratio"] < ratio_range[1]:
+                new_image_info["overall_shape"] = shape
+                break
 
         if use_vis_tools:
             # Recognize fossil features
@@ -207,11 +230,14 @@ class DataGenerator:
 
         return tunnel_angles
 
-    def _generate_instruction(self, image_info: dict) -> str:
+    def get_one_instruction(self, image_info: dict) -> str:
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
         instruction += "Here is some information about the fossil:\n"
-        # overall shape
+        # overall size and shape
         instruction += f"length: {image_info['length']:.3f} mm. , width(diameter): {image_info['width']:.3f} mm. ratio: {image_info['ratio']:.3f}\n"
+        instruction += (
+            f"overall size: {image_info['overall_size']}, overall shape: {image_info['overall_shape']}\n"
+        )
         instruction += f"number of volutions(whorls): {image_info['num_volutions']}\n"
 
         # thickness of spirotheca
@@ -247,7 +273,7 @@ class DataGenerator:
 
         return instruction
 
-    def _generate_naive_instruction(self, image_info: dict):
+    def get_one_novis_instruction(self, image_info: dict):
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
 
         width_mm = image_info["img_width"] * image_info["pixel_mm"]
@@ -265,9 +291,9 @@ class DataGenerator:
         for image_info in tqdm(self.images):
             new_image_info = self.recognize_features(image_info, use_vis_tools)
             if use_vis_tools:
-                instruction = self._generate_instruction(new_image_info)
+                instruction = self.get_one_instruction(new_image_info)
             else:
-                instruction = self._generate_naive_instruction(new_image_info)
+                instruction = self.get_one_novis_instruction(new_image_info)
             sample = {"image": image_info["image"], "input": instruction, "output": image_info["desc"]}
             instructions.append(sample)
 
@@ -390,17 +416,21 @@ def tag_format(start_pos=None, end_pos=None):
     with open(input_data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
-    # Extract and paraphrase outputs
-    original_outputs = [caption["output"] for caption in captions]
-    paraphrased_outputs = paraphraser(original_outputs)
+    # Process in batches and write incrementally
+    batch_size = caption_args.caption_batchsize
+    with open(output_path, "a") as f:
+        for i in tqdm(range(0, len(captions), batch_size), desc="Tag Format"):
+            batch_captions = captions[i : i + batch_size]
+            batch_outputs = [caption["output"] for caption in batch_captions]
 
-    # Replace original outputs with paraphrased ones
-    for caption, paraphrased_output in zip(captions, paraphrased_outputs):
-        caption["output"] = paraphrased_output
+            # Process this batch
+            paraphrased_batch = paraphraser(batch_outputs)
 
-    with open(output_path, "w") as f:
-        for caption in captions:
-            f.write(json.dumps(caption) + "\n")
+            # Write this batch to file immediately
+            for caption, paraphrased_output in zip(batch_captions, paraphrased_batch):
+                caption["output"] = paraphrased_output
+                f.write(json.dumps(caption) + "\n")
+            f.flush()
     torch.cuda.empty_cache()
 
 
@@ -410,10 +440,10 @@ def add_default_value(start_pos=None, end_pos=None):
     # Read original captions
     if start_pos is not None and end_pos is not None:
         input_data_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
         )
         output_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"stage3_add_default_value_{start_pos}_{end_pos}.jsonl"
         )
     else:
         input_data_path = stage3_tag_format_path
@@ -422,17 +452,21 @@ def add_default_value(start_pos=None, end_pos=None):
     with open(input_data_path, "r") as f:
         captions = [json.loads(line) for line in f]
 
-    # Extract and paraphrase outputs
-    original_outputs = [caption["output"] for caption in captions]
-    paraphrased_outputs = paraphraser(original_outputs)
+    # Process in batches and write incrementally
+    batch_size = caption_args.caption_batchsize
+    with open(output_path, "a") as f:
+        for i in tqdm(range(0, len(captions), batch_size), desc="Add Default Value"):
+            batch_captions = captions[i : i + batch_size]
+            batch_outputs = [caption["output"] for caption in batch_captions]
 
-    # Replace original outputs with paraphrased ones
-    for caption, paraphrased_output in zip(captions, paraphrased_outputs):
-        caption["output"] = paraphrased_output
+            # Process this batch
+            paraphrased_batch = paraphraser(batch_outputs)
 
-    with open(output_path, "w") as f:
-        for caption in captions:
-            f.write(json.dumps(caption) + "\n")
+            # Write this batch to file immediately
+            for caption, paraphrased_output in zip(batch_captions, paraphrased_batch):
+                caption["output"] = paraphrased_output
+                f.write(json.dumps(caption) + "\n")
+            f.flush()
     torch.cuda.empty_cache()
 
 
@@ -472,12 +506,12 @@ def format_to_internvl():
 
 
 def main():
-    # generate_dataset(use_vis_tools=True)
-    paraphrase()
-    tag_format()
-    add_default_value()
+    generate_dataset(use_vis_tools=False)
+    # paraphrase()
+    # tag_format()
+    # add_default_value()
     # format_to_llava()
-    format_to_internvl()
+    # format_to_internvl()
 
 
 if __name__ == "__main__":
