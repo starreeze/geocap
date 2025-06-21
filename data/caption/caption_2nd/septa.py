@@ -1,7 +1,10 @@
+import math
+
+import numpy as np
+
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.params import *
-import math
-import numpy as np
+
 
 class Septa(BaseFeature):
     def __init__(self, septa_folds, volution_sizes):
@@ -13,7 +16,7 @@ class Septa(BaseFeature):
         # self.genSeptaNum()
         self.genSeptaDescription()
 
-    def quadrilateral_area(self,control_points):
+    def quadrilateral_area(self, control_points):
         # 解包坐标点
         p1, p2, p3, p4 = control_points
         x1, y1 = p1
@@ -22,20 +25,17 @@ class Septa(BaseFeature):
         x4, y4 = p4
 
         # 应用鞋带公式
-        area = 0.5 * abs(
-            (x1*y2 + x2*y3 + x3*y4 + x4*y1) - 
-            (y1*x2 + y2*x3 + y3*x4 + y4*x1)
-        )
-        return area/4
-    
-    def curves_center(self,control_points):
-        x,y=0,0
+        area = 0.5 * abs((x1 * y2 + x2 * y3 + x3 * y4 + x4 * y1) - (y1 * x2 + y2 * x3 + y3 * x4 + y4 * x1))
+        return area / 4
+
+    def curves_center(self, control_points):
+        x, y = 0, 0
         for p in control_points:
-            x+=p[0]
-            y+=p[1]
-        return [x/4,y/4]
-    
-    def mean_absolute_difference(self,arr):
+            x += p[0]
+            y += p[1]
+        return [x / 4, y / 4]
+
+    def mean_absolute_difference(self, arr):
         if len(arr) < 2:
             return 0.0  # 如果数组元素少于2个，返回0
 
@@ -55,8 +55,8 @@ class Septa(BaseFeature):
         return total / num_pairs
 
     def refineSeptaFolds(self):
-        self.septa_pos={}
-        self.septa_size={}
+        self.septa_pos = {}
+        self.septa_size = {}
         refined_septa_folds = {}
         current_volution = 1
         for septa in self.septa_folds:
@@ -69,16 +69,24 @@ class Septa(BaseFeature):
             refined_septa_folds[current_volution][septa["type"]].append(septa)
 
             if current_volution not in self.septa_pos:
-                self.septa_pos[current_volution]=[]
+                self.septa_pos[current_volution] = []
             if current_volution not in self.septa_size:
-                self.septa_size[current_volution]=[]
+                self.septa_size[current_volution] = []
 
             if septa["type"] == "ellipse":
                 self.septa_pos[current_volution].append(septa["center"])
-                self.septa_size[current_volution].append(math.pi*septa["major_axis"]*septa["minor_axis"]/self.volution_sizes[current_volution]/4)
+                self.septa_size[current_volution].append(
+                    math.pi
+                    * septa["major_axis"]
+                    * septa["minor_axis"]
+                    / self.volution_sizes[current_volution]
+                    / 4
+                )
             elif septa["type"] == "curves":
                 self.septa_pos[current_volution].append(self.curves_center(septa["control_points"]))
-                self.septa_size[current_volution].append(self.quadrilateral_area(septa["control_points"])/self.volution_sizes[current_volution])
+                self.septa_size[current_volution].append(
+                    self.quadrilateral_area(septa["control_points"]) / self.volution_sizes[current_volution]
+                )
 
         filtered = []
         filtered_inner = []
@@ -89,20 +97,24 @@ class Septa(BaseFeature):
             else:
                 filtered_outer.append(self.septa_size[k])
         for size in self.septa_size.values():
-            if len(size)>0:
+            if len(size) > 0:
                 filtered.append(size)
         if len(filtered) <= 0:
             self.size_diff = 0
         else:
-            self.size_diff=np.average([self.mean_absolute_difference(size) for size in filtered])
+            self.size_diff = np.average([self.mean_absolute_difference(size) for size in filtered])
         if len(filtered_inner) <= 0:
             self.size_diff_inner = 0
         else:
-            self.size_diff_inner = np.average([self.mean_absolute_difference(size) for size in filtered_inner])
+            self.size_diff_inner = np.average(
+                [self.mean_absolute_difference(size) for size in filtered_inner]
+            )
         if len(filtered_outer) <= 0:
             self.size_diff_outer = 0
         else:
-            self.size_diff_outer = np.average([self.mean_absolute_difference(size) for size in filtered_outer])
+            self.size_diff_outer = np.average(
+                [self.mean_absolute_difference(size) for size in filtered_outer]
+            )
         self.refined_septa_folds = refined_septa_folds
 
     def genSeptaNum(self):

@@ -136,12 +136,12 @@ class BaseFeature:
             return -1
         else:
             return 0
-        
+
     def overridedDescriptionByPriority(self, priority_classes, descriptions):
         final_desc = ""
         final_pri = -1
         for desc in descriptions:
-            if priority_classes[desc]>final_pri:
+            if priority_classes[desc] > final_pri:
                 final_desc = desc
                 final_pri = priority_classes[desc]
         return final_desc

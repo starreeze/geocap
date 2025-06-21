@@ -1,10 +1,15 @@
-from data.caption.caption_2nd.base import BaseFeature
-from data.caption.caption_2nd.params import *
-import numpy as np
 import math
 
+import numpy as np
+
+from data.caption.caption_2nd.base import BaseFeature
+from data.caption.caption_2nd.params import *
+
+
 class Tunnel(BaseFeature):
-    def __init__(self, rule000, visible_chomata_idx, chomata_whs_relative, chomata_pos_ordered, tunnel_angles=[]):
+    def __init__(
+        self, rule000, visible_chomata_idx, chomata_whs_relative, chomata_pos_ordered, tunnel_angles=[]
+    ):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
         self.rule = rule000
@@ -20,33 +25,33 @@ class Tunnel(BaseFeature):
         return res
 
     def calc_irregular(self):
-        chomata_classes=[[],[],[],[]]
+        chomata_classes = [[], [], [], []]
         for coords in self.chomata_pos_ordered:
             valid_coords = [coord for coord in coords if coord != [-1, -1]]
-            chomata_angles=[self.cartesian_to_polar_angle(coord) for coord in valid_coords]
-            pos=[]
-            neg=[]
+            chomata_angles = [self.cartesian_to_polar_angle(coord) for coord in valid_coords]
+            pos = []
+            neg = []
             for ang in chomata_angles:
-                if ang<0:
+                if ang < 0:
                     neg.append(ang)
                 else:
                     pos.append(ang)
-            if len(pos)>0:
+            if len(pos) > 0:
                 chomata_classes[0].append(min(pos))
                 chomata_classes[1].append(max(pos))
-            if len(neg)>0:
+            if len(neg) > 0:
                 chomata_classes[2].append(min(neg))
                 chomata_classes[3].append(max(neg))
-        stds=[]
+        stds = []
         for clazz in chomata_classes:
-            if len(clazz)>1:
+            if len(clazz) > 1:
                 stds.append(float(np.std(clazz)))
-        if len(stds)>0:
+        if len(stds) > 0:
             return float(np.average(stds))
         else:
             return 1.0
 
-    def cartesian_to_polar_angle(self,point):
+    def cartesian_to_polar_angle(self, point):
         x, y = point
         angle = math.atan2(y, x)
         return angle

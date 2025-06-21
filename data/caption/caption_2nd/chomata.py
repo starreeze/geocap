@@ -606,7 +606,7 @@ class Chomata(BaseFeature):
             temp = []
             if i in chomata_metas_by_volution:
                 temp = [c["center"] for c in chomata_metas_by_volution[i]["chomatas"]]
-            while len(temp)<4:
+            while len(temp) < 4:
                 temp.append([-1, -1])
             self.chomata_pos_ordered.append(temp)
         self.chomata_whs = {}
@@ -884,7 +884,7 @@ class Chomata(BaseFeature):
     def genChomataDevelopment(self) -> str:
         if len(self.chomata_shapes) <= 0:
             return "absent"
-        develop_draft =  self.standardRangeFilter(
+        develop_draft = self.standardRangeFilter(
             chomata_development_classes, len(self.chomata_shapes) / self.volution_num
         )
         if self.size_all == "massive":

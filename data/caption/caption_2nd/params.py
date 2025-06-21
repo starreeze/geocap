@@ -31,7 +31,7 @@ shell_fusiform_pole_classes = {
     "sharply pointed": [100, 114],
 }
 
-shell_axis_classes = {"straight": [175, 180], "slightly": [165, 175], "": [155, 165], "strongly":[0, 155]}
+shell_axis_classes = {"straight": [175, 180], "slightly": [165, 175], "": [155, 165], "strongly": [0, 155]}
 
 proloculus_size_classes = {
     "very small": [0, 0.1],
@@ -50,12 +50,9 @@ volution_coiled_classes = {
 
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
 
-tunnel_shape_regular_classes = {"regular":[0,0.5],"irregular":[0.5,99]}
+tunnel_shape_regular_classes = {"regular": [0, 0.5], "irregular": [0.5, 99]}
 
-tunnel_shape_regular_priority = {
-    "regular": 0,
-    "irregular": 1
-}
+tunnel_shape_regular_priority = {"regular": 0, "irregular": 1}
 
 chomata_size_classes = {
     "absent": [0, 0.0001],
@@ -102,12 +99,7 @@ septa_size_difference_classes = {
     "strongly fluted": lambda x: (x > 0.005),
 }
 
-septa_shape_priority = {
-    "straight": 0,
-    "slightly fluted": 1,
-    "fluted": 2,
-    "strongly fluted": 3,
-}
+septa_shape_priority = {"straight": 0, "slightly fluted": 1, "fluted": 2, "strongly fluted": 3}
 
 ordinal_numbers = [
     "first",
