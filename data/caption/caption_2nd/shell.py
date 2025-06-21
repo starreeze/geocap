@@ -29,13 +29,17 @@ class Shell(BaseFeature):
             (self.w * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset))
             * (self.h * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset)),
         )
+        self.size_str = txt.strip()
         txt += " "
         if "fusiform" in type:
-            txt += self.standardRangeFilter(fusiform_classes, ratio)
+            self.shape_str = self.standardRangeFilter(fusiform_classes, ratio)
+            txt += self.shape_str
         elif "ellipse" in type:
-            txt += self.standardRangeFilter(ellipse_classes, ratio)
+            self.shape_str = self.standardRangeFilter(ellipse_classes, ratio)
+            txt += self.shape_str
         elif "curves" in type:
-            txt += self.standardRangeFilter(ellipse_classes, ratio)
+            self.shape_str = self.standardRangeFilter(ellipse_classes, ratio)
+            txt += self.shape_str
         equ = self.getEquator()
         if equ != "":
             txt = equ + " in the median part, " + txt  # type: ignore
@@ -101,11 +105,11 @@ class Shell(BaseFeature):
             cross = self.convex_or_concave(top, a, b)
             angle = self.calculate_angle(a, top, b)
             axis = self.standardRangeFilter(shell_axis_classes, angle)
-            if axis == "other":
+            if axis != "straight":
                 if cross > 0:
-                    return "convex"
+                    return f"{axis} convex".strip()
                 elif cross < 0:
-                    return "concave"
+                    return f"{axis} concave".strip()
             else:
                 return axis
         elif "ellipse" in self.type:
@@ -131,7 +135,10 @@ class Shell(BaseFeature):
         return tagged
 
     def genInput(self):
-        txt = "length: {length} mm, ".format(length=self.length)
+        txt = ""
+        txt += "size: {size}, ".format(size=self.size_str)
+        txt += "shape: {shape}, ".format(shape=self.shape_str)
+        txt += "length: {length} mm, ".format(length=self.length)
         txt += "width: {width} mm, ".format(width=self.width)
         txt += "ratio: {ratio}\n".format(ratio=self.length_width_ratio)
         return txt

@@ -1,14 +1,16 @@
 from data.caption.caption_2nd.base import BaseFeature
 from data.caption.caption_2nd.params import *
-
+import numpy as np
+import math
 
 class Tunnel(BaseFeature):
-    def __init__(self, rule000, visible_chomata_idx, chomata_whs_relative, tunnel_angles=[]):
+    def __init__(self, rule000, visible_chomata_idx, chomata_whs_relative, chomata_pos_ordered, tunnel_angles=[]):
         self.tunnel_angles = [round(x, 0) for x in tunnel_angles]
         self.threshold = 10
         self.rule = rule000
         self.visible_chomata_idx = visible_chomata_idx
         self.chomata_whs_relative = chomata_whs_relative
+        self.chomata_pos_ordered = chomata_pos_ordered
 
     def getTunnelHeight(self):
         tunnel_heights = [self.chomata_whs_relative[k][1] for k in self.chomata_whs_relative]
@@ -16,6 +18,38 @@ class Tunnel(BaseFeature):
         if res == "moderate":
             res = "height moderate"
         return res
+
+    def calc_irregular(self):
+        chomata_classes=[[],[],[],[]]
+        for coords in self.chomata_pos_ordered:
+            valid_coords = [coord for coord in coords if coord != [-1, -1]]
+            chomata_angles=[self.cartesian_to_polar_angle(coord) for coord in valid_coords]
+            pos=[]
+            neg=[]
+            for ang in chomata_angles:
+                if ang<0:
+                    neg.append(ang)
+                else:
+                    pos.append(ang)
+            if len(pos)>0:
+                chomata_classes[0].append(min(pos))
+                chomata_classes[1].append(max(pos))
+            if len(neg)>0:
+                chomata_classes[2].append(min(neg))
+                chomata_classes[3].append(max(neg))
+        stds=[]
+        for clazz in chomata_classes:
+            if len(clazz)>1:
+                stds.append(float(np.std(clazz)))
+        if len(stds)>0:
+            return float(np.average(stds))
+        else:
+            return 1.0
+
+    def cartesian_to_polar_angle(self,point):
+        x, y = point
+        angle = math.atan2(y, x)
+        return angle
 
     def genTunnelFeatures(self):
         feat = ""
@@ -47,6 +81,17 @@ class Tunnel(BaseFeature):
             feat = f"Tunnels {tunnel_height}, broader in inner volutions compared to outer volutions. "
         else:
             feat = f"Tunnels {tunnel_height}, width moderate. "
+        missings = []
+        for coords in self.chomata_pos_ordered:
+            total_points = len(coords)
+            valid_coords = [coord for coord in coords if coord != [-1, -1]]
+            missing_count = total_points - len(valid_coords)
+            missing_rate = missing_count / total_points if total_points > 0 else 1.0
+            missings.append(missing_rate)
+        avg_missing = np.average(missings)
+        adj1 = self.standardRangeFilter(tunnel_shape_regular_classes, avg_missing)
+        adj2 = self.standardRangeFilter(tunnel_shape_regular_classes, self.calc_irregular())
+        feat += f"Tunnel path {self.overridedDescriptionByPriority(tunnel_shape_regular_priority, [adj1, adj2])}. "
         return feat
 
     def genTunnelAngleDescription(self):
