@@ -6,6 +6,8 @@ import random
 import re
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm
 
 from common.args import data_args, run_args
@@ -35,9 +37,70 @@ def caption(rules: list[dict[str, Any]], generator, output_path: str):
         rule_strs.append({"input": input_str, "output": rule_str})
         idx += 1
 
+    # caption2_debug()
+
     with open(output_path, "w") as f:
         f.write(json.dumps(rule_strs, indent=4))
         f.flush()
+
+
+septa_diffs = []
+
+
+def plot_histogram(
+    arr,
+    bins="auto",
+    save_path="dataset/histogram.png",
+    title="Frequency Distribution",
+    xlabel="Value",
+    ylabel="Frequency",
+):
+    """
+    绘制数组的频率分布直方图并保存
+
+    参数:
+    arr -- 输入数组
+    bins -- 直方图的柱子数量，可以是整数或'auto'、'sturges'等自动计算算法 (默认 'auto')
+    save_path -- 保存的文件路径 (默认 'histogram.png')
+    title -- 图表标题 (默认 'Frequency Distribution')
+    xlabel -- X轴标签 (默认 'Value')
+    ylabel -- Y轴标签 (默认 'Frequency')
+    """
+    plt.figure(figsize=(10, 6))
+
+    # 绘制直方图
+    plt.hist(arr, bins=bins, color="skyblue", edgecolor="black", alpha=0.7)
+
+    # 添加基本元素
+    plt.title(title, fontsize=14)
+    plt.xlabel(xlabel, fontsize=12)
+    plt.ylabel(ylabel, fontsize=12)
+
+    # 添加网格线
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
+
+    # 添加均值和中位数线
+    mean_val = np.mean(arr)
+    median_val = np.median(arr)
+
+    plt.axvline(mean_val, color="red", linestyle="dashed", linewidth=1.5, label=f"Mean: {mean_val:.2f}")
+    plt.axvline(
+        median_val, color="green", linestyle="dashed", linewidth=1.5, label=f"Median: {median_val:.2f}"
+    )
+
+    # 添加图例
+    plt.legend()
+
+    # 自动调整布局并保存
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()  # 关闭图形以释放内存
+
+    print(f"直方图已保存至: {save_path}")
+
+
+def caption2_debug():
+    plot_histogram(septa_diffs)
 
 
 def gen_user_input_txt_2nd(rule):
@@ -119,12 +182,16 @@ def gen_user_input_txt_2nd(rule):
     )
     # if len(chomata_shapes) > 0:
     obj_parts.append(Chomata(chomata_shapes, rule["numerical_info"]["num_volutions"], volutions))
+    volution_sizes = []
+    for i in range(len(obj_parts[-1].volution_heights)):
+        volution_sizes.append(obj_parts[-1].volution_heights[i] * obj_parts[-1].volution_widths[i])
     if "tunnel_angles" in rule["numerical_info"] and len(rule["numerical_info"]["tunnel_angles"]) > 0:
         obj_parts.append(
             Tunnel(
                 rule,
                 rule["numerical_info"]["visible_chomata_idx"],
                 obj_parts[-1].chomata_whs_relative,
+                obj_parts[-1].chomata_pos_ordered,
                 rule["numerical_info"]["tunnel_angles"],
             )
         )
@@ -132,7 +199,8 @@ def gen_user_input_txt_2nd(rule):
         obj_parts.append(Deposit(rule["axial_filling"], rule["numerical_info"]["num_volutions"]))
     else:
         obj_parts.append(Deposit([], rule["numerical_info"]["num_volutions"]))
-    obj_parts.append(Septa(rule["septa_folds"]))
+    obj_parts.append(Septa(rule["septa_folds"], volution_sizes))
+
     txt2 = head_start_2nd + "\n"
     feature_tagged = []
     for part in obj_parts:
@@ -141,6 +209,9 @@ def gen_user_input_txt_2nd(rule):
     feature_tagged.sort(key=featureSortFunc)
     for feat in feature_tagged:
         txt += feat
+
+    # septa_diffs.append(obj_parts[-1].size_diff)
+
     return txt2.strip(), txt.strip()
 
 

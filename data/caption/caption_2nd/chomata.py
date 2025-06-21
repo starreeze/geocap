@@ -601,6 +601,14 @@ class Chomata(BaseFeature):
             if vo not in chomata_metas_by_volution:
                 chomata_metas_by_volution[vo] = {"chomatas": [], "volution": self.volutions_table[vo]}
             chomata_metas_by_volution[vo]["chomatas"].append(c)
+        self.chomata_pos_ordered = []
+        for i in range(int(self.volution_num)):
+            temp = []
+            if i in chomata_metas_by_volution:
+                temp = [c["center"] for c in chomata_metas_by_volution[i]["chomatas"]]
+            while len(temp) < 4:
+                temp.append([-1, -1])
+            self.chomata_pos_ordered.append(temp)
         self.chomata_whs = {}
         for k in chomata_metas_by_volution:
             c_l = chomata_metas_by_volution[k]
@@ -651,6 +659,9 @@ class Chomata(BaseFeature):
         )
         size_outer = self.standardRangeFilter(
             chomata_size_classes, sum(outer_weights) / len(outer_weights) if len(outer_weights) > 0 else 0
+        )
+        self.size_all = self.standardRangeFilter(
+            chomata_size_classes, sum(weight_list) / len(weight_list) if len(weight_list) > 0 else 0
         )
         size_mid = -1
         if len(weight_list) >= 3:
@@ -871,9 +882,25 @@ class Chomata(BaseFeature):
         self.volution_widths = widths
 
     def genChomataDevelopment(self) -> str:
-        return self.standardRangeFilter(
+        if len(self.chomata_shapes) <= 0:
+            return "absent"
+        develop_draft = self.standardRangeFilter(
             chomata_development_classes, len(self.chomata_shapes) / self.volution_num
         )
+        if self.size_all == "massive":
+            return develop_draft
+        elif self.size_all == "moderate":
+            if develop_draft == "well developed":
+                return "normally developed"
+            else:
+                return develop_draft
+        elif (self.size_all == "small") or (self.size_all == "absent"):
+            if (develop_draft == "well developed") or (develop_draft == "present only in some volutions"):
+                return "weakly developed"
+            else:
+                return develop_draft
+        else:
+            return develop_draft
 
     def genUserInput(self):
         txt = "Chomata {block}. ".format(
