@@ -118,6 +118,10 @@ class Tunnel(BaseFeature):
                 txt += ", "
             else:
                 txt += "and {:.0f} degrees, respectively. ".format(self.tunnel_angles[i])
+        if len(self.tunnel_angles) > 0:
+            txt = f"Tunnel angle measures {int(round(np.average(self.tunnel_angles),0))} degrees on average. "
+        else:
+            txt = "Tunnel angles absent. "
         return txt
 
     def genUserInput(self):
@@ -147,4 +151,8 @@ class Tunnel(BaseFeature):
                 txt += ", "
             else:
                 txt += ".\n"
+        if len(self.tunnel_angles) > 0:
+            txt = f"tunnel angle: {int(round(np.average(self.tunnel_angles),0))}"
+        else:
+            txt = ""
         return txt
