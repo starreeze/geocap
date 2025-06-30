@@ -176,7 +176,7 @@ class Septa(BaseFeature):
 
     def genUserInput(self):
         if self.txt == "":
-            self.txt = "Septa straight. "
+            self.txt = "Septa straight, fluted only at poles. "
         return [f"<septa>{self.txt}</septa>"]
 
     def genInput(self):
