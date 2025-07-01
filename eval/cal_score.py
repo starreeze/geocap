@@ -14,6 +14,7 @@ characteristics = [
     "number_of_volutions",
     "thickness_of_spirotheca",
     "height_of_volution",
+    "endothyroid",
     "septa_folds",
     "proloculus",
     "tunnel_shape",
