@@ -164,10 +164,18 @@ def extract_tunnel_shape(text, default_value="moderate"):
     return height, width
 
 
+def extract_axis_shape(text, default_value="straight"):
+    axis_template = r"\b(straight|convex|concave|irregular|curved|sinuous)\b"
+    axis = re.search(axis_template, text)
+    axis = axis.group(0) if axis else default_value
+    return axis
+
+
 # test extract_range_or_num
 if __name__ == "__main__":
-    print(extract_range_or_num("2.0:1 to 2.5:1"))
-    print(extract_range_or_num("1:1.9, 1:2.2, 1:2.4, 1:2.6, 1:2.8"))
-    print(extract_range_or_num("3.1-5.5 mm"))
-    print(extract_range_or_num("2.8-3.5, more frequently 3.0"))
-    print(extract_range_or_num("near 1.5 in the first volution, increasing to near 2.5 at maturity"))
+    print(extract_axis_shape("straight to slightly curved"))
+    print(extract_axis_shape("slightly curved"))
+    print(extract_axis_shape("straight and well-defined"))
+    print(extract_axis_shape("nearly straight"))
+    print(extract_axis_shape("convex"))
+    print(extract_axis_shape("concave"))

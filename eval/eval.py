@@ -6,7 +6,13 @@ from tqdm import tqdm
 from common.args import fossil_eval_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from eval.cal_score import statistics
-from eval.utils import calculate_score, extract_range_or_num, extract_tunnel_shape, find_first_json_block
+from eval.utils import (
+    calculate_score,
+    extract_axis_shape,
+    extract_range_or_num,
+    extract_tunnel_shape,
+    find_first_json_block,
+)
 
 characteristics = [
     "overall_size",
@@ -26,7 +32,7 @@ characteristics = [
     "chomata",
     "axial_filling",
 ]
-rule_based_eval_features = ["length", "width", "ratio", "number_of_volutions", "proloculus"]
+rule_based_eval_features = ["length", "width", "ratio", "axis_shape", "number_of_volutions", "proloculus"]
 
 
 def record_err(input, output, error, idx, mode):
@@ -94,9 +100,9 @@ class Evaluater:
             "thickness_of_spirotheca": "",
             "height_of_volution": "",
             "endothyroid": "Endothyroid coiling in the inner whorls not observed",
-            "septa_folds": "slightly fluted only at poles",
+            "septa_folds": "",
             "proloculus": "",
-            "tunnel_shape": "moderate height, moderate width",
+            "tunnel_shape": "",
             "tunnel_angles": "",
             "chomata": "indistinct",
             "axial_filling": "present",
@@ -263,7 +269,11 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
 
         # Calculate scores for numerical features
         for feature in rule_based_eval_features:
-            if new_detail[feature].get("rating") == -1 or feature == "tunnel_shape":
+            if (
+                new_detail[feature].get("rating") == -1
+                or feature == "tunnel_shape"
+                or feature == "axis_shape"
+            ):
                 continue
 
             if not isinstance(reference[feature], str):
@@ -276,7 +286,7 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
             score = calculate_score(ref_range, pred_range)
             new_detail[feature][
                 "reason"
-            ] = f"Manual calculated score with output:{output[feature]}->{pred_range}, reference:{reference[feature]}->{ref_range}"
+            ] = f"Rule-based eval with output:{output[feature]}->{pred_range}, reference:{reference[feature]}->{ref_range}"
             new_detail[feature]["rating"] = score
 
         # Calculate scores for tunnel shape
@@ -287,16 +297,45 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
         rating = 0
         if height_reference == height_output:
             rating += 5
+        elif height_output == "none":
+            rating += 0
         elif height_reference == "moderate":
             rating += 2
+
         if width_reference == width_output:
             rating += 5
+        elif width_output == "none":
+            rating += 0
         elif width_reference == "moderate":
             rating += 2
+
         new_detail["tunnel_shape"]["rating"] = rating
         new_detail["tunnel_shape"][
             "reason"
-        ] = f"Manual calculated score with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
+        ] = f"Rule-based eval with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
+
+        # Calculate scores for axis shape
+        if reference["axis_shape"] == "":
+            new_detail["axis_shape"]["rating"] = -1
+            new_detail["axis_shape"]["reason"] = "Reference is empty, skipped evaluation"
+        else:
+            axis_output = extract_axis_shape(output["axis_shape"], default_value="none")
+            axis_reference = extract_axis_shape(reference["axis_shape"], default_value="none")
+            if axis_reference == axis_output:
+                new_detail["axis_shape"]["rating"] = 10
+            elif axis_output in ["convex", "concave", "curved"] and axis_reference in [
+                "convex",
+                "concave",
+                "curved",
+            ]:
+                new_detail["axis_shape"]["rating"] = 10
+            elif axis_output in ["irregular", "sinuous"] and axis_reference in ["irregular", "sinuous"]:
+                new_detail["axis_shape"]["rating"] = 10
+            else:
+                new_detail["axis_shape"]["rating"] = 0
+            new_detail["axis_shape"][
+                "reason"
+            ] = f"Rule-based eval with output:{output['axis_shape']}, reference:{reference['axis_shape']}"
 
         new_detailed.append(new_detail)
     return new_detailed
