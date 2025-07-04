@@ -17,11 +17,21 @@ shell_equator_classes = {"inflated": [90, 9999], "normal": [0, 90]}
 
 shell_slope_classes = {"convex": [0, 0.5], "concave": [0.5, 1]}
 
-shell_pole_classes = {"bluntly rounded": [100, 999], "bluntly pointed": [80, 100], "elongated": [0, 80]}
+shell_pole_classes = {
+    "bluntly rounded": [130, 999],
+    "bluntly pointed": [110, 130],
+    "sharply pointed": [0, 110],
+}
 
-shell_fusiform_pole_classes = {"bluntly rounded": [0, 6], "elongated": [6.1, 99]}
+shell_ellipse_pole_classes = {"bluntly rounded": [0, 4], "bluntly pointed": [4, 6], "elongated": [6, 99]}
 
-shell_axis_classes = {"straight": [178, 180], "other": [0, 178]}
+shell_fusiform_pole_classes = {
+    "bluntly rounded": [0, 6],
+    "elongated": [6.1, 99],
+    "sharply pointed": [100, 114],
+}
+
+shell_axis_classes = {"straight": [175, 180], "slightly": [165, 175], "": [155, 165], "strongly": [0, 155]}
 
 proloculus_size_classes = {
     "very small": [0, 0.1],
@@ -32,13 +42,38 @@ proloculus_size_classes = {
 
 proloculus_shape_classes = {"spherical": [0, 0.33], "normal": [0.33, 0.67], "kidney-shaped": [0.67, 1]}
 
+volution_coiled_classes = {
+    "tightly coiled": [0, 0.150],
+    "moderately coiled": [0.150, 0.2],
+    "loosely expanded": [0.2, 999],
+}
+
 tunnel_angle_classes = {"narrow": [0, 20], "moderate": [21, 30], "broad": [31, 99]}
 
-chomata_size_classes = {"small": [0, 0.06], "moderate": [0.06, 0.1], "massive": [0.1, 9999]}
+tunnel_shape_regular_classes = {"regular": [0, 0.5], "irregular": [0.5, 99]}
 
-chomata_height_classes = {"low": [0, 0.4], "moderate": [0.4, 0.6], "high": [0.6, 999]}
+tunnel_shape_regular_priority = {"regular": 0, "irregular": 1}
 
-chomata_width_classes = {"narrow": [0, 0.1], "moderate": [0.1, 0.2], "broad": [0.2, 999]}
+chomata_size_classes = {
+    "absent": [0, 0.0001],
+    "small": [0.0001, 0.03],
+    "moderate": [0.03, 0.05],
+    "massive": [0.05, 9999],
+}
+
+chomata_height_classes = {
+    "absent": [0, 0.0001],
+    "low": [0.0001, 0.4],
+    "moderate": [0.4, 0.6],
+    "high": [0.6, 999],
+}
+
+chomata_width_classes = {
+    "absent": [0, 0.0001],
+    "narrow": [0.0001, 0.1],
+    "moderate": [0.1, 0.2],
+    "broad": [0.2, 999],
+}
 
 chomata_development_classes = {
     "absence": [-1, 0.1],
@@ -51,13 +86,20 @@ chomata_development_classes = {
 deposit_development_classes = {"absence": [-1, 0.2], "normal": [0.2, 0.5], "well developed": [0.5, 999]}
 
 septa_shape_classes = {
-    "slightly fluted": lambda x: True,
-    "straight": lambda x: x[0] >= 0.7,
-    "undulant": lambda x: x[1] >= 0.7,
-    "fluted": lambda x: x[1] + x[2] >= 0.7 and x[2] >= 0.35,
-    "strongly fluted": lambda x: x[2] >= 0.7,
-    "irregularly fluted": lambda x: x[2] >= 0.9,
+    "straight": lambda x: x[0] <= 1,
+    "slightly fluted": lambda x: x[0] > 1 and x[0] <= 6,
+    "fluted": lambda x: x[0] > 6 and x[0] <= 10,
+    "strongly fluted": lambda x: (x[0] > 10),
 }
+
+septa_size_difference_classes = {
+    "straight": lambda x: x <= 0.003,
+    "slightly fluted": lambda x: x > 0.003 and x <= 0.004,
+    "fluted": lambda x: x > 0.004 and x <= 0.005,
+    "strongly fluted": lambda x: (x > 0.005),
+}
+
+septa_shape_priority = {"straight": 0, "slightly fluted": 1, "fluted": 2, "strongly fluted": 3}
 
 ordinal_numbers = [
     "first",

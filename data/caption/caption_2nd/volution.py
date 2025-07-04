@@ -3,12 +3,13 @@ from data.caption.caption_2nd.params import *
 
 
 class Volution(BaseFeature):
-    def __init__(self, n_volutions, thickness_table=[], volutions_table=[]):
+    def __init__(self, n_volutions, thickness_table=[], volutions_table=[], random_pixel_div_mm_offset=0):
         self.num = n_volutions
         self.thickness_table = thickness_table
         self.volutions_table = volutions_table
         self.chamber_heights = None
         self.growth_rate = None
+        self.random_pixel_div_mm_offset = random_pixel_div_mm_offset
 
     def genWallThickness(self):
         if len(self.thickness_table) == 0:
@@ -46,7 +47,7 @@ class Volution(BaseFeature):
                         )
                         / 2
                         * shell_world_pixel
-                        / shell_pixel_div_mm,
+                        / (shell_pixel_div_mm + self.random_pixel_div_mm_offset),
                         3,
                     ),
                     0.001,
@@ -64,18 +65,57 @@ class Volution(BaseFeature):
             return ""
         txt += txt1
         self.chamber_heights = txt1
-        txt += "Rates of growth of {start} to {end} volution are ".format(
-            start=ordinal_numbers[1], end=ordinal_numbers[len(self.volutions_table) - 1]
-        )
+        self.growth_rate_raw = []
+        # txt += "Rates of growth of {start} to {end} volution are ".format(
+        #     start=ordinal_numbers[1], end=ordinal_numbers[len(self.volutions_table) - 1]
+        # )
         for i in range(len(heights) - 1):
             txt2 += str(round(heights[i + 1] / heights[i], 1))
+            self.growth_rate_raw.append(heights[i + 1] - heights[i])
             if i != len(heights) - 2:
                 txt2 += ", "
             else:
                 txt2 += ". "
-        txt += txt2
-        self.growth_rate = txt2
+        # txt += txt2
+        # self.growth_rate = txt2
+        self.growth_rate = None
+        txt += f"Volutions {self.getCoiled()}. "
         return txt
+
+    def processTwo(self, inner, outer):
+        if "moderate" in inner[0]:
+            return f"{outer[0]} in outer volutions"
+        elif "moderate" in outer[0]:
+            return f"{inner[0]} in first {inner[1] + 2} volutions"
+        else:
+            return f"{inner[0]} in first {inner[1] + 2} volutions while {outer[0]} in outer volutions"
+
+    def getCoiled(self):
+        coiled = [self.standardRangeFilter(volution_coiled_classes, g) for g in self.growth_rate_raw]
+        inner, outer = ["", -1], ["", -1]
+        current_modify = inner
+        # print("new sample:")
+        # print(self.chamber_heights)
+        for i, word in enumerate(coiled):
+            # print(f"{i}th loop:",inner,outer)
+            if current_modify[0] == "":
+                current_modify[0] = word
+                current_modify[1] = i
+            elif current_modify[0] != word:
+                current_modify = outer
+                current_modify[0] = word
+                current_modify[1] = i
+            else:
+                current_modify[1] = i
+        if inner[0] != "":
+            if outer[0] == "":
+                return inner[0]
+            elif outer[0] == inner[0]:
+                return inner[0]
+            else:
+                return self.processTwo(inner, outer)
+        else:
+            return "moderately coiled"
 
     def genUserInput(self):
         txt = "The number of volutions is {num}. ".format(num=self.num)

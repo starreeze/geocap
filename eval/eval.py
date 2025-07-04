@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from common.args import fossil_eval_args, logger
 from common.llm import generator_mapping, model_path_mapping
-from eval.statistics import statistics
+from eval.cal_score import statistics
 from eval.utils import calculate_score, extract_range_or_num, extract_tunnel_shape, find_first_json_block
 
 characteristics = [
@@ -18,6 +18,7 @@ characteristics = [
     "number_of_volutions",
     "thickness_of_spirotheca",
     "height_of_volution",
+    "endothyroid",
     "septa_folds",
     "proloculus",
     "tunnel_shape",
@@ -92,6 +93,7 @@ class Evaluater:
             "number_of_volutions": "",
             "thickness_of_spirotheca": "",
             "height_of_volution": "",
+            "endothyroid": "Endothyroid coiling in the inner whorls not observed",
             "septa_folds": "slightly fluted only at poles",
             "proloculus": "",
             "tunnel_shape": "moderate height, moderate width",

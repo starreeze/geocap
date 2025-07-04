@@ -12,6 +12,7 @@ You are provided with a description of a fossil image. You need to extract speci
 - number_of_volutions
 - thickness_of_spirotheca
 - height_of_volution
+- endothyroid
 - septa_folds
 - proloculus
 - tunnel_angles
@@ -24,6 +25,7 @@ You are provided with a description of a fossil image. You need to extract speci
 - Convert the word-described number into digits, e.g. 'one' -> 1
 - If conflicting information arises, retain the more accurate one with smaller data range
 - Preserve original measurements/descriptions verbatim
+- Pay attention to unit conversion, e.g., 1mm = 1000 microns
 - For sequential values (e.g., volution heights), use comma-separated values
 - Handle equivalent terms:
     1. "proloculus" is equivalent to "initial chamber"
@@ -46,51 +48,53 @@ You are provided with a description of a fossil image. You need to extract speci
 ## Example 1:
 
 ### User:
-Test large, rhomboid in outline, concave in middle on one side and convex on another side; median axis sinuous, and extremities sharp. Volutions 8-10; inner 4-5 volutions tightly involute and successive ones loosing gradually. Holotype specimen 10.87 mm long, 2.92 mm wide, and about 3.72:1 in axial ratio. Spirotheca very thin in tightly coiled inner volutions, about 0.008-0.01 mm thick; thickening outwards; composed of a tectum and a keriotheca; the spirotheca on the eighth volution about 0.07 mm thick. Septa are plane and straight in the inner volutions, and completely fluted in the outer volutions; flutings broadly rounded in general, sometimes reaching the top of the chambers in height. Chomata small, only visible in the inner volutions. Tunnels low, moderately wide. Axial fillings heavy, distributed on the lateral sides of median axis, except the final volution. Proloculus circular.
+Test large, rhomboid in outline, concave in middle on one side and convex on another side; median axis sinuous, and extremities sharp. Volutions 8-10; inner 4-5 volutions tightly involute and successive ones loosing gradually. Holotype specimen 10.87 mm long, 2.92 mm wide, and about 3.72:1 in axial ratio. Spirotheca very thin in tightly coiled inner volutions, about 0.008-0.01 mm thick; thickening outwards; composed of a tectum and a keriotheca; the spirotheca on the eighth volution about 0.07 mm thick. Septa are plane and straight in the inner volutions, and completely fluted in the outer volutions; flutings broadly rounded in general, sometimes reaching the top of the chambers in height. Chomata small, only visible in the inner volutions. Tunnels low, moderately wide. Axial fillings heavy, distributed on the lateral sides of median axis, except the final volution. Proloculus circular. Endothyroid coiling in the inner whorls not observed.
 
 ### Assistant:
 ```json
 {
-    "overall_size":"large",
-    "overall_shape":"rhomboid in outline, concave in middle on one side and convex on another side",
-    "length":"10.87 mm",
-    "width":"2.92 mm",
-    "ratio":"3.72",
-    "axis_shape":"sinuous",
-    "number_of_volutions":"8-10",
-    "thickness_of_spirotheca":"0.008-0.01 mm",
-    "height_of_volution":"",
-    "septa_folds":"plane and straight in the inner volutions, and completely fluted in the outer volutions; flutings broadly rounded in general, sometimes reaching the top of the chambers in height",
-    "proloculus":"circular",
-    "tunnel_shape":"low, moderately wide",
-    "tunnel_angles":"",
-    "chomata":"small, only visible in the inner volutions",
-    "axial_filling":"heavy, distributed on the lateral sides of median axis, except the final volution"
+    "overall_size": "large",
+    "overall_shape": "rhomboid in outline, concave in middle on one side and convex on another side",
+    "length": "10.87 mm",
+    "width": "2.92 mm",
+    "ratio": "3.72",
+    "axis_shape": "sinuous",
+    "number_of_volutions": "8-10",
+    "thickness_of_spirotheca": "0.008-0.01 mm",
+    "height_of_volution": "",
+    "endothyroid": "endothyroid coiling in the inner whorls not observed",
+    "septa_folds": "plane and straight in the inner volutions, and completely fluted in the outer volutions; flutings broadly rounded in general, sometimes reaching the top of the chambers in height",
+    "proloculus": "circular",
+    "tunnel_shape": "low, moderately wide",
+    "tunnel_angles": "",
+    "chomata": "small, only visible in the inner volutions",
+    "axial_filling": "heavy, distributed on the lateral sides of median axis, except the final volution"
 }
 ```
 ## Example 2:
 
 ### User:
-Its shell is minute and inflated fusiform, possessing pointed poles, straight to slightly curving axis of coiling, and concave lateral slopes. The inner two volutions are ellipsoidal. The next two volutions are uniformly inflated fusiform. Beyond the fourth volution the poles are extended and the central part is more highly inflated. Mature specimens of six to seven volutions are 2.9 to 3.2 mm. long and 1.3 to 1.5 mm. wide. The form ratio is 2.1 to 2.4. The shell changes form ratio gradually.\\nThe proloculus is small, and its outside diameter measures 77 to 101 microns. The heights of the first to the seventh volution are 32, 46, 73, 101, 126, 156, and 170 microns, respectively. The heights of the chambers change little laterally from the tunnel, but near the poles, they increase suddenly.\\nThe septa are broadly fluted in the extreme polar regions but are unfluted in the central half of the shell.\\nThe spirotheca is relatively thick. The wall of the proloculus measures about 10 microns. The thicknesses of all layers of the spirotheca in the first to the seventh volution are 11, 16, 20, 26, 31, 27, and 38 microns, respectively. The spirotheca thins only slightly poleward from the center of the shell.\\nThe tunnel is narrow and its path is irregular. Tunnel angles of the third to the seventh volution are 21, 19, 19, 23, and 27 degrees, respectively. Chomata are massive and broad. Their tunnel side is about vertical, and their poleward slope is low. The outer margins of the chomata extend to the poles in the inner four to five volutions. In the outer volutions, the chomata are asymmetrical and are three to four times as wide as high.
+Its shell is minute and inflated fusiform, possessing pointed poles, straight to slightly curving axis of coiling, and concave lateral slopes. The inner two volutions are ellipsoidal. The next two volutions are uniformly inflated fusiform. Beyond the fourth volution the poles are extended and the central part is more highly inflated. Mature specimens of six to seven volutions are 2.9 to 3.2 mm. long and 1.3 to 1.5 mm. wide. The form ratio is 2.1 to 2.4. The shell changes form ratio gradually.\\nThe proloculus is small, and its outside diameter measures 77 to 101 microns. First whorl endothyroid. The heights of the first to the seventh volution are 32, 46, 73, 101, 126, 156, and 170 microns, respectively. The heights of the chambers change little laterally from the tunnel, but near the poles, they increase suddenly.\\nThe septa are broadly fluted in the extreme polar regions but are unfluted in the central half of the shell.\\nThe spirotheca is relatively thick. The wall of the proloculus measures about 10 microns. The thicknesses of all layers of the spirotheca in the first to the seventh volution are 11, 16, 20, 26, 31, 27, and 38 microns, respectively. The spirotheca thins only slightly poleward from the center of the shell.\\nThe tunnel is narrow and its path is irregular. Tunnel angles of the third to the seventh volution are 21, 19, 19, 23, and 27 degrees, respectively. Chomata are massive and broad. Their tunnel side is about vertical, and their poleward slope is low. The outer margins of the chomata extend to the poles in the inner four to five volutions. In the outer volutions, the chomata are asymmetrical and are three to four times as wide as high.
 
 ### Assistant:
 ```json
 {
-    "overall_size":"minute",
-    "overall_shape":"inflated fusiform, possessing pointed poles and concave lateral slopes",
-    "length":"2.9 to 3.2 mm",
-    "width":"1.3 to 1.5 mm",
-    "ratio":"2.1 to 2.4",
-    "axis_shape":"straight to slightly curving",
-    "number_of_volutions":"6 to 7",
-    "thickness_of_spirotheca":"11, 16, 20, 26, 31, 27, and 38 microns",
-    "height_of_volution":"32, 46, 73, 101, 126, 156, and 170 microns",
-    "septa_folds":"broadly fluted in the extreme polar regions but are unfluted in the central half of the shell",
-    "proloculus":"small, and its outside diameter measures 77 to 101 microns",
-    "tunnel_shape":"narrow and its path is irregular",
-    "tunnel_angles":"21, 19, 19, 23, and 27 degrees",
-    "chomata":"massive and broad",
-    "axial_filling":""
+    "overall_size": "minute",
+    "overall_shape": "inflated fusiform, possessing pointed poles and concave lateral slopes",
+    "length": "2.9 to 3.2 mm",
+    "width": "1.3 to 1.5 mm",
+    "ratio": "2.1 to 2.4",
+    "axis_shape": "straight to slightly curving",
+    "number_of_volutions": "6 to 7",
+    "thickness_of_spirotheca": "11, 16, 20, 26, 31, 27, and 38 microns",
+    "height_of_volution": "32, 46, 73, 101, 126, 156, and 170 microns",
+    "endothyroid": "first whorl endothyroid",
+    "septa_folds": "broadly fluted in the extreme polar regions but are unfluted in the central half of the shell",
+    "proloculus": "small, and its outside diameter measures 77 to 101 microns",
+    "tunnel_shape": "narrow and its path is irregular",
+    "tunnel_angles": "21, 19, 19, 23, and 27 degrees",
+    "chomata": "massive and broad",
+    "axial_filling": ""
 }
 ```
 
