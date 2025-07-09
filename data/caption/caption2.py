@@ -217,11 +217,14 @@ def gen_user_input_txt_2nd(rule):
 
 def featureSortFunc(feat):
     feat_order = [
-        "shell",
+        "size",
+        "shape",
+        "equator",
+        "lateral slopes",
         "length",
         "width",
         "ratio",
-        "volution",
+        "number of volutions",
         "proloculus",
         "axis",
         "axial filling",
