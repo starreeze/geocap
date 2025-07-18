@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--reference_path",
         type=str,
-        default="dataset/latest/instructions_all.jsonl",
+        default="dataset/stage3/no_vis/add_default_value.jsonl",
         help="Path to the reference file",
     )
     args = parser.parse_args()

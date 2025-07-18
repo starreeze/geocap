@@ -1,5 +1,38 @@
 import re
 
+characteristics = [
+    "size",
+    "shape",
+    "equator",
+    "lateral_slopes",
+    "poles",
+    "length",
+    "width",
+    "ratio",
+    "axis_shape",
+    "number_of_volutions",
+    "coil_tightness",
+    "height_of_volution",
+    "thickness_of_spirotheca",
+    "endothyroid",
+    "septa",
+    "proloculus",
+    "tunnel_shape",
+    "tunnel_angles",
+    "chomata",
+    "axial_filling",
+]
+rule_based_eval_features = [
+    "length",
+    "width",
+    "ratio",
+    "axis_shape",
+    "number_of_volutions",
+    "proloculus",
+    "tunnel_shape",
+    "tunnel_angles",
+]
+
 
 def find_first_json_block(text: str) -> tuple[str, str]:
     """Find the first complete JSON block in the text.
@@ -106,7 +139,7 @@ def extract_range_or_num(text: str) -> list[float] | str:
 
 def calculate_score(ref_range: list[float] | str, pred_range: list[float] | str) -> int:
     if ref_range == "no number found":
-        return 10
+        return -1
 
     # Process reference and prediction list
     if isinstance(ref_range, list):
@@ -164,10 +197,17 @@ def extract_tunnel_shape(text, default_value="moderate"):
     return height, width
 
 
+def extract_axis_shape(text, default_value="straight"):
+    axis_template = r"\b(straight|convex|concave|irregular|curved|sinuous)\b"
+    axis = re.search(axis_template, text)
+    axis = axis.group(0) if axis else default_value
+    return axis
+
+
 # test extract_range_or_num
 if __name__ == "__main__":
-    print(extract_range_or_num("2.0:1 to 2.5:1"))
-    print(extract_range_or_num("1:1.9, 1:2.2, 1:2.4, 1:2.6, 1:2.8"))
-    print(extract_range_or_num("3.1-5.5 mm"))
-    print(extract_range_or_num("2.8-3.5, more frequently 3.0"))
-    print(extract_range_or_num("near 1.5 in the first volution, increasing to near 2.5 at maturity"))
+    print(extract_range_or_num("20\u00b0 in the second whorl to 30\u00b0-40\u00b0in the fifth"))
+    print(extract_range_or_num("about 22 degrees"))
+    print(extract_range_or_num("20\u00b0 and 25\u00b0"))
+    print(extract_range_or_num("27, 27, and 31 degrees"))
+    print(extract_range_or_num("moderately large but increases at a relatively slow rate"))

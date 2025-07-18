@@ -11,15 +11,17 @@ from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
 from stage3.recognize import recognize_feature
-from stage3.utils import get_circle_points
+from stage3.reorder_tag import reorder_tag
+from stage3.utils import classify_ellipsoidal_vs_fusiform, get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
-instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_no_vis.jsonl")
+instructions_path = os.path.join(feat_recog_args.save_data_path, "instructions_all.jsonl")
 stage3_data_path = os.path.join(feat_recog_args.save_data_path, "num_replace.jsonl")
 stage3_paraphrase_path = os.path.join(feat_recog_args.save_data_path, "paraphrase.jsonl")
 stage3_tag_format_path = os.path.join(feat_recog_args.save_data_path, "tag_format.jsonl")
 stage3_add_default_value_path = os.path.join(feat_recog_args.save_data_path, "add_default_value.jsonl")
+stage3_reorder_tag_path = os.path.join(feat_recog_args.save_data_path, "reorder_tag.jsonl")
 llava_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_llava.jsonl")
 internvl_data_path = os.path.join(feat_recog_args.save_data_path, "stage3_internvl.jsonl")
 
@@ -101,19 +103,29 @@ class DataGenerator:
         else:
             new_image_info["overall_size"] = "large"
 
-        # Classify overall shape by ratio
-        # TODO: add more shapes
-        ratio2shape = {
-            "lenticular": [0.2, 0.8],
-            "spherical": [0.8, 1.2],
-            "inflated fusiform": [1.2, 1.9],
-            "fusiform": [2.0, 3.1],
-            "elongate fusiform": [3.1, 99],
-        }
-        for shape, ratio_range in ratio2shape.items():
-            if ratio_range[0] <= new_image_info["ratio"] < ratio_range[1]:
-                new_image_info["overall_shape"] = shape
-                break
+        # Classify overall shape by ratio and contour
+        if 0.2 <= new_image_info["ratio"] < 0.8:
+            new_image_info["overall_shape"] = "lenticular"
+        elif 0.8 <= new_image_info["ratio"] < 1.2:
+            new_image_info["overall_shape"] = "spherical"
+        else:
+            shape_type = classify_ellipsoidal_vs_fusiform(contour)  # "ellipsoidal" or "fusiform"
+            ellipsoidal_classes = {
+                "ellipsoidal": [1.2, 2.1],
+                "sub-ellipsoidal": [2.1, 4],
+                "cylindrical": [4, 6],
+                "sub-cylindrical": [6, 99],
+            }
+            fusiform_classes = {
+                "inflated fusiform": [1.2, 1.9],
+                "fusiform": [1.9, 3],
+                "elongate fusiform": [3, 99],
+            }
+            ratio2shape = ellipsoidal_classes if shape_type == "ellipsoidal" else fusiform_classes
+            for shape, ratio_range in ratio2shape.items():
+                if ratio_range[0] <= new_image_info["ratio"] < ratio_range[1]:
+                    new_image_info["overall_shape"] = shape
+                    break
 
         if use_vis_tools:
             # Recognize fossil features
@@ -184,7 +196,10 @@ class DataGenerator:
             tunnel_angles = self.post_process_tunnel_angles(
                 tunnel_angles, int(new_image_info["num_volutions"])
             )
-            new_image_info["tunnel_angles"] = tunnel_angles
+
+            # Average tunnel angles by volutions
+            tunnel_angle = int(sum(tunnel_angles.values()) / len(tunnel_angles))
+            new_image_info["tunnel_angle"] = tunnel_angle
 
         return new_image_info
 
@@ -232,12 +247,10 @@ class DataGenerator:
 
     def get_one_instruction(self, image_info: dict) -> str:
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
-        instruction += "Here is some information about the fossil:\n"
+        instruction += "Here is some information about the fossil that must be included in the description:\n"
         # overall size and shape
+        instruction += f"size: {image_info['overall_size']}, shape: {image_info['overall_shape']}, "
         instruction += f"length: {image_info['length']:.3f} mm. , width(diameter): {image_info['width']:.3f} mm. ratio: {image_info['ratio']:.3f}\n"
-        instruction += (
-            f"overall size: {image_info['overall_size']}, overall shape: {image_info['overall_shape']}\n"
-        )
         instruction += f"number of volutions(whorls): {image_info['num_volutions']}\n"
 
         # thickness of spirotheca
@@ -258,18 +271,8 @@ class DataGenerator:
         if "size_init_chamber" in image_info:
             instruction += f"initial chamber(proloculus): {int(image_info['size_init_chamber'])} microns\n"
 
-        if "tunnel_angles" in image_info:
-            instruction += "tunnel angles: "
-            for i, angle in image_info["tunnel_angles"].items():
-                if i == 1:
-                    instruction += f"{angle} degrees in the 1st volution, "
-                elif i == 2:
-                    instruction += f"{angle} degrees in the 2nd volution, "
-                elif i == 3:
-                    instruction += f"{angle} degrees in the 3rd volution, "
-                else:
-                    instruction += f"{angle} degrees in the {i}th volution, "
-            instruction = instruction.rstrip(", ") + ".\n"
+        if "tunnel_angle" in image_info:
+            instruction += f"tunnel angle: {image_info['tunnel_angle']} degrees.\n"
 
         return instruction
 
@@ -399,16 +402,14 @@ def paraphrase(start_pos=None, end_pos=None):
 
 
 def tag_format(start_pos=None, end_pos=None):
-    caption_args.paraphrase_prompt_dir = "data/caption/prompts/tag_format.txt"
+    caption_args.paraphrase_prompt_dir = "stage3/prompts/tag_format.txt"
     paraphraser = Paraphraser()
     # Read original captions
     if start_pos is not None and end_pos is not None:
         input_data_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_paraphrase_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"paraphrase_{start_pos}_{end_pos}.jsonl"
         )
-        output_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
-        )
+        output_path = os.path.join(feat_recog_args.save_data_path, f"tag_format_{start_pos}_{end_pos}.jsonl")
     else:
         input_data_path = stage3_paraphrase_path
         output_path = stage3_tag_format_path
@@ -435,15 +436,15 @@ def tag_format(start_pos=None, end_pos=None):
 
 
 def add_default_value(start_pos=None, end_pos=None):
-    caption_args.paraphrase_prompt_dir = "data/caption/prompts/add_default_value.txt"
+    caption_args.paraphrase_prompt_dir = "stage3/prompts/add_default_value_orig.txt"
     paraphraser = Paraphraser()
     # Read original captions
     if start_pos is not None and end_pos is not None:
         input_data_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_tag_format_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"tag_format_{start_pos}_{end_pos}.jsonl"
         )
         output_path = os.path.join(
-            feat_recog_args.save_data_path, f"stage3_add_default_value_{start_pos}_{end_pos}.jsonl"
+            feat_recog_args.save_data_path, f"add_default_value_{start_pos}_{end_pos}.jsonl"
         )
     else:
         input_data_path = stage3_tag_format_path
@@ -489,8 +490,7 @@ def format_to_llava():
 
 
 def format_to_internvl():
-    # data: list[str] = open(stage3_paraphrase_path, "r").readlines()
-    data: list[str] = open(stage3_tag_format_path, "r").readlines()
+    data: list[str] = open(stage3_reorder_tag_path, "r", encoding="utf-8").readlines()
     with open(internvl_data_path, "w") as f:
         for i, d in enumerate(data):
             d = json.loads(d.strip())
@@ -506,12 +506,13 @@ def format_to_internvl():
 
 
 def main():
-    generate_dataset(use_vis_tools=False)
-    # paraphrase()
-    # tag_format()
-    # add_default_value()
+    generate_dataset(use_vis_tools=True)
+    paraphrase()
+    tag_format()
+    add_default_value()
+    reorder_tag(input_path=stage3_add_default_value_path, output_path=stage3_reorder_tag_path)
     # format_to_llava()
-    # format_to_internvl()
+    format_to_internvl()
 
 
 if __name__ == "__main__":
