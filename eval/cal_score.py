@@ -3,25 +3,7 @@ import json
 from collections import defaultdict
 
 from common.args import fossil_eval_args
-
-characteristics = [
-    "overall_size",
-    "overall_shape",
-    "length",
-    "width",
-    "ratio",
-    "axis_shape",
-    "number_of_volutions",
-    "thickness_of_spirotheca",
-    "height_of_volution",
-    "endothyroid",
-    "septa_folds",
-    "proloculus",
-    "tunnel_shape",
-    "tunnel_angles",
-    "chomata",
-    "axial_filling",
-]
+from eval.utils import characteristics
 
 
 def feature_statistics():

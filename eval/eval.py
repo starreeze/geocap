@@ -8,31 +8,13 @@ from common.llm import generator_mapping, model_path_mapping
 from eval.cal_score import statistics
 from eval.utils import (
     calculate_score,
+    characteristics,
     extract_axis_shape,
     extract_range_or_num,
     extract_tunnel_shape,
     find_first_json_block,
+    rule_based_eval_features,
 )
-
-characteristics = [
-    "overall_size",
-    "overall_shape",
-    "length",
-    "width",
-    "ratio",
-    "axis_shape",
-    "number_of_volutions",
-    "thickness_of_spirotheca",
-    "height_of_volution",
-    "endothyroid",
-    "septa_folds",
-    "proloculus",
-    "tunnel_shape",
-    "tunnel_angles",
-    "chomata",
-    "axial_filling",
-]
-rule_based_eval_features = ["length", "width", "ratio", "axis_shape", "number_of_volutions", "proloculus"]
 
 
 def record_err(input, output, error, idx, mode):
@@ -88,30 +70,6 @@ class Evaluater:
             ]
         return messages
 
-    def add_default_extraced_value(self, extracted_json_item):
-        default_value_map = {
-            "overall_size": "",
-            "overall_shape": "",
-            "length": "",
-            "width": "",
-            "ratio": "",
-            "axis_shape": "",
-            "number_of_volutions": "",
-            "thickness_of_spirotheca": "",
-            "height_of_volution": "",
-            "endothyroid": "Endothyroid coiling in the inner whorls not observed",
-            "septa_folds": "",
-            "proloculus": "",
-            "tunnel_shape": "",
-            "tunnel_angles": "",
-            "chomata": "indistinct",
-            "axial_filling": "present",
-        }
-        for key, value in default_value_map.items():
-            if extracted_json_item.get(key) == "":
-                extracted_json_item[key] = value
-        return extracted_json_item
-
     def extract(self, entry_batch, mode):
         fail_flag = False
         testee = [entry[mode] for entry in entry_batch]
@@ -132,10 +90,6 @@ class Evaluater:
                         new_json_item[key] = value
                     json_item.clear()
                     json_item.update(new_json_item)
-
-                # Set default value for each feature in reference
-                if mode == "reference":
-                    json_item = self.add_default_extraced_value(json_item)
 
             except Exception as e:
                 process_json_batch = [{"image_path": entry_batch[idx].get("img", "")}]
@@ -198,7 +152,7 @@ class Evaluater:
 def main():
     evaluater = Evaluater()
     evaluater.load_llm_generator()
-    with open(fossil_eval_args.eval_origin_file, "r") as f:  # load to verify the data
+    with open(fossil_eval_args.eval_origin_file, "r", encoding="utf-8") as f:  # load to verify the data
         caption_batch = json.load(f)
         caption_batch = caption_batch[fossil_eval_args.eval_start_pos : fossil_eval_args.eval_end_pos]
     if not os.path.exists(fossil_eval_args.eval_result_dir):
@@ -208,7 +162,7 @@ def main():
     if not os.path.exists(fossil_eval_args.eval_reference_file):
         ex_r, fail = evaluater.extract(caption_batch, mode="reference")
         with open(fossil_eval_args.eval_reference_file, "w") as f:
-            json.dump(ex_r, f)
+            json.dump(ex_r, f, indent=4)
         if fail:
             print(
                 "Fail Detected, check log file; program aborted due to unabling to carry on until this error is fixed manually"
@@ -227,7 +181,7 @@ def main():
         # Extract output feature info
         ex_o, fail = evaluater.extract(caption_batch, mode="output")
         with open(f"{fossil_eval_args.eval_result_dir}/extracted_output_info.json", "w") as f:
-            json.dump(ex_o, f)
+            json.dump(ex_o, f, indent=4)
         if fail:
             print("Fail Detected, check log file; carry on to independent reference extraction")
             return
@@ -242,7 +196,7 @@ def main():
     # Evaluation
     detailed, fail = evaluater.evaluate(ex_o, ex_r, caption_batch)
     with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "w") as f:
-        json.dump(detailed, f)
+        json.dump(detailed, f, indent=4)
 
     # ---------debug---------
     # with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "r") as f:
@@ -253,7 +207,7 @@ def main():
     detailed = rule_based_eval(detailed, ex_o, ex_r)
 
     with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "w") as f:
-        json.dump(detailed, f)
+        json.dump(detailed, f, indent=4)
     if fail:
         print("Fail Detected, check log file; program aborted")
         return
@@ -267,75 +221,72 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
     ):
         new_detail = detail.copy()
 
-        # Calculate scores for numerical features
         for feature in rule_based_eval_features:
-            if (
-                new_detail[feature].get("rating") == -1
-                or feature == "tunnel_shape"
-                or feature == "axis_shape"
-            ):
+            if new_detail[feature].get("rating") == -1:
                 continue
 
-            if not isinstance(reference[feature], str):
-                reference[feature] = str(reference[feature])
-            if not isinstance(output[feature], str):
-                output[feature] = str(output[feature])
-            ref_range = extract_range_or_num(reference[feature])
-            pred_range = extract_range_or_num(output[feature])
+            # Calculate scores for numerical features
+            if feature in ["length", "width", "ratio", "number_of_volutions", "proloculus", "tunnel_angles"]:
+                if not isinstance(reference[feature], str):
+                    reference[feature] = str(reference[feature])
+                if not isinstance(output[feature], str):
+                    output[feature] = str(output[feature])
+                ref_range = extract_range_or_num(reference[feature])
+                pred_range = extract_range_or_num(output[feature])
 
-            score = calculate_score(ref_range, pred_range)
-            new_detail[feature][
-                "reason"
-            ] = f"Rule-based eval with output:{output[feature]}->{pred_range}, reference:{reference[feature]}->{ref_range}"
-            new_detail[feature]["rating"] = score
+                score = calculate_score(ref_range, pred_range)
+                new_detail[feature][
+                    "reason"
+                ] = f"Rule-based eval with output:{output[feature]}->{pred_range}, reference:{reference[feature]}->{ref_range}"
+                new_detail[feature]["rating"] = score
 
-        # Calculate scores for tunnel shape
-        height_output, width_output = extract_tunnel_shape(output["tunnel_shape"], default_value="none")
-        height_reference, width_reference = extract_tunnel_shape(
-            reference["tunnel_shape"], default_value="moderate"
-        )
-        rating = 0
-        if height_reference == height_output:
-            rating += 5
-        elif height_output == "none":
-            rating += 0
-        elif height_reference == "moderate":
-            rating += 2
+            # Calculate scores for tunnel shape
+            elif feature == "tunnel_shape":
+                height_output, width_output = extract_tunnel_shape(
+                    output["tunnel_shape"], default_value="none"
+                )
+                height_reference, width_reference = extract_tunnel_shape(
+                    reference["tunnel_shape"], default_value="moderate"
+                )
+                rating = 0
+                if height_reference == height_output:
+                    rating += 5
+                elif height_output == "none":
+                    rating += 0
+                elif height_reference == "moderate":
+                    rating += 2
 
-        if width_reference == width_output:
-            rating += 5
-        elif width_output == "none":
-            rating += 0
-        elif width_reference == "moderate":
-            rating += 2
+                if width_reference == width_output:
+                    rating += 5
+                elif width_output == "none":
+                    rating += 0
+                elif width_reference == "moderate":
+                    rating += 2
 
-        new_detail["tunnel_shape"]["rating"] = rating
-        new_detail["tunnel_shape"][
-            "reason"
-        ] = f"Rule-based eval with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
+                new_detail["tunnel_shape"]["rating"] = rating
+                new_detail["tunnel_shape"][
+                    "reason"
+                ] = f"Rule-based eval with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
 
-        # Calculate scores for axis shape
-        if reference["axis_shape"] == "":
-            new_detail["axis_shape"]["rating"] = -1
-            new_detail["axis_shape"]["reason"] = "Reference is empty, skipped evaluation"
-        else:
-            axis_output = extract_axis_shape(output["axis_shape"], default_value="none")
-            axis_reference = extract_axis_shape(reference["axis_shape"], default_value="none")
-            if axis_reference == axis_output:
-                new_detail["axis_shape"]["rating"] = 10
-            elif axis_output in ["convex", "concave", "curved"] and axis_reference in [
-                "convex",
-                "concave",
-                "curved",
-            ]:
-                new_detail["axis_shape"]["rating"] = 10
-            elif axis_output in ["irregular", "sinuous"] and axis_reference in ["irregular", "sinuous"]:
-                new_detail["axis_shape"]["rating"] = 10
-            else:
-                new_detail["axis_shape"]["rating"] = 0
-            new_detail["axis_shape"][
-                "reason"
-            ] = f"Rule-based eval with output:{output['axis_shape']}, reference:{reference['axis_shape']}"
+            # Calculate scores for axis shape
+            elif feature == "axis_shape":
+                axis_output = extract_axis_shape(output["axis_shape"], default_value="none")
+                axis_reference = extract_axis_shape(reference["axis_shape"], default_value="straight")
+                if axis_reference == axis_output:
+                    new_detail["axis_shape"]["rating"] = 10
+                elif axis_output in ["convex", "concave", "curved"] and axis_reference in [
+                    "convex",
+                    "concave",
+                    "curved",
+                ]:
+                    new_detail["axis_shape"]["rating"] = 10
+                elif axis_output in ["irregular", "sinuous"] and axis_reference in ["irregular", "sinuous"]:
+                    new_detail["axis_shape"]["rating"] = 10
+                else:
+                    new_detail["axis_shape"]["rating"] = 0
+                new_detail["axis_shape"][
+                    "reason"
+                ] = f"Rule-based eval with output:{output['axis_shape']}, reference:{reference['axis_shape']}"
 
         new_detailed.append(new_detail)
     return new_detailed

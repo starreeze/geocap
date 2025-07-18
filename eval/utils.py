@@ -1,5 +1,38 @@
 import re
 
+characteristics = [
+    "size",
+    "shape",
+    "equator",
+    "lateral_slopes",
+    "poles",
+    "length",
+    "width",
+    "ratio",
+    "axis_shape",
+    "number_of_volutions",
+    "coil_tightness",
+    "height_of_volution",
+    "thickness_of_spirotheca",
+    "endothyroid",
+    "septa",
+    "proloculus",
+    "tunnel_shape",
+    "tunnel_angles",
+    "chomata",
+    "axial_filling",
+]
+rule_based_eval_features = [
+    "length",
+    "width",
+    "ratio",
+    "axis_shape",
+    "number_of_volutions",
+    "proloculus",
+    "tunnel_shape",
+    "tunnel_angles",
+]
+
 
 def find_first_json_block(text: str) -> tuple[str, str]:
     """Find the first complete JSON block in the text.
@@ -106,7 +139,7 @@ def extract_range_or_num(text: str) -> list[float] | str:
 
 def calculate_score(ref_range: list[float] | str, pred_range: list[float] | str) -> int:
     if ref_range == "no number found":
-        return 10
+        return -1
 
     # Process reference and prediction list
     if isinstance(ref_range, list):
@@ -173,9 +206,8 @@ def extract_axis_shape(text, default_value="straight"):
 
 # test extract_range_or_num
 if __name__ == "__main__":
-    print(extract_axis_shape("straight to slightly curved"))
-    print(extract_axis_shape("slightly curved"))
-    print(extract_axis_shape("straight and well-defined"))
-    print(extract_axis_shape("nearly straight"))
-    print(extract_axis_shape("convex"))
-    print(extract_axis_shape("concave"))
+    print(extract_range_or_num("20\u00b0 in the second whorl to 30\u00b0-40\u00b0in the fifth"))
+    print(extract_range_or_num("about 22 degrees"))
+    print(extract_range_or_num("20\u00b0 and 25\u00b0"))
+    print(extract_range_or_num("27, 27, and 31 degrees"))
+    print(extract_range_or_num("moderately large but increases at a relatively slow rate"))
