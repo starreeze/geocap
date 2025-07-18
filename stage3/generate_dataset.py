@@ -402,7 +402,7 @@ def paraphrase(start_pos=None, end_pos=None):
 
 
 def tag_format(start_pos=None, end_pos=None):
-    caption_args.paraphrase_prompt_dir = "data/caption/prompts/tag_format.txt"
+    caption_args.paraphrase_prompt_dir = "stage3/prompts/tag_format.txt"
     paraphraser = Paraphraser()
     # Read original captions
     if start_pos is not None and end_pos is not None:
@@ -436,7 +436,7 @@ def tag_format(start_pos=None, end_pos=None):
 
 
 def add_default_value(start_pos=None, end_pos=None):
-    caption_args.paraphrase_prompt_dir = "data/caption/prompts/add_default_value.txt"
+    caption_args.paraphrase_prompt_dir = "stage3/prompts/add_default_value_orig.txt"
     paraphraser = Paraphraser()
     # Read original captions
     if start_pos is not None and end_pos is not None:
@@ -506,10 +506,10 @@ def format_to_internvl():
 
 
 def main():
-    # generate_dataset(use_vis_tools=True)
-    # paraphrase()
-    # tag_format()
-    # add_default_value()
+    generate_dataset(use_vis_tools=True)
+    paraphrase()
+    tag_format()
+    add_default_value()
     reorder_tag(input_path=stage3_add_default_value_path, output_path=stage3_reorder_tag_path)
     # format_to_llava()
     format_to_internvl()

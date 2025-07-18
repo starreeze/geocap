@@ -7,7 +7,11 @@ def reorder_tag(input_path, output_path):
         captions = [json.loads(line) for line in f]
 
     pre_defined_tags = [
-        "<shell>",
+        "<size>",
+        "<shape>",
+        "<equator>",
+        "<lateral slopes>",
+        "<poles>",
         "<axis>",
         "<length>",
         "<width>",

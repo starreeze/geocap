@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from scipy.spatial.distance import cdist
 from sklearn.decomposition import PCA
 
 from common.args import feat_recog_args
