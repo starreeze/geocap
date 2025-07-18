@@ -45,22 +45,34 @@ Do not include any additional text, headers, or explanations outside this JSON s
 ## Example 1:
 
 ### Input:
-- overall_size
+- size
 Generated:large
 Reference:shell of moderate size
-- overall_shape
-Generated:a fusiform shape with concave slopes and rounded ends
-Reference:irregular subcylindrical
-- thickness_of_spircotheca
-Generated:5\u03bc to 30\u03bc
-Reference:8, 12, 16, 20, 33, 41, and 33 microns
+- shape
+Generated:fusiform
+Reference:rhomboid in outline
+- equator
+Generated:concave in middle on one side and convex on another side
+Reference:equatorial portion inflated
+- lateral_slopes
+Generated:straight
+Reference:slightly convex
+- poles
+Generated:moderately acute
+Reference:sharp
+- coil_tightness
+Generated:inner 4-5 volutions tightly involute and successive ones loosing gradually
+Reference:the initial 3 or 4 being more tightly coiled than subsequent ones
 - height_of_volution
 Generated:45, 68, 92, 125, 150, and 180 microns
 Reference:increases with increasing radius
+- thickness_of_spircotheca
+Generated:5\u03bc to 30\u03bc
+Reference:8, 12, 16, 20, 33, 41, and 33 microns
 - endothyroid
 Generated:endothyroid coiling in the inner whorls not observed
 Reference:endothyroid coiling in the inner whorls not observed
-- septa_folds
+- septa
 Generated:slightly fluted near the poles, planar across central regions
 Reference:irregular but tend to be tightly fluted across the entire length of the test
 - tunnel_angles
@@ -76,12 +88,16 @@ Reference:light to moderately developed
 ### Output:
 ```json
 {
-  "overall_size": {"reason":"Generated describes the size as 'large', while Reference describes the size as 'shell of moderate size'. The generated description is not consistent with the reference description. The descriptions differ significantly in characteristics and distribution.", "rating": 3},
-  "overall_shape": {"reason": "Reference describes the shape as 'irregular subcylindrical', while Generated describes it as 'a fusiform shape with concave slopes and rounded ends'. These are different shape descriptions with only partial similarity.", "rating": 3},
-  "thickness_of_spircotheca": {"reason": "Generated states 5 to 30 microns, which approximately falls within the Reference sequence of 8, 12, 16, 20, 33, 41, and 33 microns.", "rating": 7},
+  "size": {"reason":"Generated describes the size as 'large', while Reference describes the size as 'shell of moderate size'. The generated description is not consistent with the reference description.", "rating": 5},
+  "shape": {"reason": "Reference describes the shape as 'rhomboid in outline', while Generated describes it as 'fusiform'. The generated description is not consistent with the reference description.", "rating": 3},
+  "equator": {"reason": "Generated describes the equator as 'concave in middle on one side and convex on another side', while Reference describes the equator as 'equatorial portion inflated'. The generated description is not consistent with the reference description.", "rating": 5},
+  "lateral_slopes": {"reason": "Generated describes the lateral slopes as 'straight', while Reference describes the equator as 'slightly convex'. They are not consistent but similar.", "rating": 6},
+  "poles": {"reason": "Generated describes the poles as 'moderately acute', while Reference describes the poles as 'sharp'. The generated description perfectly matches the reference description.", "rating": 10},
+  "coil_tightness": {"reason": "Generated describes the coil tightness as 'inner 4-5 volutions tightly involute and successive ones loosing gradually', while Reference describes the coil tightness as 'the initial 3 or 4 being more tightly coiled than subsequent ones'. The generated description is almost consistent with the reference description wiht slight difference in the number of volutions.", "rating": 9},
   "height_of_volution": {"reason": "Generated provides specific measurements (45, 68, 92, 125, 150, and 180 microns) while Reference states 'increases with increasing radius'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
+  "thickness_of_spircotheca": {"reason": "Generated states 5 to 30 microns, which approximately falls within the Reference sequence of 8, 12, 16, 20, 33, 41, and 33 microns.", "rating": 8},
   "endothyroid": {"reason": "Both Generated and Reference describe the endothyroid as 'endothyroid coiling in the inner whorls not observed', so they are perfectly aligned.", "rating": 10},
-  "septa_folds": {"reason": "Generated describes the septa as 'slightly fluted near the poles, planar across central regions', while Reference describes the septa as 'irregular but tend to be tightly fluted across the entire length of the test'. The generated description is partial match with the reference description.", "rating": 7},
+  "septa": {"reason": "Generated describes the septa as 'slightly fluted near the poles, planar across central regions', while Reference describes the septa as 'irregular but tend to be tightly fluted across the entire length of the test'. The generated description is partial match with the reference description.", "rating": 7},
   "tunnel_angles": {"reason": "Generated states 20 degrees, which is close to the reference angles of 20\u00b0 and 30\u00b0.", "rating": 9},
   "chomata": {"reason": "Reference describes the chomata as 'high, narrow, steep-sided, slightly asymmetrical ridges which extend about half the distance to the tops of the chambers', while Generated describes the chomata as 'well-developed, prominent, extending to nearly half the height of the chambers in inner volutions'. The height of chomata is consistent with the reference, but there are missing details in the Generated description.", "rating": 7},
   "axial_filling": {"reason": "Generated describes the axial filling as 'dense calcite fills chambers in polar regions', while Reference describes the axial filling as 'light to moderately developed'. The generated description is not consistent with the reference description. The descriptions differ significantly in characteristics and distribution.", "rating": 2}
@@ -91,12 +107,21 @@ Reference:light to moderately developed
 ## Example 2:
 
 ### Input:
-- overall_size
+- size
 Generated:small
 Reference:diminutive
-- overall_shape
-Generated:inflated fusiform with stout median part and somewhat sharply or narrowly rounded poles
-Reference:inflated fusiform with sharply pointed poles, slightly concave lateral slopes
+- shape
+Generated:inflated fusiform
+Reference:inflated fusiform
+- equator
+Generated:stout
+Reference:equatorial portion inflated
+- lateral_slopes
+Generated:strongly convex
+Reference:slightly concave
+- poles
+Generated:somewhat sharply or narrowly rounded
+Reference:sharply pointed
 - thickness_of_spircotheca
 Generated:7, 9, 13, 17, 16, and 8 microns
 Reference:varies in thickness throughout any given volution
@@ -106,7 +131,7 @@ Reference:33, 49, 66, 114, 148, 197, and 213 microns
 - endothyroid
 Generated:endothyroid coiling in the inner whorls not observed
 Reference:first whorl endothyroid
-- septa_folds
+- septa
 Generated:pronounced but irregular fluting throughout
 Reference:closely spaced, with high and narrowly irregular fluting throughout the length of the shell
 - tunnel_angles
@@ -122,12 +147,15 @@ Reference:present, especially in the inner volutions, but it is irregular and do
 ### Output:
 ```json
 {
-  "overall_size": {"reason":"Generated describes the size as 'small', which aligns with Reference's description of 'diminutive'.", "rating": 10},
-  "overall_shape": {"reason": "Reference describes the shape as 'inflated fusiform with sharply pointed poles, slightly concave lateral slopes', while Generated describes it as 'inflated fusiform with stout median part and somewhat sharply or narrowly rounded poles'. There are only minor differences.", "rating": 9},
-  "thickness_of_spircotheca": {"reason": "Generated provides specific measurements (7, 9, 13, 17, 16, and 8 microns) while Reference states 'varies in thickness throughout any given volution'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
+  "size": {"reason":"Generated describes the size as 'small', which aligns with Reference's description of 'diminutive'.", "rating": 10},
+  "shape": {"reason": "Both Generated and Reference describe the shape as 'inflated fusiform', so they are perfectly aligned.", "rating": 10},
+  "equator": {"reason": "Generated describes the equator as 'stout', while Reference describes the equator as 'equatorial portion inflated'. The generated description is almost the same as reference description.", "rating": 10},
+  "lateral_slopes": {"reason": "Generated describes the lateral slopes as 'strongly convex', while Reference describes the equator as 'slightly concave'. They are not consistent.", "rating": 0},
+  "poles": {"reason": "Generated describes the poles as 'somewhat sharply or narrowly rounded', while Reference describes the poles as 'sharply pointed'. The generated description is not consistent with the reference description.", "rating": 5},
   "height_of_volution": {"reason": "Generated provides specific measurements (85, 85, 96, 116, 132, and 190 microns) while Reference states '33, 49, 66, 114, 148, 197, and 213 microns'. Some of the generated sequence are close to the reference.", "rating": 6},
+  "thickness_of_spircotheca": {"reason": "Generated provides specific measurements (7, 9, 13, 17, 16, and 8 microns) while Reference states 'varies in thickness throughout any given volution'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
   "endothyroid": {"reason": "Generated describes the endothyroid as 'endothyroid coiling in the inner whorls not observed', while Reference describes the endothyroid as 'first whorl endothyroid'. The generated description is not consistent with the reference description.", "rating": 0},
-  "septa_folds": {"reason": "Generated describes the septa as 'pronounced but irregular fluting throughout', while Reference describes the septa as 'closely spaced, with high and narrowly irregular fluting throughout the length of the shell'. The Generated is approximately correct but some details are missing.", "rating": 8},
+  "septa": {"reason": "Generated describes the septa as 'pronounced but irregular fluting throughout', while Reference describes the septa as 'closely spaced, with high and narrowly irregular fluting throughout the length of the shell'. The Generated is approximately correct but some details are missing.", "rating": 8},
   "tunnel_angles": {"reason": "Generated provides specific measurements (25 degrees) while Reference states 'moderately large but increases at a relatively slow rate'. The generated sequence is not consistent with the reference.", "rating": 3},
   "chomata": {"reason": "Reference describes the chomata as 'indistinct', while Generated describes the chomata as 'faint, restricted to proloculus'. These descriptions are consistent.", "rating": 10},
   "axial_filling": {"reason": "Generated describes the axial filling as 'present', while Reference describes the axial filling as 'present, especially in the inner volutions, but it is irregular and does not appear in all specimens'. The generated description partially matches the reference description.", "rating": 8}
