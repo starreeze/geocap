@@ -857,42 +857,89 @@ class CustomedShapeGenerator:
         # add random translation on left and right vertices
         y_trans_1 = normal(0, 0.25) * minor_r
         y_trans_2 = y_trans_1 + normal(0, 0.01) * minor_r
+        y_trans = [y_trans_1, y_trans_2]
 
         control_points_list = []
-        for i in range(4):
-            angle = i * np.pi / 2
+        slope_type = random.choice(["convex", "concave"])
+        convex_angle = uniform(0.3 * np.arctan(minor_r / major_r), np.arctan(minor_r / major_r))
+        concave_angle = uniform(0.1 * np.pi, 0.25 * np.pi)
+        concave_radius_factor = uniform(0.5, 0.8)
+        for i in range(2):  # right and left
+            angle = i * np.pi
+            p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle) + y_trans[i]]
 
-            # start control point
-            p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle)]
-            if i == 0:
-                p0[1] += y_trans_1
-            elif i == 2:
-                p0[1] += y_trans_2
+            for j in range(2):  # rotate direction (counterclockwise and clockwise)
+                rotate = (-1) ** j
+                p3 = [
+                    x0 + major_r * np.cos(angle + rotate * 0.5 * np.pi),
+                    y0 + minor_r * np.sin(angle + rotate * 0.5 * np.pi),
+                ]
 
-            # end control point
-            p3 = [x0 + major_r * np.cos(angle + 0.5 * np.pi), y0 + minor_r * np.sin(angle + 0.5 * np.pi)]
-            if i == 3:
-                p3[1] += y_trans_1
-            elif i == 1:
-                p3[1] += y_trans_2
+                d1_axis = distance_2points(tuple(p0), center)
+                d2_axis = distance_2points(tuple(p3), center)
 
-            # mid 2 control points
-            mid_radius1 = normal(0.95, 0.1) * distance_2points(tuple(p0), center)
-            mid_radius2 = normal(0.95, 0.1) * distance_2points(tuple(p3), center)
-            delta_angle = normal(0.17 * np.pi, 0.03 * np.pi)
-            p1 = [
-                x0 + mid_radius1 * np.cos(angle + delta_angle),
-                y0 + mid_radius1 * np.sin(angle + delta_angle),
-            ]
-            p2 = [
-                x0 + mid_radius2 * np.cos(angle + 0.5 * np.pi - delta_angle),
-                y0 + mid_radius2 * np.sin(angle + 0.5 * np.pi - delta_angle),
-            ]
+                if slope_type == "convex":
+                    delta_angle = convex_angle
+                    d1 = d1_axis / np.cos(convex_angle)
+                    d2 = d2_axis / np.cos(convex_angle)
+                elif slope_type == "concave":
+                    delta_angle = concave_angle
+                    d1 = concave_radius_factor * d1_axis / np.cos(concave_angle)
+                    d2 = d2_axis / np.cos(concave_angle)
 
-            control_points = [tuple(p) for p in [p0, p1, p2, p3]]
-            control_points_list.append(control_points)
+                p1 = [
+                    x0 + d1 * np.cos(angle + rotate * delta_angle),
+                    y0 + d1 * np.sin(angle + rotate * delta_angle),
+                ]
+                p2 = [
+                    x0 + d2 * np.cos(angle + rotate * (0.5 * np.pi - delta_angle)),
+                    y0 + d2 * np.sin(angle + rotate * (0.5 * np.pi - delta_angle)),
+                ]
 
-        curves = [Curve(control_points) for control_points in control_points_list]
+                control_points = [tuple(p) for p in [p0, p1, p2, p3]]
+                control_points_list.append(control_points)
+
+        # Order points in counterclockwise direction
+        ordered_control_points_list = []
+        ordered_control_points_list.append(control_points_list[0])
+        ordered_control_points_list.append(control_points_list[3][::-1])
+        ordered_control_points_list.append(control_points_list[2])
+        ordered_control_points_list.append(control_points_list[1][::-1])
+
+        # for i in range(4):
+        #     angle = i * np.pi / 2
+
+        #     # start control point
+        #     p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle)]
+        #     if i == 0:
+        #         p0[1] += y_trans_1
+        #     elif i == 2:
+        #         p0[1] += y_trans_2
+
+        #     # end control point
+        #     p3 = [x0 + major_r * np.cos(angle + 0.5 * np.pi), y0 + minor_r * np.sin(angle + 0.5 * np.pi)]
+        #     if i == 3:
+        #         p3[1] += y_trans_1
+        #     elif i == 1:
+        #         p3[1] += y_trans_2
+
+        #     # mid 2 control points
+        #     mid_radius1 = normal(0.95, 0.1) * distance_2points(tuple(p0), center)
+        #     mid_radius2 = normal(0.95, 0.1) * distance_2points(tuple(p3), center)
+        #     delta_angle = normal(0.17 * np.pi, 0.03 * np.pi)
+        #     p1 = [
+        #         x0 + mid_radius1 * np.cos(angle + delta_angle),
+        #         y0 + mid_radius1 * np.sin(angle + delta_angle),
+        #     ]
+        #     p2 = [
+        #         x0 + mid_radius2 * np.cos(angle + 0.5 * np.pi - delta_angle),
+        #         y0 + mid_radius2 * np.sin(angle + 0.5 * np.pi - delta_angle),
+        #     ]
+
+        #     control_points = [tuple(p) for p in [p0, p1, p2, p3]]
+        #     control_points_list.append(control_points)
+
+        curves = [Curve(control_points) for control_points in ordered_control_points_list]
         return CustomedShape(curves, special_info="volution 0")
 
 
@@ -927,8 +974,9 @@ class SeptaGenerator:
             thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
             thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
             # chomata_type = np.random.choice(["ellipse", "polygon"])
+            # size = np.random.choice(["small", "big"])
             chomata_type = "ellipse"
-            size = np.random.choice(["small", "big"])
+            size = "big"
 
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower
