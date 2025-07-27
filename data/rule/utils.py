@@ -325,17 +325,23 @@ def valid_intersection(shapes, new_shape) -> bool:
 
     # New line case
     if new_shape.to_dict()["type"] in ["line", "segment", "ray"]:
+        line = new_shape.points
         for shape in shapes:
             if shape.to_dict()["type"] == "polygon":
                 for i in range(len(shape.points)):
-                    line = new_shape.points
                     edge = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
                     if segments_intersect(segment1=line, segment2=edge):
                         new_intersections += 1
             if shape.to_dict()["type"] in ["line", "segment", "ray"]:
-                line1 = new_shape.points
                 line2 = shape.points
-                if segments_intersect(segment1=line1, segment2=line2):
+                if segments_intersect(segment1=line, segment2=line2):
+                    new_intersections += 1
+            if shape.to_dict()["type"] == "sector":
+                start_edge = [shape.center, shape.arc_start_point]
+                if segments_intersect(segment1=line, segment2=start_edge):
+                    new_intersections += 1
+                end_edge = [shape.center, shape.arc_end_point]
+                if segments_intersect(segment1=line, segment2=end_edge):
                     new_intersections += 1
 
     # New polygon case
