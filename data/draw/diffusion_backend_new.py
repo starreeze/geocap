@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import sys
 from io import BytesIO
 from typing import Any
 
@@ -10,9 +9,8 @@ import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
 from iterwrap import iterate_wrapper
-from PIL import Image, ImageDraw, ImageFilter
 
-from common.args import data_args, run_args
+from common.args import data_args
 
 
 class Figure_Engine:
@@ -39,7 +37,7 @@ class Figure_Engine:
         width, color, trans = self.__get_essential_info(shape)
         try:
             index = self.__special_info_validator(shape["special_info"])
-        except:
+        except Exception:
             index = None
         match shape["type"]:
             case "fusiform_1":
@@ -148,7 +146,7 @@ class Figure_Engine:
         self.__keep_memory(index, ellipse_x, ellipse_y)
 
     def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (random.random(), random.random(), random.random()) if color is None else color
         self.ax.add_patch(
             pch.Polygon(
                 points,
@@ -169,7 +167,7 @@ class Figure_Engine:
         color: Any,
         index: int | None = None,
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (random.random(), random.random(), random.random()) if color is None else color
         theta = np.arange(0, 2 * 3.1416, 0.01)
         a = major_axis / 2
         b = minor_axis / 2
@@ -223,7 +221,7 @@ class Figure_Engine:
         line_width,
         index,
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (random.random(), random.random(), random.random()) if color is None else color
 
         def f(x):
             return 4 * focal_length * (x - x_offset) ** 2 + y_offset + eps * np.sin(omega * x + phi)
@@ -255,7 +253,7 @@ class Figure_Engine:
         line_width,
         index,
     ):
-        color = (random.random(), random.random(), random.random()) if color == None else color
+        color = (random.random(), random.random(), random.random()) if color is None else color
 
         x = np.linspace(x_start, x_end, 1000)
         x_left = x[:500]
@@ -303,13 +301,13 @@ class Figure_Engine:
     def __get_width(self, shape):
         try:
             return shape["width"]
-        except:
+        except Exception:
             return 5
 
     def __get_color(self, shape):
         try:
             return shape["color"]
-        except:
+        except Exception:
             return (random.random(), random.random(), random.random())
 
     def __get_transparency(self, shape):
@@ -320,7 +318,7 @@ class Figure_Engine:
                 trans = (1, 1, 1, 1)
             elif shape["fill_mode"] == "black":
                 trans = (0, 0, 0, 1)
-        except:
+        except Exception:
             trans = (0, 0, 0, 0)  # no
         return trans
 
@@ -347,7 +345,7 @@ class Figure_Engine:
     def __keep_memory(self, index, x, y):
         assert len(x) == len(y)
         # Suppose the center is the same
-        if index != None and index >= 0:
+        if index is not None and index >= 0:
             angle_value = []
             for x0, y0 in zip(x, y):
                 x0 -= self.center[0]
