@@ -199,7 +199,7 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
 
                 shapes.append(t_shape)
                 exclude_shape.append(t_shape)
-        
+
         if cur_num_samples.get(len(shapes), 0) < target_num_samples.get(len(shapes), 0):
             shapes_dict = [shape.to_dict() for shape in shapes]
             sample = {"shapes": shapes_dict, "relations": relations}
