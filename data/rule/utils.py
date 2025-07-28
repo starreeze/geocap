@@ -320,46 +320,62 @@ def segments_intersect(segment1: list[tuple[float, float]], segment2: list[tuple
 
 
 def valid_intersection(shapes, new_shape) -> bool:
-    # At most 1 new intersection point is allowed
+    """
+    Check if a new shape can be added without creating too many intersections.
+
+    Args:
+        shapes: List of existing shapes
+        new_shape: The new shape to be added
+
+    Returns:
+        bool: True if the new shape can be added, False otherwise
+    """
     new_intersections = 0
 
-    # New line case
-    if new_shape.to_dict()["type"] in ["line", "segment", "ray"]:
-        line = new_shape.points
-        for shape in shapes:
-            if shape.to_dict()["type"] == "polygon":
-                for i in range(len(shape.points)):
-                    edge = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
-                    if segments_intersect(segment1=line, segment2=edge):
-                        new_intersections += 1
-            if shape.to_dict()["type"] in ["line", "segment", "ray"]:
-                line2 = shape.points
-                if segments_intersect(segment1=line, segment2=line2):
-                    new_intersections += 1
-            if shape.to_dict()["type"] == "sector":
-                start_edge = [shape.center, shape.arc_start_point]
-                if segments_intersect(segment1=line, segment2=start_edge):
-                    new_intersections += 1
-                end_edge = [shape.center, shape.arc_end_point]
-                if segments_intersect(segment1=line, segment2=end_edge):
-                    new_intersections += 1
+    # Get points for the new shape
+    new_points = get_shape_points(new_shape)
+    if not new_points:
+        return True
 
-    # New polygon case
-    elif new_shape.to_dict()["type"] == "polygon":
-        for shape in shapes:
-            if shape.to_dict()["type"] in ["line", "segment", "ray"]:
-                for i in range(len(new_shape.points)):
-                    line = shape.points
-                    edge = [new_shape.points[i], new_shape.points[(i + 1) % len(new_shape.points)]]
-                    if segments_intersect(segment1=line, segment2=edge):
-                        new_intersections += 1
+    for shape in shapes:
+        # Get points for the existing shape
+        shape_points = get_shape_points(shape)
+        if not shape_points:
+            continue
 
-            if shape.to_dict()["type"] == "polygon":
-                for i in range(len(shape.points)):
-                    for j in range(len(new_shape.points)):
-                        edge1 = [shape.points[i], shape.points[(i + 1) % len(shape.points)]]
-                        edge2 = [new_shape.points[j], new_shape.points[(j + 1) % len(new_shape.points)]]
-                        if segments_intersect(segment1=edge1, segment2=edge2):
-                            new_intersections += 1
+        # Check intersections between all edges of both shapes
+        for i in range(len(new_points)):
+            new_p1 = new_points[i]
+            new_p2 = new_points[(i + 1) % len(new_points)]
 
-    return new_intersections <= 1
+            for j in range(len(shape_points)):
+                shape_p1 = shape_points[j]
+                shape_p2 = shape_points[(j + 1) % len(shape_points)]
+
+                if segments_intersect([new_p1, new_p2], [shape_p1, shape_p2]):
+                    new_intersections += 1
+                    if new_intersections > 1:
+                        return False
+    return True
+
+
+def get_shape_points(shape):
+    """
+    Get the points that define a shape's boundary.
+
+    Args:
+        shape: A shape object (Line, Polygon, Sector, or Star)
+
+    Returns:
+        list: List of points defining the shape's boundary
+    """
+    shape_type = shape.to_dict()["type"]
+
+    if shape_type in ["line", "segment", "ray", "polygon", "star"]:
+        # For lines, polygons and stars use the points directly
+        return shape.points
+    elif shape_type == "sector":
+        # For sectors, use boundary points
+        return shape.points.tolist() if hasattr(shape.points, "tolist") else list(shape.points)
+    else:
+        raise ValueError(f"Invalid shape type: {shape_type}")

@@ -532,9 +532,9 @@ class Sector(GSRule):
             self.angular_span = self.end_angle - self.start_angle
 
         # Generate points for the sector boundary
-        self._generate_boundary_points()
+        self._generate_points()
 
-    def _generate_boundary_points(self):
+    def _generate_points(self):
         """Generate points that define the sector boundary"""
         # Vertices
         self.arc_start_point = (
@@ -562,7 +562,7 @@ class Sector(GSRule):
         arc_points_array = np.column_stack((arc_x, arc_y))
 
         # Complete sector boundary: center -> start of arc -> arc -> end of arc -> center
-        self.boundary_points = np.vstack(
+        self.points = np.vstack(
             [[self.center], arc_points_array, [self.center]]  # center point  # arc points  # back to center
         )
 
@@ -571,7 +571,7 @@ class Sector(GSRule):
 
     def get_bbox(self) -> list[tuple[float, float]]:
         # Get bounding box from all boundary points
-        return self.bbox_from_points(self.boundary_points.tolist())
+        return self.bbox_from_points(self.points.tolist())
 
     def get_area(self) -> float:
         """Calculate sector area: (1/2) * r² * θ"""
@@ -1306,7 +1306,7 @@ class ShapeGenerator:
                 sector.end_angle = sector.start_angle + 3 * np.pi / 2
 
             # Regenerate boundary points after any modifications
-            sector._generate_boundary_points()
+            sector._generate_points()
 
             return sector
 
