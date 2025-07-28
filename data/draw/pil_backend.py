@@ -56,7 +56,7 @@ class Figure:
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             try:
                 self.__handle(rule, randomize=self.randomize, color=color)
-            except:
+            except Exception:
                 print(index, rule)
         # print("All rules adapted.")
         if self.randomize and random.random() < Gaussian_proba:
@@ -79,14 +79,14 @@ class Figure:
     ):
         assert self.randomize, "Function 'add_noise' is disabled whilst randomize==False"
         try:
-            rdm_lw = self.randomized_line_width
-        except:
+            _ = self.randomized_line_width
+        except Exception:
             raise AttributeError("Must firstly run 'draw' to create attribute 'randomized_line_width'")
         n_redraw = (
-            int(random.gauss(len(self.rules) // 2, len(self.rules) // 20)) if n_redraw == None else n_redraw
+            int(random.gauss(len(self.rules) // 2, len(self.rules) // 20)) if n_redraw is None else n_redraw
         )
-        n_rand_pixels = int(random.gauss(100, 5)) if n_rand_pixels == None else n_rand_pixels
-        n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+        n_rand_pixels = int(random.gauss(100, 5)) if n_rand_pixels is None else n_rand_pixels
+        n_white_line = int(random.gauss(10, 1)) if n_white_line is None else n_white_line
         self.__redraw(n_redraw)
         self.__add_random_pixels(n_pixels=n_rand_pixels)
         self.__add_white_line(n_white_line)
@@ -164,7 +164,7 @@ class Figure:
                     (points[0][0], points[0][1], points[1][0], points[1][1]),
                     fill=(
                         (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                        if color == None
+                        if color is None
                         else color
                     ),
                     width=int(self.randomized_line_width + random.gauss(20, 10)),
@@ -180,7 +180,7 @@ class Figure:
                         xy=(x[0], y[0], x[1], y[1]),
                         fill=(
                             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                            if color == None
+                            if color is None
                             else color
                         ),
                         width=width[1],
@@ -200,7 +200,7 @@ class Figure:
                 n_ascend = width[end_point] - width[begin_point]
                 color = (
                     (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                    if color == None
+                    if color is None
                     else color
                 )
                 for i in range(n_ascend - 1):
@@ -225,7 +225,7 @@ class Figure:
             case "manual":
                 color = (
                     (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                    if color == None
+                    if color is None
                     else color
                 )
                 for i in range(len(ascensions) - 1):
@@ -285,7 +285,7 @@ class Figure:
             self.canvas.line((x1, y1, x2, y2), fill="white", width=self.randomized_line_width)
 
     def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
-        assert (color == None) or (
+        assert (color is None) or (
             isinstance(color, tuple) and len(color) == 3
         ), "Argument 'color' should be None or a 3-dimension tuple."
         line_width = (
@@ -357,7 +357,7 @@ class Figure:
             fill=(
                 random.randint(0, 255),
                 random.randint(0, 255),
-                random.randint(0, 255) if color == None else color,
+                random.randint(0, 255) if color is None else color,
             ),
         )
 
@@ -383,7 +383,7 @@ class Figure:
             fill=(self.background[0], self.background[1], self.background[2], 0),
             outline=(
                 (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
-                if color == None
+                if color is None
                 else list(color).append(255)
             ),
             width=line_width,
@@ -403,7 +403,7 @@ class Figure:
     def __handle_polygon(self, points: list, line_width: int, color: Any):
         color = (
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            if color == None
+            if color is None
             else color
         )
         for index in range(len(points)):
@@ -433,7 +433,7 @@ class Figure:
 
         color = (
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            if color == None
+            if color is None
             else color
         )
 
