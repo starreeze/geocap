@@ -44,15 +44,15 @@ def find_extremes(contour):
 
     leftmost_idx = np.argmin(x)
     rightmost_idx = np.argmax(x)
-    topmost_idx = np.argmin(y)
-    bottommost_idx = np.argmax(y)
+    topmost_idx = np.argmax(y)
+    bottommost_idx = np.argmin(y)
 
     leftmost = contour[leftmost_idx]
     rightmost = contour[rightmost_idx]
     topmost = contour[topmost_idx]
     bottommost = contour[bottommost_idx]
 
-    return (leftmost, rightmost, topmost, bottommost)
+    return np.array([leftmost, rightmost, topmost, bottommost])
 
 
 def find_extrema_points(points):
@@ -81,27 +81,11 @@ def find_extrema_points(points):
             local_trend = -local_trend
     extrema_points = sorted_points[extrema_indices]
     if extrema_points.size == 0:
-        logger.warning("No extrema points found. Using midpoint instead.")
+        logger.warning(
+            f"No extrema points found. Using midpoint {sorted_points[len(sorted_points) // 2]} instead."
+        )
         return np.array([sorted_points[len(sorted_points) // 2]])
     return extrema_points
-
-
-def get_interval_points(contour, x_min, x_max, center_y, existing_points):
-    mask = (contour[:, 0] >= x_min) & (contour[:, 0] <= x_max)
-    interval_points = contour[mask]
-
-    if existing_points.size > 0:
-        is_new = np.ones(len(interval_points), dtype=bool)
-        for pt in existing_points:
-            matches = np.isclose(interval_points[:, 0], pt[0]) & np.isclose(interval_points[:, 1], pt[1])
-            is_new[matches] = False
-
-        interval_points = interval_points[is_new]
-
-    upper_mask = interval_points[:, 1] > center_y
-    lower_mask = interval_points[:, 1] < center_y
-
-    return interval_points[upper_mask], interval_points[lower_mask]
 
 
 def get_start(extremas, mid_x, contour):
@@ -250,13 +234,7 @@ def get_angle(start, side, neighbor_points):
     if not angles:
         return np.pi  # flat
 
-    n_angles = len(angles)
-    x = np.linspace(-10, 10, n_angles)
-    weights = 1 / (1 + np.exp(-x))
-    weights /= np.sum(weights)
-
-    weighted_avg = np.sum(np.array(angles) * weights)
-    return weighted_avg if weighted_avg >= 1e-6 else np.pi
+    return np.mean(angles)
 
 
 def separate_slopes(slope):
@@ -278,6 +256,7 @@ def separate_slopes(slope):
 
     largest_diff_indices = np.argsort(angular_diffs)[-4:]
     split_positions = np.sort(largest_diff_indices) + 1
+    # print(split_positions)
 
     if split_positions[-1] == len(sorted_points):
         regions = np.split(sorted_points, split_positions[:-1])
@@ -345,9 +324,12 @@ def check_curvature(x, y):
     plt.axis('equal')
     plt.plot(x_norm, y_norm)
     function = np.poly1d(coeffs)
+    #function_1 = np.poly1d(np.array([coeffs[2], coeffs[3]]))
     px = np.linspace(min(x_norm), max(x_norm), 100)
     py = function(px)
+    #py_1 = function_1(px)
     plt.plot(px, py)
+    #plt.plot(px, py_1)
     print(coeffs)
     plt.show()
     plt.clf()
@@ -362,7 +344,11 @@ def conv_scoring(coeff, side, t3_threshold=0.5):
         positive = -1
     else:
         raise ValueError("Invalid side")
-    score = np.exp((np.abs(coeff[0]) - t3_threshold) * 10) + coeff[1] * positive * 3
+
+    def relu(x):
+        return np.maximum(x, 0)
+
+    score = relu((np.abs(coeff[0]) - np.abs(coeff[1]) - t3_threshold) * 10) + coeff[1] * positive * 3
     return score
 
 
@@ -383,6 +369,34 @@ def extend(exclusion, contour):
     return np.array(result_list, dtype=int) if result_list else np.empty((0, 2), dtype=int)
 
 
+def get_convexity(contour, extremes, extended_lower, extended_upper, sample_rate):
+    n_left_right = contour.shape[0] // sample_rate
+    unique_left = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[0][0]))[:n_left_right])
+    unique_right = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[1][0]))[:n_left_right])
+    unique_left = np.array(sorted(unique_left, key=lambda p: p[1]))
+    unique_right = np.array(sorted(unique_right, key=lambda p: p[1]))
+
+    remove_set = set(map(tuple, np.vstack((unique_left, unique_right, extended_lower, extended_upper))))
+    slopes = contour[~np.array([tuple((p)) in remove_set for p in contour])]
+    slopes = separate_slopes(slopes)
+    d2x_dy2 = [deriv2(slope) for slope in slopes]
+    # logger.info(f"XP: {(np.pi/2 - np.arctan(d2x_dy2[0][2])+np.arctan(d2x_dy2[1][2]) + np.pi/2) * 180 / np.pi} {(np.arctan(d2x_dy2[2][2]) + np.pi/2+np.pi/2 - np.arctan(d2x_dy2[3][2])) * 180 / np.pi}")
+    try:
+        convex_score = [
+            conv_scoring(d2x_dy2[0], "u"),
+            conv_scoring(d2x_dy2[1], "u"),
+            conv_scoring(d2x_dy2[2], "d"),
+            conv_scoring(d2x_dy2[3], "d"),
+        ]  # ↑concave, ↓convex
+    except Exception:
+        logger.info("Cannot correctly divide 4 blocks. Retrying...")
+        if sample_rate > 2:
+            convex_score = get_convexity(contour, extremes, extended_lower, extended_upper, sample_rate - 1)
+        else:
+            raise Exception("The Fossil Picture is weird! Check the picture.")
+    return convex_score
+
+
 def get_angles_and_slope(path, debug=False):
     contour: np.ndarray = find_contour(path)
     contour = contour.squeeze(1)
@@ -392,41 +406,38 @@ def get_angles_and_slope(path, debug=False):
     contour[:, 1] = max_y - contour[:, 1]
     extremes = find_extremes(contour)
     mid_x = extremes[0][0] + (extremes[1][0] - extremes[0][0]) / 2
-
-    n = contour.shape[0] // 8
-    upper_mid_points, lower_mid_points = classify_points(contour, mid_x, n=n, center=center)
-    selected = [mid_x]
-    if np.abs(extremes[2][0] - mid_x) < np.abs(extremes[1][0] - extremes[0][0]) // 3:
-        upper_uxtr_points, lower_uxtr_points = classify_points(contour, extremes[2][0], n=n, center=center)
-        selected.append(extremes[2][0])
-    else:
-        upper_uxtr_points, lower_uxtr_points = upper_mid_points, lower_mid_points
-    if np.abs(extremes[3][0] - mid_x) < np.abs(extremes[1][0] - extremes[0][0]) // 3:
-        upper_lxtr_points, lower_lxtr_points = classify_points(contour, extremes[3][0], n=n, center=center)
-        selected.append(extremes[3][0])
-    else:
-        upper_lxtr_points, lower_lxtr_points = upper_mid_points, lower_mid_points
-
-    x_positions = np.array(selected)
-    x_min, x_max = np.min(x_positions), np.max(x_positions)
-
-    center_y = center[1]
-    existing_upper = np.vstack([upper_mid_points, upper_uxtr_points])
-    existing_lower = np.vstack([lower_mid_points, lower_lxtr_points])
-
-    upper_interval, lower_interval = get_interval_points(
-        contour, x_min, x_max, center_y, np.vstack([existing_upper, existing_lower])
+    center_y = np.mean(contour[:, 1])
+    upper_mid_points, lower_mid_points = classify_points(
+        contour, mid_x, n=contour.shape[0] // 3, center=center
     )
+    extremes[2] = get_start(find_extrema_points(upper_mid_points), mid_x, contour)
+    extremes[3] = get_start(find_extrema_points(lower_mid_points), mid_x, contour)
 
-    all_upper = np.vstack([upper_mid_points, upper_uxtr_points, upper_interval])
-    all_lower = np.vstack([lower_mid_points, lower_lxtr_points, lower_interval])
+    n = contour.shape[0] // 4
+    upper_selected = []
+    lower_selected = []
+    if np.abs(extremes[2][0] - mid_x) < np.abs(extremes[1][0] - extremes[0][0]) // 5:
+        upper_selected.append(extremes[2][0])
+    else:
+        upper_selected.append(mid_x)
+    if np.abs(extremes[3][0] - mid_x) < np.abs(extremes[1][0] - extremes[0][0]) // 5:
+        lower_selected.append(extremes[3][0])
+    else:
+        lower_selected.append(mid_x)
+    assert len(upper_selected) == 1 and len(lower_selected) == 1
+    upper_chosen = upper_selected[0]
+    lower_chosen = lower_selected[0]
+    all_upper, _ = classify_points(contour, upper_chosen, n, center)
+    _, all_lower = classify_points(contour, lower_chosen, n, center)
 
     unique_upper = np.unique(all_upper, axis=0)
     unique_lower = np.unique(all_lower, axis=0)
     upper_extrema = find_extrema_points(unique_upper)
     lower_extrema = find_extrema_points(unique_lower)
-    unique_left = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[0][0]))[:n])
-    unique_right = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[1][0]))[:n])
+
+    n_left_right = contour.shape[0] // 12
+    unique_left = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[0][0]))[:n_left_right])
+    unique_right = np.array(sorted(contour, key=lambda p: abs(p[0] - extremes[1][0]))[:n_left_right])
     unique_left = np.array(sorted(unique_left, key=lambda p: p[1]))
     unique_right = np.array(sorted(unique_right, key=lambda p: p[1]))
 
@@ -443,20 +454,11 @@ def get_angles_and_slope(path, debug=False):
     upper_angle = get_angle(upper_start, "u", unique_upper)
     lower_angle = get_angle(lower_start, "d", unique_lower)
 
+    upper_mid_points, lower_mid_points = classify_points(contour, mid_x, n, center)
     extended_lower = extend(lower_mid_points, contour)
     extended_upper = extend(upper_mid_points, contour)
 
-    remove_set = set(map(tuple, np.vstack((unique_left, unique_right, extended_lower, extended_upper))))
-    slopes = contour[~np.array([tuple((p)) in remove_set for p in contour])]
-    slopes = separate_slopes(slopes)
-    d2x_dy2 = [deriv2(slope) for slope in slopes]
-
-    convex_score = [
-        conv_scoring(d2x_dy2[0], "u"),
-        conv_scoring(d2x_dy2[1], "u"),
-        conv_scoring(d2x_dy2[2], "d"),
-        conv_scoring(d2x_dy2[3], "d"),
-    ]  # ↑concave, ↓convex
+    convex_score = get_convexity(contour, extremes, extended_lower, extended_upper, 12)
 
     if debug:
         # V-DEBUG
@@ -480,9 +482,6 @@ def get_angles_and_slope(path, debug=False):
         plt.scatter(unique_lower[:, 0], unique_lower[:, 1], c="g", s=s)
         plt.scatter(unique_left[:, 0], unique_left[:, 1], c="g", s=s)
         plt.scatter(unique_right[:, 0], unique_right[:, 1], c="g", s=s)
-
-        plt.scatter(upper_interval[:, 0], upper_interval[:, 1], c="cyan", s=s)
-        plt.scatter(lower_interval[:, 0], lower_interval[:, 1], c="magenta", s=s)
 
         plt.scatter(upper_extrema[:, 0], upper_extrema[:, 1], c="r", s=s)
         plt.scatter(lower_extrema[:, 0], lower_extrema[:, 1], c="r", s=s)
@@ -515,6 +514,30 @@ def get_angles_and_slope(path, debug=False):
 
 
 def main():
+    # name = 'Chusenella_tenuis_1_3'
+    # name = 'Fusulinella_juncea_1_10'
+    # name = 'Eostaffella_Eostaffella_pseudostruvei_var_angusta_1_3'
+
+    # name = 'Pseudoschwagerina_minatoi_1_4'
+    # name = 'Fusulina_haworthi_1_6'
+    # name = 'Fusulina_dunbari_1_3'
+
+    # name = 'Fusulina_acme_1_10'
+    # name = "Fusulina_acme_1_11"
+    # name = "Pseudoschwagerina_simplex_1_1"
+
+    # name = 'Neoschwagerina_majulensis_1_3'
+    # name = 'Pseudoschwagerina_simplex_1_1'
+    # name = 'Pseudoschwagerina_convexa_1_3'
+
+    # name = 'Fusulina_cappsensis_1_1'
+    # name = 'Fusulinella_hanzawai_1_1'
+    # name = 'Rugosofusulina_serrata_1_1'
+
+    # name = 'Fusulina_higginsvillensis_1_3'
+
+    # name = 'Neoschwagerina_takagamiensis_1_1'
+    # name = 'Rugosofusulina_latioralis_1_1'
     # name = "Pseudoschwagerina_intermedia_1_3"
     # name = 'Pseudoschwagerina_grinnelli_1_8'
     name = "Chusenella_minuta_1_1"  # normal
@@ -525,15 +548,22 @@ def main():
     # name = "Chusenella_absidata_1_5" # Deeply concaved at bottom
     # name = np.random.choice(os.listdir("D:\\Python_Proj\\Work\\pics")).strip(".png")
     path = f"D:\\Python_Proj\\Work\\pics\\{name}.png"
-    left_angle, right_angle, upper_angle, lower_angle, lu_slope, ru_slope, ld_slope, rd_slope = (
-        get_angles_and_slope(path, debug=True)
-    )
+    try:
+        left_angle, right_angle, upper_angle, lower_angle, lu_slope, ru_slope, ld_slope, rd_slope = (
+            get_angles_and_slope(path, debug=True)
+        )
+    except Exception:
+        logger.error(f"{name} Failed")
+        assert 0
     logger.info(
         f"{name} Angle Info \nLeft: {left_angle * 180 / 3.1416:.2f}° | Right: {right_angle * 180 / 3.1416:.2f}° | Upper: {upper_angle * 180 / 3.1416:.2f}° | Lower: {lower_angle * 180 / 3.1416:.2f}°"
     )
-    print(lu_slope, ru_slope, ld_slope, rd_slope)
-    # logger.info(f"{name} Slope Info \nLU: {np.mean(lu_slope):.2f} | RU: {np.mean(ru_slope):.2f} | LD: {np.mean(ld_slope):.2f} | RD: {np.mean(rd_slope):.2f}")
+    # print(lu_slope, ru_slope, ld_slope, rd_slope)
+    logger.info(
+        f"{name} Slope Info \nLU: {np.mean(lu_slope):.2f} | RU: {np.mean(ru_slope):.2f} | LD: {np.mean(ld_slope):.2f} | RD: {np.mean(rd_slope):.2f}"
+    )
 
 
 if __name__ == "__main__":
+    # for _ in range(1000):
     main()
