@@ -318,19 +318,46 @@ def check_curvature(x, y):
     x_norm = (x - np.mean(x)) / (max(x) - min(x) + 1e-10)
     y_norm = (y - np.mean(y)) / (max(x) - min(x) + 1e-10)
 
-    coeffs = np.polyfit(x_norm, y_norm, 3)
+    # Fit a line to get the general trend
+    line_coeffs = np.polyfit(x_norm, y_norm, 1)
+    m = line_coeffs[0]
+
+    # Angle of the line
+    theta = np.arctan(m)
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+
+    # Rotate the coordinate system so the fitted line becomes the new x-axis
+    x_rotated = x_norm * cos_theta + y_norm * sin_theta
+    y_rotated = -x_norm * sin_theta + y_norm * cos_theta
+
+    # Now fit the cubic polynomial on the rotated coordinates
+    coeffs = np.polyfit(x_rotated, y_rotated, 3)
     """DEBUG
     import matplotlib.pyplot as plt
     plt.axis('equal')
-    plt.plot(x_norm, y_norm)
+    # Plot original normalized points
+    plt.plot(x_norm, y_norm, 'o', label='Normalized Points')
+
+    # Plot the fitted line (the new x-axis)
+    line_x = np.array([min(x_norm), max(x_norm)])
+    line_y = m * line_x + line_coeffs[1]
+    plt.plot(line_x, line_y, 'r-', label='Fitted Line (New X-axis)')
+
+    # To visualize the fitted cubic, create points along the rotated x-axis,
+    # calculate the corresponding y from the polynomial, and then rotate
+    # these (x,y) pairs back to the original coordinate system.
     function = np.poly1d(coeffs)
-    #function_1 = np.poly1d(np.array([coeffs[2], coeffs[3]]))
-    px = np.linspace(min(x_norm), max(x_norm), 100)
-    py = function(px)
-    #py_1 = function_1(px)
-    plt.plot(px, py)
-    #plt.plot(px, py_1)
+    px_rotated = np.linspace(min(x_rotated), max(x_rotated), 100)
+    py_rotated = function(px_rotated)
+
+    # Rotate the fitted curve back to the original coordinate system for plotting
+    px_orig = px_rotated * cos_theta - py_rotated * sin_theta
+    py_orig = px_rotated * sin_theta + py_rotated * cos_theta
+    plt.plot(px_orig, py_orig, 'g-', label='Fitted Cubic Curve')
+
     print(coeffs)
+    plt.legend()
     plt.show()
     plt.clf()
     #"""
@@ -348,7 +375,8 @@ def conv_scoring(coeff, side, t3_threshold=0.5):
     def relu(x):
         return np.maximum(x, 0)
 
-    score = relu((np.abs(coeff[0]) - np.abs(coeff[1]) - t3_threshold) * 10) + coeff[1] * positive * 3
+    # score = relu((np.abs(coeff[0]) - np.abs(coeff[1]) - t3_threshold) * 10) + coeff[1] * positive * 3
+    score = coeff[1] * positive * 3
     return score
 
 
@@ -388,8 +416,8 @@ def get_convexity(contour, extremes, extended_lower, extended_upper, sample_rate
             conv_scoring(d2x_dy2[2], "d"),
             conv_scoring(d2x_dy2[3], "d"),
         ]  # ↑concave, ↓convex
-    except Exception:
-        logger.info("Cannot correctly divide 4 blocks. Retrying...")
+    except Exception as e:
+        logger.info(f"{e} Cannot correctly divide 4 blocks. Retrying...")
         if sample_rate > 2:
             convex_score = get_convexity(contour, extremes, extended_lower, extended_upper, sample_rate - 1)
         else:
@@ -534,13 +562,13 @@ def main():
     # name = 'Fusulinella_hanzawai_1_1'
     # name = 'Rugosofusulina_serrata_1_1'
 
-    # name = 'Fusulina_higginsvillensis_1_3'
+    name = "Fusulina_higginsvillensis_1_3"
 
     # name = 'Neoschwagerina_takagamiensis_1_1'
     # name = 'Rugosofusulina_latioralis_1_1'
     # name = "Pseudoschwagerina_intermedia_1_3"
     # name = 'Pseudoschwagerina_grinnelli_1_8'
-    name = "Chusenella_minuta_1_1"  # normal
+    # name = 'Chusenella_minuta_1_1' # normal
     # name = 'Fusulinella_pinguis_1_7' # few samples
     # name = 'Chusenella_referta_1_2' # Another deeply concaved example
     # name = "Chusenella_extensa_1_3" # heavily biased
@@ -552,8 +580,8 @@ def main():
         left_angle, right_angle, upper_angle, lower_angle, lu_slope, ru_slope, ld_slope, rd_slope = (
             get_angles_and_slope(path, debug=True)
         )
-    except Exception:
-        logger.error(f"{name} Failed")
+    except Exception as e:
+        logger.error(f"{e} {name} Failed")
         assert 0
     logger.info(
         f"{name} Angle Info \nLeft: {left_angle * 180 / 3.1416:.2f}° | Right: {right_angle * 180 / 3.1416:.2f}° | Upper: {upper_angle * 180 / 3.1416:.2f}° | Lower: {lower_angle * 180 / 3.1416:.2f}°"

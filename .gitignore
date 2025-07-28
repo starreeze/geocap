@@ -9,4 +9,3 @@ common/iterwrap.ckpt
 api_*.yaml
 eval_stage3/manual_fix_extractions.py
 tools/.*
-stage3/get_angles_and_slope.py 
