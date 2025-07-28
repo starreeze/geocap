@@ -1132,7 +1132,7 @@ class ShapeGenerator:
 
         special_polygon = np.random.choice(
             ["no", "square", "rectangle", "equilateral triangle", "regular pentagon", "regular hexagon"],
-            p=[0.25, 0.15, 0.15, 0.15, 0.15, 0.15],
+            p=[0.5, 0.1, 0.1, 0.1, 0.1, 0.1],
         )
         if special_polygon == "square":
             side_len = uniform(0.1, 0.6)
