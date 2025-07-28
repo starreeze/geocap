@@ -5,7 +5,7 @@ from typing import Any, Literal
 import numpy as np
 from numpy.random import normal, randint, uniform
 
-from data.rule.shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2, Line, Polygon
+from data.rule.shapes import Curve, CustomedShape, Ellipse, Fusiform, Fusiform_2, Line, Polygon, Sector, Star
 from data.rule.utils import (
     another_2points_on_line,
     calculate_angle,
@@ -27,14 +27,18 @@ class RelationGenerator:
         self.line_relation_generator = LineRelationGenerator(rule_args)
         self.ellipse_relation_generator = EllipseRelationGenerator(rule_args)
         self.fusiform_relation_generator = FusiformRelationGenerator(rule_args)
+        self.sector_relation_generator = SectorRelationGenerator(rule_args)
+        self.star_relation_generator = StarRelationGenerator(rule_args)
 
         self.type2generator = {
             "polygon": self.polygon_relation_generator,
             "line": self.line_relation_generator,
             "ellipse": self.ellipse_relation_generator,
+            "sector": self.sector_relation_generator,
+            "star": self.star_relation_generator,
         }
 
-    def __call__(self, shape: Polygon | Line | Ellipse) -> tuple[Any, str]:
+    def __call__(self, shape: Polygon | Line | Ellipse | Sector | Star) -> tuple[Any, str]:
         shape_type = shape.to_dict()["type"]
         if shape_type in ["line", "ray", "segment"]:
             shape_type = "line"
@@ -55,8 +59,15 @@ class PolygonRelationGenerator:
         self.triangle_only_rel = ["shared edge", "circumscribed circle of triangle", "inscribed circle"]
         self.rectangle_only_rel = ["circumscribed circle of rectangle", "diagonal"]
         self.square_only_rel = ["circumscribed circle of square", "diagonal"]
+        self.regular_pentagon_only_rel = ["circumscribed circle of regular pentagon"]
+        self.regular_hexagon_only_rel = ["circumscribed circle of regular hexagon"]
         all_relations = (
-            self.base_rel + self.triangle_only_rel + self.rectangle_only_rel + self.square_only_rel
+            self.base_rel
+            + self.triangle_only_rel
+            + self.rectangle_only_rel
+            + self.square_only_rel
+            + self.regular_pentagon_only_rel
+            + self.regular_hexagon_only_rel
         )
 
         self.relation_level = {}
@@ -73,6 +84,10 @@ class PolygonRelationGenerator:
             opt_rel = opt_rel + self.rectangle_only_rel
         elif "square" in self.polygon.special_info:
             opt_rel = opt_rel + self.square_only_rel
+        elif "regular pentagon" in self.polygon.special_info:
+            opt_rel = opt_rel + self.regular_pentagon_only_rel
+        elif "regular hexagon" in self.polygon.special_info:
+            opt_rel = opt_rel + self.regular_hexagon_only_rel
 
         relation_prob = np.array([self.relation_level[rel] for rel in opt_rel])
         relation_prob = relation_prob / relation_prob.sum()
@@ -172,8 +187,22 @@ class PolygonRelationGenerator:
             circle = Ellipse(center=center)
             circle.to_circle(radius)
 
+        elif (
+            "regular pentagon" in self.polygon.special_info or "regular hexagon" in self.polygon.special_info
+        ):
+            # For regular polygons, the circumcenter is the center of the polygon
+            center = (
+                sum(x for x, y in self.polygon.points) / len(self.polygon.points),
+                sum(y for x, y in self.polygon.points) / len(self.polygon.points),
+            )
+            radius = distance_2points(center, self.polygon.points[0])
+            circle = Ellipse(center=center)
+            circle.to_circle(radius)
+
         else:
-            raise ValueError("The polygon is not a triangle or rectangle or square.")
+            raise ValueError(
+                "The polygon is not a triangle or rectangle or square or regular pentagon or regular hexagon."
+            )
 
         return circle
 
@@ -213,7 +242,7 @@ class LineRelationGenerator:
     def __init__(self, rule_args) -> None:
         self.rule_args = rule_args
 
-        self.base_rel = ["parallel", "tangent line", "axis of ellipse"]
+        self.base_rel = ["parallel", "perpendicular", "tangent line", "axis of ellipse"]
 
         self.relation_level = {}
         for relation_type in self.base_rel:
@@ -230,6 +259,9 @@ class LineRelationGenerator:
 
         if relation_type == "parallel":
             new_shape = self.get_parallel_line()
+
+        elif relation_type == "perpendicular":
+            new_shape = self.get_perpendicular_line()
 
         elif relation_type == "tangent line":
             new_shape = self.get_tangent_circle()
@@ -253,6 +285,25 @@ class LineRelationGenerator:
         points = another_2points_on_line(line=(k, b2), point=p)
         line = Line(type="segment", points=points)
         return line
+
+    def get_perpendicular_line(self) -> Line:
+        # Get slope and intercept of the original line
+        k, b = line_given2points(self.line.points)
+
+        # Randomly select a point on the line segment
+        t = uniform(0.2, 0.8)  # Parameter t between 0.2 and 0.8 to avoid endpoints
+        p1, p2 = self.line.points
+        random_point = (p1[0] + t * (p2[0] - p1[0]), p1[1] + t * (p2[1] - p1[1]))
+
+        # Find the perpendicular line passing through this random point
+        perp_slope, perp_intercept = find_perpendicular_line(line=(k, b), point=random_point)
+
+        # Generate two points on the perpendicular line to form a line segment
+        points = another_2points_on_line(line=(perp_slope, perp_intercept), point=random_point)
+
+        # Create and return the perpendicular line segment
+        perpendicular_line = Line(type="segment", points=points)
+        return perpendicular_line
 
     def get_tangent_circle(self) -> Ellipse:
         points = self.line.points
@@ -524,6 +575,178 @@ class EllipseRelationGenerator:
                 volution.adjust_curve_points()
 
         return volutions
+
+
+class SectorRelationGenerator:
+    def __init__(self, rule_args) -> None:
+        self.rule_args = rule_args
+
+        self.base_rel = ["tangent line", "adjacent sector", "adjacent polygon"]
+
+        self.relation_level = {}
+        for relation_type in self.base_rel:
+            level = eval(f"rule_args.sector_{relation_type.replace(' ', '_')}_level")
+            self.relation_level[relation_type] = level
+
+    def generate_relation(self, sector: Sector) -> tuple[Any, str]:
+        self.sector = sector
+
+        relation_prob = np.array([self.relation_level[rel] for rel in self.base_rel])
+        relation_prob = relation_prob / relation_prob.sum()
+        relation_type = np.random.choice(self.base_rel, p=relation_prob)
+
+        if relation_type == "tangent line":
+            new_shape = self.get_tangent_line()
+        elif relation_type == "adjacent sector":
+            new_shape = self.get_adjacent_sector()
+        elif relation_type == "adjacent polygon":
+            new_shape = self.get_adjacent_polygon()
+
+        if "adjacent" in relation_type:
+            relation_type = "shared edge"
+        return new_shape, relation_type
+
+    def get_tangent_line(self) -> Line:
+        """Generate a tangent line at a point on the sector's arc"""
+        # Randomly select an angle on the arc
+        theta = uniform(self.sector.start_angle, self.sector.end_angle)
+
+        # Calculate the point on the arc
+        x = self.sector.center[0] + self.sector.radius * np.cos(theta)
+        y = self.sector.center[1] + self.sector.radius * np.sin(theta)
+
+        # Tangent direction is perpendicular to radius direction
+        tangent_angle = theta + np.pi / 2
+
+        # Generate two points on the tangent line
+        line_length = uniform(0.3, 0.8)
+        half_length = line_length / 2
+
+        p1 = (x + half_length * np.cos(tangent_angle), y + half_length * np.sin(tangent_angle))
+        p2 = (x - half_length * np.cos(tangent_angle), y - half_length * np.sin(tangent_angle))
+
+        return Line(type="segment", points=[p1, p2])
+
+    def get_adjacent_sector(self) -> Sector:
+        """Generate adjacent sectors that share the same center point and radius"""
+        # Get the angular span of the original sector (in radians)
+        angle_span = self.sector.angular_span
+
+        new_center = self.sector.arc_start_point
+        start_angle = np.pi + self.sector.start_angle
+        end_angle = start_angle + angle_span
+
+        new_sector = Sector(
+            center=new_center,
+            radius=self.sector.radius,
+            start_angle=start_angle,
+            end_angle=end_angle,
+            fill_mode=self.sector.fill_mode,
+        )
+        return new_sector
+
+    def get_adjacent_polygon(self) -> Polygon:
+        """Generate adjacent polygon which shares one edge with the sector"""
+        # Share the start radius edge (from center to arc_start_point)
+        shared_edge = [self.sector.center, self.sector.arc_start_point]
+
+        def create_random_polygon():
+            # Generate additional vertices for the polygon (up to hexagon)
+            num_additional_vertices = randint(1, 5)
+            # Generate vertices in clockwise direction from the base angle
+            additional_vertices = []
+            for _ in range(num_additional_vertices):
+                # Angle offset in clockwise direction (negative for clockwise)
+                angle_offset = uniform(0.3, 1.2)
+                new_angle = self.sector.start_angle - angle_offset  # Clockwise rotation
+                # Randomize distance from center
+                vertex_distance = self.sector.radius * uniform(0.5, 1.6)
+
+                new_x = self.sector.center[0] + vertex_distance * np.cos(new_angle)
+                new_y = self.sector.center[1] + vertex_distance * np.sin(new_angle)
+                additional_vertices.append((new_x, new_y))
+
+            polygon_points = shared_edge + additional_vertices
+            polygon = Polygon(points=polygon_points)
+            polygon.to_simple_polygon()
+            return polygon
+
+        polygon = create_random_polygon()
+        while (
+            not polygon.is_convex()
+            or polygon.get_area() < 0.01
+            or not polygon.check_angle()
+            or not polygon.check_points_distance()
+        ):
+            polygon = create_random_polygon()
+
+        return polygon
+
+
+class StarRelationGenerator:
+    def __init__(self, rule_args) -> None:
+        self.rule_args = rule_args
+
+        self.base_rel = ["circumscribed circle", "circumscribed polygon"]
+
+        self.relation_level = {"no": 1}
+        for relation_type in self.base_rel:
+            level = eval(f"rule_args.star_{relation_type.replace(' ', '_')}_level")
+            self.relation_level[relation_type] = level
+
+    def generate_relation(self, star: Star) -> tuple[Any, str]:
+        self.star = star
+
+        relation_prob = np.array([self.relation_level[rel] for rel in self.base_rel])
+        relation_prob = relation_prob / relation_prob.sum()
+        relation_type = np.random.choice(self.base_rel, p=relation_prob)
+
+        if relation_type == "circumscribed circle":
+            new_shape = self.get_circumscribed_circle()
+        elif relation_type == "circumscribed polygon":
+            new_shape = self.get_circumscribed_polygon()
+
+        return new_shape, relation_type
+
+    def get_circumscribed_circle(self) -> Ellipse:
+        """Generate the circumscribed circle of the star, with center at star center and radius as outer radius"""
+        center = self.star.center
+        radius = self.star.outer_radius
+
+        # Create a circle (special case of ellipse where major axis = minor axis = diameter)
+        circle = Ellipse(center=center)
+        circle.to_circle(radius)
+
+        return circle
+
+    def get_circumscribed_polygon(self) -> Polygon:
+        """Generate a circumscribed regular polygon"""
+        center = self.star.center
+        radius = self.star.outer_radius
+        num_sides = self.star.num_points
+
+        # Create an initial point as the starting point of the polygon
+        initial_point = (center[0] + radius, center[1])
+        polygon = Polygon([initial_point])
+
+        # Generate regular polygon with number of sides equal to number of star points
+        # Use star's rotation angle as the starting angle for the polygon
+        rotation = self.star.rotation
+
+        # Generate all vertices of the regular polygon
+        points = []
+        for i in range(num_sides):
+            angle = rotation + i * 2 * np.pi / num_sides
+            x = center[0] + radius * np.cos(angle)
+            y = center[1] + radius * np.sin(angle)
+            points.append((x, y))
+
+        polygon.points = points
+        if num_sides == 5:
+            polygon.special_info = "regular pentagon"
+        elif num_sides == 6:
+            polygon.special_info = "regular hexagon"
+        return polygon
 
 
 class FusiformRelationGenerator:
@@ -857,42 +1080,89 @@ class CustomedShapeGenerator:
         # add random translation on left and right vertices
         y_trans_1 = normal(0, 0.25) * minor_r
         y_trans_2 = y_trans_1 + normal(0, 0.01) * minor_r
+        y_trans = [y_trans_1, y_trans_2]
 
         control_points_list = []
-        for i in range(4):
-            angle = i * np.pi / 2
+        slope_type = random.choice(["convex", "concave"])
+        convex_angle = uniform(0.3 * np.arctan(minor_r / major_r), np.arctan(minor_r / major_r))
+        concave_angle = uniform(0.1 * np.pi, 0.25 * np.pi)
+        concave_radius_factor = uniform(0.5, 0.8)
+        for i in range(2):  # right and left
+            angle = i * np.pi
+            p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle) + y_trans[i]]
 
-            # start control point
-            p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle)]
-            if i == 0:
-                p0[1] += y_trans_1
-            elif i == 2:
-                p0[1] += y_trans_2
+            for j in range(2):  # rotate direction (counterclockwise and clockwise)
+                rotate = (-1) ** j
+                p3 = [
+                    x0 + major_r * np.cos(angle + rotate * 0.5 * np.pi),
+                    y0 + minor_r * np.sin(angle + rotate * 0.5 * np.pi),
+                ]
 
-            # end control point
-            p3 = [x0 + major_r * np.cos(angle + 0.5 * np.pi), y0 + minor_r * np.sin(angle + 0.5 * np.pi)]
-            if i == 3:
-                p3[1] += y_trans_1
-            elif i == 1:
-                p3[1] += y_trans_2
+                d1_axis = distance_2points(tuple(p0), center)
+                d2_axis = distance_2points(tuple(p3), center)
 
-            # mid 2 control points
-            mid_radius1 = normal(0.95, 0.1) * distance_2points(tuple(p0), center)
-            mid_radius2 = normal(0.95, 0.1) * distance_2points(tuple(p3), center)
-            delta_angle = normal(0.17 * np.pi, 0.03 * np.pi)
-            p1 = [
-                x0 + mid_radius1 * np.cos(angle + delta_angle),
-                y0 + mid_radius1 * np.sin(angle + delta_angle),
-            ]
-            p2 = [
-                x0 + mid_radius2 * np.cos(angle + 0.5 * np.pi - delta_angle),
-                y0 + mid_radius2 * np.sin(angle + 0.5 * np.pi - delta_angle),
-            ]
+                if slope_type == "convex":
+                    delta_angle = convex_angle
+                    d1 = d1_axis / np.cos(convex_angle)
+                    d2 = d2_axis / np.cos(convex_angle)
+                elif slope_type == "concave":
+                    delta_angle = concave_angle
+                    d1 = concave_radius_factor * d1_axis / np.cos(concave_angle)
+                    d2 = d2_axis / np.cos(concave_angle)
 
-            control_points = [tuple(p) for p in [p0, p1, p2, p3]]
-            control_points_list.append(control_points)
+                p1 = [
+                    x0 + d1 * np.cos(angle + rotate * delta_angle),
+                    y0 + d1 * np.sin(angle + rotate * delta_angle),
+                ]
+                p2 = [
+                    x0 + d2 * np.cos(angle + rotate * (0.5 * np.pi - delta_angle)),
+                    y0 + d2 * np.sin(angle + rotate * (0.5 * np.pi - delta_angle)),
+                ]
 
-        curves = [Curve(control_points) for control_points in control_points_list]
+                control_points = [tuple(p) for p in [p0, p1, p2, p3]]
+                control_points_list.append(control_points)
+
+        # Order points in counterclockwise direction
+        ordered_control_points_list = []
+        ordered_control_points_list.append(control_points_list[0])
+        ordered_control_points_list.append(control_points_list[3][::-1])
+        ordered_control_points_list.append(control_points_list[2])
+        ordered_control_points_list.append(control_points_list[1][::-1])
+
+        # for i in range(4):
+        #     angle = i * np.pi / 2
+
+        #     # start control point
+        #     p0 = [x0 + major_r * np.cos(angle), y0 + minor_r * np.sin(angle)]
+        #     if i == 0:
+        #         p0[1] += y_trans_1
+        #     elif i == 2:
+        #         p0[1] += y_trans_2
+
+        #     # end control point
+        #     p3 = [x0 + major_r * np.cos(angle + 0.5 * np.pi), y0 + minor_r * np.sin(angle + 0.5 * np.pi)]
+        #     if i == 3:
+        #         p3[1] += y_trans_1
+        #     elif i == 1:
+        #         p3[1] += y_trans_2
+
+        #     # mid 2 control points
+        #     mid_radius1 = normal(0.95, 0.1) * distance_2points(tuple(p0), center)
+        #     mid_radius2 = normal(0.95, 0.1) * distance_2points(tuple(p3), center)
+        #     delta_angle = normal(0.17 * np.pi, 0.03 * np.pi)
+        #     p1 = [
+        #         x0 + mid_radius1 * np.cos(angle + delta_angle),
+        #         y0 + mid_radius1 * np.sin(angle + delta_angle),
+        #     ]
+        #     p2 = [
+        #         x0 + mid_radius2 * np.cos(angle + 0.5 * np.pi - delta_angle),
+        #         y0 + mid_radius2 * np.sin(angle + 0.5 * np.pi - delta_angle),
+        #     ]
+
+        #     control_points = [tuple(p) for p in [p0, p1, p2, p3]]
+        #     control_points_list.append(control_points)
+
+        curves = [Curve(control_points) for control_points in ordered_control_points_list]
         return CustomedShape(curves, special_info="volution 0")
 
 
@@ -927,8 +1197,9 @@ class SeptaGenerator:
             thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
             thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
             # chomata_type = np.random.choice(["ellipse", "polygon"])
+            # size = np.random.choice(["small", "big"])
             chomata_type = "ellipse"
-            size = np.random.choice(["small", "big"])
+            size = "big"
 
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower

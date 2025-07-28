@@ -55,6 +55,8 @@ class RuleArgs:
     line_shape_level: int = field(default=2)
     ellipse_shape_level: int = field(default=3)
     spiral_shape_level: int = field(default=1)
+    sector_shape_level: int = field(default=2)
+    star_shape_level: int = field(default=2)
 
     # numerical params for shapes
     polygon_points_min_distance: float = field(default=0.01)
@@ -76,10 +78,13 @@ class RuleArgs:
     polygon_inscribed_circle_level: int = field(default=2)
     polygon_circumscribed_circle_of_rectangle_level: int = field(default=2)
     polygon_circumscribed_circle_of_square_level: int = field(default=2)
+    polygon_circumscribed_circle_of_regular_pentagon_level: int = field(default=2)
+    polygon_circumscribed_circle_of_regular_hexagon_level: int = field(default=2)
     polygon_diagonal_level: int = field(default=1)
 
     # levels of line relation
     line_parallel_level: int = field(default=1)
+    line_perpendicular_level: int = field(default=1)
     line_tangent_line_level: int = field(default=2)
     line_axis_of_ellipse_level: int = field(default=2)
 
@@ -89,6 +94,15 @@ class RuleArgs:
     ellipse_concentric_level: int = field(default=2)
     ellipse_circumscribed_level: int = field(default=3)
     ellipse_inscribed_level: int = field(default=3)
+
+    # levels of sector relation
+    sector_tangent_line_level: int = field(default=1)
+    sector_adjacent_sector_level: int = field(default=2)
+    sector_adjacent_polygon_level: int = field(default=2)
+
+    # levels of star relation
+    star_circumscribed_circle_level: int = field(default=2)
+    star_circumscribed_polygon_level: int = field(default=2)
 
     """args for stage 2"""
     prob_has_axial_filling: float = field(default=0.8)

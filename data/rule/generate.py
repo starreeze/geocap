@@ -165,7 +165,7 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
             assert isinstance(tail_shape, list) and isinstance(relation_type, str)
 
             exclude_shape = [head_shape]
-            for t_shape in tail_shape:
+            for i, t_shape in enumerate(tail_shape):
                 if no_overlap(shapes, t_shape, exclude_shape=exclude_shape) and valid_intersection(
                     shapes, t_shape
                 ):
@@ -188,6 +188,8 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
                     # Keep 'line-polygon-relation' order in diagonal relation
                     elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
+                    elif i > 0:  # multiple tail shapes (e.g. concentric ellipses or adjacent sectors)
+                        relations.append((tail_idx - 1, tail_idx, relation_type))
                     else:
                         relations.append((head_idx, tail_idx, relation_type))
 
@@ -245,7 +247,7 @@ def generate_rules_multiprocess(num_workers: int = 2) -> list[dict[str, list]]:
 
 def save_rules(rules: list[dict[str, list]], output_file: str):
     with open(output_file, "w") as f:
-        json.dump(round_floats(rules, rule_args.output_fp_precision), f)
+        json.dump(round_floats(rules, rule_args.output_fp_precision), f, indent=4)
 
 
 def main():
