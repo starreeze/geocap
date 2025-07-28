@@ -182,8 +182,8 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
                     # Add each tail_shape to shapes
                     tail_idx = len(shapes)
 
-                    # Keep 'ellipse-polygon-relation' order in inscribed or circumscribed relation
-                    if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
+                    # Keep 'ellipse-polygon/star-relation' order in inscribed or circumscribed relation
+                    if head_shape.to_dict()["type"] in ["polygon", "star"] and "cribed" in relation_type:
                         relations.append((tail_idx, head_idx, relation_type))
                     # Keep 'line-polygon-relation' order in diagonal relation
                     elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
