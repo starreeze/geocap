@@ -319,7 +319,7 @@ def segments_intersect(segment1: list[tuple[float, float]], segment2: list[tuple
     return -0.1 <= u <= 1.1 and -0.1 <= t <= 1.1
 
 
-def valid_intersection(shapes, new_shape) -> bool:
+def valid_intersection(shapes, new_shape, exclude_shape=None) -> bool:
     """
     Check if a new shape can be added without creating too many intersections.
 
@@ -337,7 +337,12 @@ def valid_intersection(shapes, new_shape) -> bool:
     if not new_points:
         return True
 
+    if exclude_shape is None:
+        exclude_shape = []
+
     for shape in shapes:
+        if shape in exclude_shape:
+            continue
         # Get points for the existing shape
         shape_points = get_shape_points(shape)
         if not shape_points:
@@ -378,4 +383,4 @@ def get_shape_points(shape):
         # For sectors, use boundary points
         return shape.points.tolist() if hasattr(shape.points, "tolist") else list(shape.points)
     else:
-        raise ValueError(f"Invalid shape type: {shape_type}")
+        return []

@@ -167,7 +167,7 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
             exclude_shape = [head_shape]
             for i, t_shape in enumerate(tail_shape):
                 if no_overlap(shapes, t_shape, exclude_shape=exclude_shape) and valid_intersection(
-                    shapes, t_shape
+                    shapes, t_shape, exclude_shape=exclude_shape
                 ):
                     # Check if each tail_shape is in the canvas
                     tail_bbox = t_shape.get_bbox()
