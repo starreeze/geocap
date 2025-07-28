@@ -27,8 +27,10 @@ class Volution(BaseFeature):
         return txt
 
     def genVolutionHeightAndGrowthRate(self):
-        txt = "Heights of chambers above tunnel in {start} to {end} volution are ".format(
-            start=ordinal_numbers[0], end=ordinal_numbers[len(self.volutions_table) - 1]
+        txt = (
+            "<heights of volutions>Heights of chambers above tunnel in {start} to {end} volution are ".format(
+                start=ordinal_numbers[0], end=ordinal_numbers[len(self.volutions_table) - 1]
+            )
         )
         txt1 = ""
         txt2 = ""
@@ -64,6 +66,7 @@ class Volution(BaseFeature):
         if txt == "skip":
             return ""
         txt += txt1
+        txt_final2 = txt + "</heights of volutions>"
         self.chamber_heights = txt1
         self.growth_rate_raw = []
         # txt += "Rates of growth of {start} to {end} volution are ".format(
@@ -79,8 +82,9 @@ class Volution(BaseFeature):
         # txt += txt2
         # self.growth_rate = txt2
         self.growth_rate = None
-        txt += f"Volutions {self.getCoiled()}. "
-        return txt
+        txt_final1 = f"<coil tightness>Volutions {self.getCoiled()}. </coil tightness>"
+        return txt_final1 + txt_final2
+        # return txt
 
     def processTwo(self, inner, outer):
         if "moderate" in inner[0]:
@@ -118,10 +122,12 @@ class Volution(BaseFeature):
             return "moderately coiled"
 
     def genUserInput(self):
-        txt = "The number of volutions is {num}. ".format(num=self.num)
+        txt = "<number of volutions>The number of volutions is {num}. </number of volutions>".format(
+            num=self.num
+        )
         txt += self.genVolutionHeightAndGrowthRate()
         # txt+=self.genWallThickness()
-        return [f"<volution>{txt}</volution>"]
+        return [f"{txt}"]
 
     def genInput(self):
         txt = "number of volutions(whorls): {num}\n".format(num=self.num)

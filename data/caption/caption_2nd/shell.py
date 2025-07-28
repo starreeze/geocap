@@ -20,9 +20,7 @@ class Shell(BaseFeature):
         self.vertices = vertices
         self.center = center
 
-    def getShape(self):
-        type = self.type
-        ratio = self.ratio
+    def getSize(self):
         txt = ""
         txt += self.standardRangeFilter(
             shell_size_classes,
@@ -30,7 +28,19 @@ class Shell(BaseFeature):
             * (self.h * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset)),
         )
         self.size_str = txt.strip()
-        txt += " "
+        return self.size_str
+
+    def getShape(self):
+        type = self.type
+        ratio = self.ratio
+        txt = ""
+        # txt += self.standardRangeFilter(
+        #     shell_size_classes,
+        #     (self.w * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset))
+        #     * (self.h * shell_world_pixel / (shell_pixel_div_mm + self.random_pixel_div_mm_offset)),
+        # )
+        # self.size_str = txt.strip()
+        # txt += " "
         if "fusiform" in type:
             self.shape_str = self.standardRangeFilter(fusiform_classes, ratio)
             txt += self.shape_str
@@ -40,10 +50,15 @@ class Shell(BaseFeature):
         elif "curves" in type:
             self.shape_str = self.standardRangeFilter(ellipse_classes, ratio)
             txt += self.shape_str
-        equ = self.getEquator()
-        if equ != "":
-            txt = equ + " in the median part, " + txt  # type: ignore
+        # equ = self.getEquator()
+        # if equ != "":
+        #     txt = equ + " in the median part, " + txt  # type: ignore
         return txt.strip()
+
+    def getEquatorWrapper(self):
+        equ = self.getEquator()
+        txt = equ.strip()  # type: ignore
+        return txt
 
     def getEquator(self):
         if "curves" in self.type:
@@ -66,7 +81,7 @@ class Shell(BaseFeature):
         elif "ellipse" in self.type:
             return self.standardRangeFilter(shell_equator_classes, self.ratio * 20)
         elif "fusiform" in self.type:
-            return ""
+            return self.standardRangeFilter(shell_equator_classes, self.ratio * 20)
 
     def getSlope(self):
         if "curves" in self.type:
@@ -119,8 +134,15 @@ class Shell(BaseFeature):
 
     def genUserInput(self):
         tagged = []
-        txt = "<shell>Shell {shape}, ".format(shape=self.getShape())
-        txt += "with {slope} slopes and {pole}. </shell>".format(slope=self.getSlope(), pole=self.getPole())
+        txt = "<size>Shell {size}, </size>".format(size=self.getSize())
+        tagged.append(txt)
+        txt = "<shape>{shape}, </shape>".format(shape=self.getShape())
+        tagged.append(txt)
+        txt = "<equator>{equator} in the median part, </equator>".format(equator=self.getEquatorWrapper())
+        tagged.append(txt)
+        txt = "<lateral slopes>with {slope} slopes </lateral slopes><poles>and {pole}. </poles>".format(
+            slope=self.getSlope(), pole=self.getPole()
+        )
         tagged.append(txt)
         txt = "<length>The axial length is {length} mm, </length>".format(length=self.length)
         tagged.append(txt)
