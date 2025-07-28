@@ -1284,30 +1284,6 @@ class ShapeGenerator:
                 end_angle = start_angle + angular_span
                 sector = Sector(center, radius, start_angle, end_angle)
 
-            # Optionally create special sectors (quarter circle, semicircle, etc.)
-            special_sector = np.random.choice(
-                ["no", "quarter_circle", "semicircle", "three_quarter_circle"], p=[0.6, 0.15, 0.15, 0.1]
-            )
-
-            if special_sector == "quarter_circle":
-                sector.special_info = "quarter circle"
-                # Set to exactly 90 degrees
-                sector.angular_span = np.pi / 2
-                sector.end_angle = sector.start_angle + np.pi / 2
-            elif special_sector == "semicircle":
-                sector.special_info = "semicircle"
-                # Set to exactly 180 degrees
-                sector.angular_span = np.pi
-                sector.end_angle = sector.start_angle + np.pi
-            elif special_sector == "three_quarter_circle":
-                sector.special_info = "three quarter circle"
-                # Set to exactly 270 degrees
-                sector.angular_span = 3 * np.pi / 2
-                sector.end_angle = sector.start_angle + 3 * np.pi / 2
-
-            # Regenerate boundary points after any modifications
-            sector._generate_points()
-
             return sector
 
     def generate_star(
