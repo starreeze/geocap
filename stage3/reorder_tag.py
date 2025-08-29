@@ -17,6 +17,7 @@ def reorder_tag(input_path, output_path):
         "<width>",
         "<ratio>",
         "<number of volutions>",
+        "<coil tightness>",
         "<heights of volutions>",
         "<endothyroid>",
         "<spirotheca>",
