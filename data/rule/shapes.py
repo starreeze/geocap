@@ -1408,8 +1408,8 @@ class ShapeGenerator:
         else:
             start_volution = randint(num_volutions - 3, num_volutions - 1)
         end_volution = num_volutions - 1
-        start_angle = -normal(0.3, 0.03) * np.pi
-        end_angle = normal(0.3, 0.03) * np.pi
+        start_angle = -normal(0.13, 0.01) * np.pi
+        end_angle = normal(0.13, 0.01) * np.pi
         for i in range(2):
             poles_folds.append(
                 {

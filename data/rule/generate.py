@@ -95,6 +95,9 @@ def generate_fossil_rules() -> list[dict[str, list]]:
             )
             # shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
+
+            # no axial extension if no septa folds
+            axial_filling = [a for a in axial_filling if a["type"] == "main"]
         else:
             septa_folds = []
             num_septa = [0 for _ in range(int(num_volutions))]
