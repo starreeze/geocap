@@ -21,7 +21,10 @@ def feature_statistics():
 
     average_score = 0
     for char in characteristics:
-        slice_tab[char]["rating"] = round(slice_tab[char]["rating"] / slice_tab[char]["valid_count"], 2)
+        if slice_tab[char]["valid_count"] > 0:
+            slice_tab[char]["rating"] = round(slice_tab[char]["rating"] / slice_tab[char]["valid_count"], 2)
+        else:
+            slice_tab[char]["rating"] = 0.0
         average_score += slice_tab[char]["rating"]
 
     # Write to CSV instead of JSONL

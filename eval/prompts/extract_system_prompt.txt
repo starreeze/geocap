@@ -1,5 +1,5 @@
 ## Task Description
-You are provided with a description of a fossil image. You need to extract specific features from the description and output in pure JSON format. 3 examples are provided to help you understand the task.
+You are provided with a description of a fossil image. You need to extract specific features from the description and output in pure JSON format. 2 examples are provided to help you understand the task.
 
 ## Requirements
 1. Extract EXACTLY these 15 features (case-sensitive keys):
