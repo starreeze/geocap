@@ -4,15 +4,15 @@ from typing import Any
 
 import cv2
 import numpy as np
-import torch
 from tqdm import tqdm
 
 from common.args import caption_args, feat_recog_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from data.caption.paraphrase import Paraphraser
+from stage3.get_angles_and_slope import get_angles_and_slope
 from stage3.recognize import recognize_feature
 from stage3.reorder_tag import reorder_tag
-from stage3.utils import classify_ellipsoidal_vs_fusiform, get_circle_points
+from stage3.utils import get_circle_points
 
 os.makedirs(feat_recog_args.save_data_path, exist_ok=True)
 images_path = "whole_images"
@@ -94,38 +94,71 @@ class DataGenerator:
             print(image_info)
         new_image_info["ratio"] = new_image_info["length"] / new_image_info["width"]
 
-        # Classify overall size by area
-        area = new_image_info["width"] * new_image_info["length"]
-        if area < 10:
-            new_image_info["overall_size"] = "small"
-        elif area < 20:
-            new_image_info["overall_size"] = "medium"
+        # Classify size by length
+        if new_image_info["length"] < 1:
+            new_image_info["size"] = "minute"
+        elif new_image_info["length"] < 3:
+            new_image_info["size"] = "small"
+        elif new_image_info["length"] < 6:
+            new_image_info["size"] = "medium"
+        elif new_image_info["length"] < 10:
+            new_image_info["size"] = "large"
+        elif new_image_info["length"] < 20:
+            new_image_info["size"] = "mega"
         else:
-            new_image_info["overall_size"] = "large"
+            new_image_info["size"] = "gigantic"
 
-        # Classify overall shape by ratio and contour
-        if 0.2 <= new_image_info["ratio"] < 0.8:
-            new_image_info["overall_shape"] = "lenticular"
-        elif 0.8 <= new_image_info["ratio"] < 1.2:
-            new_image_info["overall_shape"] = "spherical"
+        # Get equator, slope and poles
+        angles_and_scores = get_angles_and_slope(img_path)
+        left_angle, right_angle, upper_angle, lower_angle = angles_and_scores[:4]
+        equator_angle = (upper_angle + lower_angle) / 2
+        if equator_angle < 2.95:
+            equator = "convex"
+        elif equator_angle < 3.15:
+            equator = "straight"
         else:
-            shape_type = classify_ellipsoidal_vs_fusiform(contour)  # "ellipsoidal" or "fusiform"
-            ellipsoidal_classes = {
-                "ellipsoidal": [1.2, 2.1],
-                "sub-ellipsoidal": [2.1, 4],
-                "cylindrical": [4, 6],
-                "sub-cylindrical": [6, 99],
-            }
-            fusiform_classes = {
-                "inflated fusiform": [1.2, 1.9],
-                "fusiform": [1.9, 3],
-                "elongate fusiform": [3, 99],
-            }
-            ratio2shape = ellipsoidal_classes if shape_type == "ellipsoidal" else fusiform_classes
-            for shape, ratio_range in ratio2shape.items():
-                if ratio_range[0] <= new_image_info["ratio"] < ratio_range[1]:
-                    new_image_info["overall_shape"] = shape
-                    break
+            equator = "concave"
+        new_image_info["equator"] = equator
+
+        poles_angle = (left_angle + right_angle) / 2
+        if poles_angle < 2.35:
+            poles = "pointed"
+        else:
+            poles = "blunted"
+        new_image_info["poles"] = poles
+
+        slopes_score = np.sum(angles_and_scores[4:])
+        if slopes_score < -2.3:
+            slopes = "convex"
+        elif slopes_score < -0.8:
+            slopes = "straight"
+        else:
+            slopes = "concave"
+        new_image_info["slopes"] = slopes
+
+        # Classify shape by ratio and contour
+        # shape_type = classify_ellipsoidal_vs_fusiform(contour)  # "ellipsoidal" or "fusiform"
+        shape_type = "ellipsoidal" if slopes == "convex" else "fusiform"
+        ellipsoidal_classes = {
+            "prolate spherical": [0.9, 0.98],
+            "spherical": [0.98, 1.05],
+            "sub-spherical": [1.05, 1.11],
+            "ellipsoidal": [1.11, 3],
+            "elongate ellipsoidal": [3, 6],
+            "cylindrical": [6, 999],
+        }
+        fusiform_classes = {
+            "lentoid": [0, 0.75],
+            "rhombus": [0.75, 1.3],
+            "inflated fusiform": [1.3, 1.9],
+            "fusiform": [1.9, 3.5],
+            "elongate fusiform": [3.5, 999],
+        }
+        ratio2shape = ellipsoidal_classes if shape_type == "ellipsoidal" else fusiform_classes
+        for shape, ratio_range in ratio2shape.items():
+            if ratio_range[0] < new_image_info["ratio"] <= ratio_range[1]:
+                new_image_info["shape"] = shape
+                break
 
         if use_vis_tools:
             # Recognize fossil features
@@ -248,9 +281,17 @@ class DataGenerator:
     def get_one_instruction(self, image_info: dict) -> str:
         instruction = "The following is an image of a paleontological fossil, please provide a detailed description for the fossil image. "
         instruction += "Here is some information about the fossil that must be included in the description:\n"
-        # overall size and shape
-        instruction += f"size: {image_info['overall_size']}, shape: {image_info['overall_shape']}, "
+        # size and shape
+        instruction += f"size: {image_info['size']}, shape: {image_info['shape']}, "
+
+        # equator, slopes and poles
+        instruction += f"equator(central part): {image_info['equator']}, "
+        instruction += f"slopes: {image_info['slopes']}, "
+        instruction += f"poles: {image_info['poles']}\n"
+
+        # length, width, ratio
         instruction += f"length: {image_info['length']:.3f} mm. , width(diameter): {image_info['width']:.3f} mm. ratio: {image_info['ratio']:.3f}\n"
+        # number of volutions
         instruction += f"number of volutions(whorls): {image_info['num_volutions']}\n"
 
         # thickness of spirotheca
@@ -337,39 +378,43 @@ class DataGenerator:
 
 
 def generate_dataset(start_pos=None, end_pos=None, use_vis_tools: bool = True):
+    """
+    Generate initial dataset with feature recognition and instruction generation
+    """
     data_path = os.path.join(feat_recog_args.fossil_data_path, "filtered_data.json")
     with open(data_path, "r") as f:
         data_dict = json.load(f)
 
-    dataset = []
     data_generator = DataGenerator()
 
-    # Recognize features and generate instructions
+    # Step 1: Recognize features and generate instructions
     if not os.path.exists(instructions_path):
         instructions = data_generator.generate_instructions(data_dict, use_vis_tools)
         with open(instructions_path, "w") as f:
             for instruction in instructions:
                 f.write(json.dumps(instruction) + "\n")
 
-    # Replace numerical infos in outputs
+    # Read instructions
     with open(instructions_path, "r") as f:
         instructions = [json.loads(line) for line in f]
 
+    # Generate outputs for the instructions
     if start_pos is None and end_pos is None:
-        output_path = stage3_data_path
         start_pos = 0
         end_pos = len(instructions)
+        output_path = stage3_data_path
     else:
         output_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
 
-    dataset = data_generator.generate_outputs(instructions[start_pos:end_pos])
+    selected_instructions = instructions[start_pos:end_pos]
+    dataset = data_generator.generate_outputs(selected_instructions)
 
-    # Save dataset as jsonl file
+    # Save dataset
     with open(output_path, "w") as f:
         for data in dataset:
             f.write(json.dumps(data) + "\n")
-    # Release GPU memory occupied by llm_generator
-    torch.cuda.empty_cache()
+
+    return dataset
 
 
 def paraphrase(start_pos=None, end_pos=None):
@@ -398,7 +443,6 @@ def paraphrase(start_pos=None, end_pos=None):
     with open(output_path, "w") as f:
         for caption in captions:
             f.write(json.dumps(caption) + "\n")
-    torch.cuda.empty_cache()
 
 
 def tag_format(start_pos=None, end_pos=None):
@@ -432,11 +476,10 @@ def tag_format(start_pos=None, end_pos=None):
                 caption["output"] = paraphrased_output
                 f.write(json.dumps(caption) + "\n")
             f.flush()
-    torch.cuda.empty_cache()
 
 
 def add_default_value(start_pos=None, end_pos=None):
-    caption_args.paraphrase_prompt_dir = "stage3/prompts/add_default_value_orig.txt"
+    caption_args.paraphrase_prompt_dir = "stage3/prompts/add_default_value.txt"
     paraphraser = Paraphraser()
     # Read original captions
     if start_pos is not None and end_pos is not None:
@@ -468,11 +511,38 @@ def add_default_value(start_pos=None, end_pos=None):
                 caption["output"] = paraphrased_output
                 f.write(json.dumps(caption) + "\n")
             f.flush()
-    torch.cuda.empty_cache()
+
+
+def numerical_replacement(start_pos=None, end_pos=None):
+    """
+    Perform numerical replacement using LLM
+    """
+    data_generator = DataGenerator()
+
+    # Read data with default values added
+    if start_pos is not None and end_pos is not None:
+        input_data_path = os.path.join(
+            feat_recog_args.save_data_path, f"add_default_value_{start_pos}_{end_pos}.jsonl"
+        )
+        output_path = os.path.join(feat_recog_args.save_data_path, f"stage3_{start_pos}_{end_pos}.jsonl")
+    else:
+        input_data_path = stage3_add_default_value_path
+        output_path = stage3_data_path
+
+    with open(input_data_path, "r") as f:
+        instructions = [json.loads(line) for line in f]
+
+    # Generate outputs using LLM for numerical replacement
+    dataset = data_generator.generate_outputs(instructions)
+
+    # Save final dataset
+    with open(output_path, "w") as f:
+        for data in dataset:
+            f.write(json.dumps(data) + "\n")
 
 
 def format_to_llava():
-    data: list[str] = open(stage3_paraphrase_path, "r").readlines()
+    data: list[str] = open(stage3_data_path, "r").readlines()
     target_data = []
     for i, d in enumerate(data):
         d = json.loads(d.strip())
@@ -506,11 +576,24 @@ def format_to_internvl():
 
 
 def main():
-    generate_dataset(use_vis_tools=True)
-    paraphrase()
-    tag_format()
-    add_default_value()
-    reorder_tag(input_path=stage3_add_default_value_path, output_path=stage3_reorder_tag_path)
+    """
+    Main data processing pipeline with separated steps:
+    1. Feature recognition and instruction generation
+    2. Paraphrase (text rewriting)
+    3. Tag format (adding tags)
+    4. Add default values (adding default values)
+    5. Numerical replacement (numerical substitution)
+    6. Reorder tags (tag reordering)
+    7. Format conversion (format conversion)
+    """
+    # generate_dataset(use_vis_tools=True)
+    # paraphrase()
+    # tag_format()
+    # add_default_value()
+    numerical_replacement()
+    reorder_tag(input_path=stage3_data_path, output_path=stage3_reorder_tag_path)
+
+    # Step 7: Format conversion
     # format_to_llava()
     format_to_internvl()
 

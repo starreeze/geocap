@@ -95,6 +95,9 @@ def generate_fossil_rules() -> list[dict[str, list]]:
             )
             # shapes.extend(septa_folds)
             septa_folds = [shape.to_dict() for shape in septa_folds]
+
+            # no axial extension if no septa folds
+            axial_filling = [a for a in axial_filling if a["type"] == "main"]
         else:
             septa_folds = []
             num_septa = [0 for _ in range(int(num_volutions))]
@@ -166,35 +169,39 @@ def generate_rules(idx_target: tuple[int, dict[int, int]]) -> list[dict[str, lis
 
             exclude_shape = [head_shape]
             for i, t_shape in enumerate(tail_shape):
-                if no_overlap(shapes, t_shape, exclude_shape=exclude_shape) and valid_intersection(
-                    shapes, t_shape
-                ):
-                    # Check if each tail_shape is in the canvas
-                    tail_bbox = t_shape.get_bbox()
-                    area_in_canvas = overlap_area(tail_bbox, [[0, 1], [1, 0]])
-                    area_tail_bbox = (tail_bbox[1][0] - tail_bbox[0][0]) * (tail_bbox[0][1] - tail_bbox[1][1])
-                    if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
-                        continue
+                if not no_overlap(shapes, t_shape, exclude_shape=exclude_shape):
+                    continue
 
-                    # if len(shapes) >= rule_args.max_num_shapes:
-                    #     break
+                intersection_exclude_shape = [head_shape] if relation_type == "shared edge" else None
+                if not valid_intersection(shapes, t_shape, exclude_shape=intersection_exclude_shape):
+                    continue
 
-                    # Add each tail_shape to shapes
-                    tail_idx = len(shapes)
+                # Check if each tail_shape is in the canvas
+                tail_bbox = t_shape.get_bbox()
+                area_in_canvas = overlap_area(tail_bbox, [[0, 1], [1, 0]])
+                area_tail_bbox = (tail_bbox[1][0] - tail_bbox[0][0]) * (tail_bbox[0][1] - tail_bbox[1][1])
+                if area_in_canvas / area_tail_bbox < rule_args.in_canvas_area_thres:
+                    continue
 
-                    # Keep 'ellipse-polygon-relation' order in inscribed or circumscribed relation
-                    if "polygon" in head_shape.to_dict()["type"] and "cribed" in relation_type:
-                        relations.append((tail_idx, head_idx, relation_type))
-                    # Keep 'line-polygon-relation' order in diagonal relation
-                    elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
-                        relations.append((tail_idx, head_idx, relation_type))
-                    elif i > 0:  # multiple tail shapes (e.g. concentric ellipses or adjacent sectors)
-                        relations.append((tail_idx - 1, tail_idx, relation_type))
-                    else:
-                        relations.append((head_idx, tail_idx, relation_type))
+                # if len(shapes) >= rule_args.max_num_shapes:
+                #     break
 
-                    shapes.append(t_shape)
-                    exclude_shape.append(t_shape)
+                # Add each tail_shape to shapes
+                tail_idx = len(shapes)
+
+                # Keep 'ellipse-polygon/star-relation' order in inscribed or circumscribed relation
+                if head_shape.to_dict()["type"] in ["polygon", "star"] and "cribed" in relation_type:
+                    relations.append((tail_idx, head_idx, relation_type))
+                # Keep 'line-polygon-relation' order in diagonal relation
+                elif "polygon" in head_shape.to_dict()["type"] and "diagonal" in relation_type:
+                    relations.append((tail_idx, head_idx, relation_type))
+                elif i > 0:  # multiple tail shapes (e.g. concentric ellipses or adjacent sectors)
+                    relations.append((tail_idx - 1, tail_idx, relation_type))
+                else:
+                    relations.append((head_idx, tail_idx, relation_type))
+
+                shapes.append(t_shape)
+                exclude_shape.append(t_shape)
 
         if cur_num_samples.get(len(shapes), 0) < target_num_samples.get(len(shapes), 0):
             shapes_dict = [shape.to_dict() for shape in shapes]

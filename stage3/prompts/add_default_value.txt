@@ -9,7 +9,7 @@ You are provided with a description of a fossil image with different features wr
    - poles: "<poles>with rounded poles</poles>"
    - axis: "<axis>Coiling axis straight</axis>"
    - coil tightness: "<coil tightness>inner volutions are more tightly coiled than outer ones</coil tightness>"
-   - septa: "<septa>Septa fluted only at poles</septa>"
+   - septa: "<septa>Septa straight</septa>"
    - chomata: "<chomata>Chomata absent</chomata>"
    - axial filling: "<axial filling>Axial filling absent</axial filling>"
    - tunnel shape: "<tunnel shape>Tunnel regular with moderate width and height</tunnel shape>"

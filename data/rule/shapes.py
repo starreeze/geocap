@@ -532,9 +532,9 @@ class Sector(GSRule):
             self.angular_span = self.end_angle - self.start_angle
 
         # Generate points for the sector boundary
-        self._generate_boundary_points()
+        self._generate_points()
 
-    def _generate_boundary_points(self):
+    def _generate_points(self):
         """Generate points that define the sector boundary"""
         # Vertices
         self.arc_start_point = (
@@ -562,7 +562,7 @@ class Sector(GSRule):
         arc_points_array = np.column_stack((arc_x, arc_y))
 
         # Complete sector boundary: center -> start of arc -> arc -> end of arc -> center
-        self.boundary_points = np.vstack(
+        self.points = np.vstack(
             [[self.center], arc_points_array, [self.center]]  # center point  # arc points  # back to center
         )
 
@@ -571,7 +571,7 @@ class Sector(GSRule):
 
     def get_bbox(self) -> list[tuple[float, float]]:
         # Get bounding box from all boundary points
-        return self.bbox_from_points(self.boundary_points.tolist())
+        return self.bbox_from_points(self.points.tolist())
 
     def get_area(self) -> float:
         """Calculate sector area: (1/2) * r² * θ"""
@@ -1132,7 +1132,7 @@ class ShapeGenerator:
 
         special_polygon = np.random.choice(
             ["no", "square", "rectangle", "equilateral triangle", "regular pentagon", "regular hexagon"],
-            p=[0.25, 0.15, 0.15, 0.15, 0.15, 0.15],
+            p=[0.5, 0.1, 0.1, 0.1, 0.1, 0.1],
         )
         if special_polygon == "square":
             side_len = uniform(0.1, 0.6)
@@ -1284,30 +1284,6 @@ class ShapeGenerator:
                 end_angle = start_angle + angular_span
                 sector = Sector(center, radius, start_angle, end_angle)
 
-            # Optionally create special sectors (quarter circle, semicircle, etc.)
-            special_sector = np.random.choice(
-                ["no", "quarter_circle", "semicircle", "three_quarter_circle"], p=[0.6, 0.15, 0.15, 0.1]
-            )
-
-            if special_sector == "quarter_circle":
-                sector.special_info = "quarter circle"
-                # Set to exactly 90 degrees
-                sector.angular_span = np.pi / 2
-                sector.end_angle = sector.start_angle + np.pi / 2
-            elif special_sector == "semicircle":
-                sector.special_info = "semicircle"
-                # Set to exactly 180 degrees
-                sector.angular_span = np.pi
-                sector.end_angle = sector.start_angle + np.pi
-            elif special_sector == "three_quarter_circle":
-                sector.special_info = "three quarter circle"
-                # Set to exactly 270 degrees
-                sector.angular_span = 3 * np.pi / 2
-                sector.end_angle = sector.start_angle + 3 * np.pi / 2
-
-            # Regenerate boundary points after any modifications
-            sector._generate_boundary_points()
-
             return sector
 
     def generate_star(
@@ -1432,8 +1408,8 @@ class ShapeGenerator:
         else:
             start_volution = randint(num_volutions - 3, num_volutions - 1)
         end_volution = num_volutions - 1
-        start_angle = -normal(0.3, 0.03) * np.pi
-        end_angle = normal(0.3, 0.03) * np.pi
+        start_angle = -normal(0.13, 0.01) * np.pi
+        end_angle = normal(0.13, 0.01) * np.pi
         for i in range(2):
             poles_folds.append(
                 {
