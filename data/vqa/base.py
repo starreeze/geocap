@@ -24,13 +24,19 @@ class GeneratorBase:
         "hexagon",
         "rectangle",
         "square",
+        "regular pentagon",
+        "regular hexagon",
         "spiral",
+        "star",
+        "sector",
     ]
     # parent -> [(child_type, child_desc)]: format to `parent (not/excluding child_desc)`
     shape_hierarchy = {
         "ellipse": [("circle", "circle")],
         "rectangle": [("square", "square")],
         "quadrilateral": [("rectangle", "rectangle"), ("square", "square")],
+        "pentagon": [("regular pentagon", "regular pentagon")],
+        "hexagon": [("regular hexagon", "regular hexagon")],
         "line": [
             ("triangle", "polygon edge"),
             ("quadrilateral", "polygon edge"),
@@ -38,11 +44,16 @@ class GeneratorBase:
             ("hexagon", "polygon edge"),
             ("rectangle", "polygon edge"),
             ("square", "polygon edge"),
+            ("regular pentagon", "polygon edge"),
+            ("regular hexagon", "polygon edge"),
+            ("star", "polygon edge"),
+            ("sector", "sector edge"),
         ],
     }
     relation_reverse = {
         "tangent": "tangent",
         "parallel": "parallel",
+        "perpendicular": "perpendicular",
         "circumscribed": "inscribed",
         "inscribed": "circumscribed",
         "shared edge": "shared edge",
@@ -68,13 +79,15 @@ class GeneratorBase:
 
     @classmethod
     def get_type(cls, shape_dict: dict[str, Any]) -> str:
-        special_info = shape_dict.get("special_info", "").strip(" .").split(" ")[-1]
+        special_info = shape_dict.get("special_info", "").strip()
         if special_info:
             return special_info
         if shape_dict["type"] in ["segment", "ray"]:
             return "line"
         if shape_dict["type"] == "polygon":
-            return cls.total_shapes[len(shape_dict["points"])]
+            num_edges = len(shape_dict["points"])
+            assert num_edges in [3, 4, 5, 6]
+            return cls.total_shapes[num_edges]
         return shape_dict["type"]
 
     def __init__(self, rules: list[dict[str, Any]]):
@@ -127,7 +140,7 @@ class GeneratorBase:
             return type + "s" if add_s else type
         overlapping_child_descs = set([c[1] for c in cls.shape_hierarchy[type] if c[0] in image_types])
         if not overlapping_child_descs:
-            return type
+            return type + "s" if add_s else type
         if add_s:
             child_desc = ", ".join(c + "s" for c in overlapping_child_descs)
             return f"{type}s (excluding {child_desc})"

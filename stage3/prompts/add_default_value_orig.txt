@@ -9,7 +9,7 @@ You are provided with a description of a fossil image. Your task is to add defau
    - poles(extremities): "poles rounded"
    - axis: "Coiling axis straight"
    - coil tightness: "inner volutions are more tightly coiled than outer ones"
-   - septa: "Septa fluted only at poles"
+   - septa(septal folding): "Septa straight"
    - chomata: "Chomata absent"
    - axial filling: "Axial filling absent"
    - tunnel shape: "Tunnel regular with moderate width and height"

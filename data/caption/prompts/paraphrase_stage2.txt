@@ -1,12 +1,18 @@
 Task:
-The following is a description of a fossil image, please paraphrase the description.
+You are provided with a description of a fossil image, please paraphrase the description. Refer to the example below for guidance.
 
-Requirements:
-1. Paraphrase the description while maintaining the scientific tone and numerical values.
-2. Your response should contain only the paraphrased description, without any additional statements or explanations.
-3. IMPORTANT!!! There will be some tags in the description, including <shell></shell>, <length></length>, <width></width>, <ratio></ratio>, <volution></volution>, <proloculus></proloculus>, <axis></axis>, <axial filling></axial filling>, <septa></septa>, <chomata></chomata>, <tunnel shape></tunnel shape>, <tunnel angle></tunnel angle>, etc. Your response should retain all the tags from the original text. The number and position of the tags in the original text should not be changed in your response.
+Guidelines:
+1. The description contains tags like <size>, </size>, <shape>, </shape> etc. that mark the specific feature being described. Do NOT change any tag while paraphrasing.
+2. Maintain scientific accuracy and academic style. Feature terms must not be replaced. For adjectives, only synonyms with identical semantic meaning are permitted.
+3. Your response should contain only the paraphrased description, without any additional statements or explanations.
 
-Input text:
+Original text:
+<size>Shell medium, </size><shape>sub-ellipsoidal, </shape><equator>inflated in the central region, </equator><lateral slopes>with convex slopes </lateral slopes><poles>and sharply pointed right pole and bluntly pointed left pole. </poles><length>The axial length is 5.47 mm, </length><width>and the sagittal width is 1.93 mm, </width><ratio>width a ratio of length to width of 2.83. </ratio><number of volutions>The number of volutions is 9.0. </number of volutions><coil tightness>Volutions tightly coiled in first 7 volutions. </coil tightness><heights of volutions>Heights of chambers above tunnel in first to ninth volution are 0.115, 0.162, 0.222, 0.298, 0.393, 0.507, 0.642, 0.796, 0.967 mm. </heights of volutions><proloculus>Proloculus small spherical, with diameter measuring 0.2 mm. </proloculus><axial filling>Axial filling well developed. </axial filling><septa>Septa strongly fluted. </septa><chomata>Chomata massive, high, width moderate, present only in some volutions. </chomata><tunnel shape>Tunnels high, broad in outer volutions and moderate in inner volutions. Tunnel path regular. </tunnel shape><tunnel angle>Tunnel angle measures 34 degrees on average. </tunnel angle>
+
+Paraphrased text:
+<size>Shell medium, </size><shape>sub-ellipsoidal in shape, </shape><equator>inflated in the median region, </equator><lateral slopes>lateral slopes convex</lateral slopes><poles>right pole sharply pointed and left pole bluntly pointed. </poles><length>The axial length measures 5.47 mm, </length><width>and the sagittal width is 1.93 mm, </width><ratio>yielding a length to width ratio of 2.83. </ratio><number of volutions>Number of volutions 9.0. </number of volutions><coil tightness>The first 7 volutions are tightly coiled. </coil tightness><heights of volutions>Chamber heights above the tunnel in the first to ninth volutions are 0.115, 0.162, 0.222, 0.298, 0.393, 0.507, 0.642, 0.796, and 0.967 mm. </heights of volutions><proloculus>Proloculus small and spherical, with a diameter of 0.2 mm. </proloculus><axial filling>Axial filling well developed. </axial filling><septa>Septa are strongly fluted. </septa><chomata>Chomata massive and high, of moderate width, only present in certain volutions. </chomata><tunnel shape>Tunnels are high and broad in outer volutions, moderate in inner volutions. Tunnel path regular. </tunnel shape><tunnel angle>The average tunnel angle is 34 degrees. </tunnel angle>
+
+Original text:
 {text}
 
 Paraphrased text:
