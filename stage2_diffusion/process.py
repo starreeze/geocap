@@ -37,7 +37,7 @@ def redraw_basic_shapes(dif_pic: np.ndarray, shapes: list) -> np.ndarray:
     return np.minimum(redrawn, dif_pic)
 
 
-def generate_basic_mask(volution_memory: dict, filling: list, mode = None, debug=None) -> np.ndarray:
+def generate_basic_mask(volution_memory: dict, filling: list, mode=None, debug=None) -> np.ndarray:
     from bisect import bisect
 
     mask = plt.figure(figsize=(12.8, 12.8), dpi=100)
@@ -226,6 +226,7 @@ def separate_axial_filling(axial_filling: list) -> tuple:
             ext_af.append(af)
     return main_af, ext_af
 
+
 def generate_one_img(
     idx,
     sample,
@@ -246,7 +247,9 @@ def generate_one_img(
     best_ref_poles = best_ref
 
     main_af, ext_af = separate_axial_filling(sample["axial_filling"])
-    main_mask = generate_basic_mask(volution_memory, main_af, "axial_main", debug=f"{debug_folder}/DEBUG/{idx}")
+    main_mask = generate_basic_mask(
+        volution_memory, main_af, "axial_main", debug=f"{debug_folder}/DEBUG/{idx}"
+    )
     diffused_basic_img = diffuse(
         basic_img,
         main_mask,
@@ -256,7 +259,7 @@ def generate_one_img(
         mode="axial_main",
         debug=f"{debug_folder}/DEBUG/{idx}_pre",
     )
-    
+
     ext_mask = generate_basic_mask(volution_memory, ext_af, "axial_ext", debug=f"{debug_folder}/DEBUG/{idx}")
     diffused_basic_img_2 = diffuse(
         basic_img_copy,
@@ -270,13 +273,13 @@ def generate_one_img(
     ext_mask = cv2.cvtColor(ext_mask, cv2.COLOR_BGR2GRAY)
     ext_mask = ext_mask[..., np.newaxis]
     diffused_basic_img = np.where(ext_mask <= 128, diffused_basic_img_2, diffused_basic_img)
-    
+
     diffused_basic_img[basic_img_after[:, :, 3] > 0] = basic_img_after[basic_img_after[:, :, 3] > 0][:, :3]
 
     # diffused_basic_img = diffuse(basic_img, basic_mask, best_ref_poles, ref_path, num_refs, mode = 'axial',debug=None)
     # septa_overlayer = generate_septa(sample["septa_folds"])
     # diffused_basic_img = np.minimum(diffused_basic_img,septa_overlayer)
-    
+
     poles_mask = generate_basic_mask(
         volution_memory, sample["poles_folds"], "poles", debug=f"{debug_folder}/DEBUG/{idx}"
     )
@@ -291,8 +294,8 @@ def generate_one_img(
     )
     poles_mask = cv2.cvtColor(poles_mask, cv2.COLOR_BGR2GRAY)
     poles_mask = poles_mask[..., np.newaxis]
-    diffused_img = np.where(poles_mask <= 128 , diffused_img, diffused_basic_img)
-    
+    diffused_img = np.where(poles_mask <= 128, diffused_img, diffused_basic_img)
+
     diffused_img = redraw_basic_shapes(diffused_img, sample["shapes"])
     septa_overlayer, alpha_mask = generate_septa(sample["septa_folds"])
 

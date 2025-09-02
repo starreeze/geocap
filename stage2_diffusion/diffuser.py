@@ -1,59 +1,50 @@
 import os
 import random
 import sys
-
 import cv2
 import numpy as np
-from PIL import Image
 
 sys.path.append(".")
 sys.path.append("..")
 
 import torch
 import torch.nn.functional as F
-from safetensors.numpy import save_file, load_file
-from omegaconf import OmegaConf
-from transformers import AutoConfig
-import cv2
-from PIL import Image
-import numpy as np
-import json
-import os
+from dataset.data_utils import *
 
 #
 from diffusers import (
-    StableDiffusionPipeline,
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipelineLegacy,
-    StableDiffusionInpaintPipeline,
-    DDIMScheduler,
     AutoencoderKL,
+    DDIMScheduler,
+    DDPMScheduler,
+    DPMSolverMultistepScheduler,
+    StableDiffusionImg2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionInpaintPipelineLegacy,
+    StableDiffusionPipeline,
+    UNet2DConditionModel,
 )
-from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel, DDIMScheduler
-from diffusers import DDIMScheduler, DDPMScheduler, DPMSolverMultistepScheduler
 from diffusers.image_processor import VaeImageProcessor
+from mimicbrush import MimicBrush_RefNet
+from models.depth_guider import DepthGuider
 
 #
 from models.pipeline_mimicbrush import MimicBrushPipeline
 from models.ReferenceNet import ReferenceNet
-from models.depth_guider import DepthGuider
-from mimicbrush import MimicBrush_RefNet
-from dataset.data_utils import *
+from omegaconf import OmegaConf
+from PIL import Image
+from safetensors.numpy import load_file, save_file
+from transformers import AutoConfig
 
 val_configs = OmegaConf.load("./configs/inference.yaml")
 
 # === import Depth Anything ===
-import sys
-sys.path.append("../depthanything")
-sys.path.append("/home/nfs03/xingsy/MimicBrush/depthanything")
 
-from torchvision.transforms import Compose
+sys.path.append("../depthanything")
+#! the above doesn't work, see the version in the server!
+
+from depthanything.depth_anything.util.transform import NormalizeImage, PrepareForNet, Resize
 from depthanything.fast_import import depth_anything_model
-from depthanything.depth_anything.util.transform import (
-    Resize,
-    NormalizeImage,
-    PrepareForNet,
-)
+from torchvision.transforms import Compose
 
 transform = Compose(
     [
@@ -99,11 +90,7 @@ noise_scheduler = DDIMScheduler(
 
 vae = AutoencoderKL.from_pretrained(vae_model_path).to(dtype=torch.float16)
 unet = UNet2DConditionModel.from_pretrained(
-    base_model_path,
-    subfolder="unet",
-    in_channels=13,
-    low_cpu_mem_usage=False,
-    ignore_mismatched_sizes=True,
+    base_model_path, subfolder="unet", in_channels=13, low_cpu_mem_usage=False, ignore_mismatched_sizes=True
 ).to(dtype=torch.float16)
 
 pipe = MimicBrushPipeline.from_pretrained(
@@ -117,23 +104,16 @@ pipe = MimicBrushPipeline.from_pretrained(
 )
 
 depth_guider = DepthGuider()
-referencenet = ReferenceNet.from_pretrained(ref_model_path, subfolder="unet").to(
-    dtype=torch.float16
-)
+referencenet = ReferenceNet.from_pretrained(ref_model_path, subfolder="unet").to(dtype=torch.float16)
 mimicbrush_model = MimicBrush_RefNet(
-    pipe,
-    image_encoder_path,
-    mimicbrush_ckpt,
-    depth_anything_model,
-    depth_guider,
-    referencenet,
-    device,
+    pipe, image_encoder_path, mimicbrush_ckpt, depth_anything_model, depth_guider, referencenet, device
 )
 mask_processor = VaeImageProcessor(
     vae_scale_factor=1, do_normalize=False, do_binarize=True, do_convert_grayscale=True
 )
 print("\033[1;32mModules loaded, we are ready to go.\033[0m")
 # === Main ===
+
 
 def pad_img_to_square(original_image, is_mask=False):
     width, height = original_image.size
@@ -159,6 +139,7 @@ def pad_img_to_square(original_image, is_mask=False):
         new_image.paste(original_image, (0, padding))
     return new_image
 
+
 def collage_region(low, high, mask):
     mask = (np.array(mask) > 128).astype(np.uint8)
     low = np.array(low).astype(np.uint8)
@@ -180,6 +161,7 @@ def resize_image_keep_aspect_ratio(image, target_size=512):
         new_height = int(height * (target_size / width))
     resized_image = cv2.resize(image, (new_width, new_height))
     return resized_image
+
 
 def infer_single(
     ref_image,
@@ -205,9 +187,7 @@ def infer_single(
     target_image = pad_img_to_square(Image.fromarray(target_image))
     target_image_low = target_image
 
-    target_mask = (
-        np.stack([target_mask, target_mask, target_mask], -1).astype(np.uint8) * 255
-    )
+    target_mask = np.stack([target_mask, target_mask, target_mask], -1).astype(np.uint8) * 255
     target_mask_np = target_mask.copy()
     target_mask = Image.fromarray(target_mask)
     target_mask = pad_img_to_square(target_mask, True)
@@ -238,12 +218,8 @@ def infer_single(
         guidance_scale=guidance_scale,
     )
 
-    depth_pred = F.interpolate(
-        depth_pred, size=(512, 512), mode="bilinear", align_corners=True
-    )[0][0]
-    depth_pred = (
-        (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min()) * 255.0
-    )
+    depth_pred = F.interpolate(depth_pred, size=(512, 512), mode="bilinear", align_corners=True)[0][0]
+    depth_pred = (depth_pred - depth_pred.min()) / (depth_pred.max() - depth_pred.min()) * 255.0
     depth_pred = depth_pred.detach().cpu().numpy().astype(np.uint8)
     depth_pred = cv2.applyColorMap(depth_pred, cv2.COLORMAP_INFERNO)[:, :, ::-1]
 
@@ -251,17 +227,14 @@ def infer_single(
     pred = np.array(pred).astype(np.uint8)
     return pred, depth_pred.astype(np.uint8)
 
+
 def crop_padding_and_resize(ori_image, square_image):
     ori_height, ori_width, _ = ori_image.shape
     scale = max(ori_height / square_image.shape[0], ori_width / square_image.shape[1])
     resized_square_image = cv2.resize(
-        square_image,
-        (int(square_image.shape[1] * scale), int(square_image.shape[0] * scale)),
+        square_image, (int(square_image.shape[1] * scale), int(square_image.shape[0] * scale))
     )
-    padding_size = max(
-        resized_square_image.shape[0] - ori_height,
-        resized_square_image.shape[1] - ori_width,
-    )
+    padding_size = max(resized_square_image.shape[0] - ori_height, resized_square_image.shape[1] - ori_width)
     if ori_height < ori_width:
         top = padding_size // 2
         bottom = resized_square_image.shape[0] - (padding_size - top)
@@ -330,11 +303,11 @@ def diffuse(
     mask = np.where(mask > 128, 1, 0).astype(np.uint8)
     mask[:, 0] = 0
     mask[0, :] = 0
-    mask[mask.shape[0]-1, :] = 0
-    mask[:, mask.shape[0]-1] = 0
+    mask[mask.shape[0] - 1, :] = 0
+    mask[:, mask.shape[0] - 1] = 0
 
     if np.all(mask == 0):
-        return img.copy() # No need to diffuse
+        return img.copy()  # No need to diffuse
 
     if mode == "axial_main":
         ref_paths = [os.path.join(ref_path, f"ref_axial_{x:08}.png") for x in range(num_refs)]
@@ -368,13 +341,19 @@ def diffuse(
         # 使用INTER_CUBIC插值进行放大（保持高质量）
         ref_image = cv2.resize(ref_image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
         ref_image = processRefImage(ref_image)
-    
+
     if debug is not None:
         cv2.imwrite(f"{debug}_Image_{mode}.png", img)
         cv2.imwrite(f"{debug}_Reference_{mode}.png", ref_image)
 
     synthesis, depth_pred = infer_single(
-        ref_image.copy(), img.copy(), mask.copy(), num_inference_steps=60, guidance_scale=6, seed=0, enable_shape_control=True
+        ref_image.copy(),
+        img.copy(),
+        mask.copy(),
+        num_inference_steps=60,
+        guidance_scale=6,
+        seed=0,
+        enable_shape_control=True,
     )
 
     if debug is not None:
