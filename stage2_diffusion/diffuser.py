@@ -4,26 +4,16 @@ import sys
 
 import cv2
 import numpy as np
+from PIL import Image
 
 sys.path.append(".")
 sys.path.append("..")
 
 import torch
 import torch.nn.functional as F
-from dataset.data_utils import *
 
 #
-from diffusers import (
-    AutoencoderKL,
-    DDIMScheduler,
-    DDPMScheduler,
-    DPMSolverMultistepScheduler,
-    StableDiffusionImg2ImgPipeline,
-    StableDiffusionInpaintPipeline,
-    StableDiffusionInpaintPipelineLegacy,
-    StableDiffusionPipeline,
-    UNet2DConditionModel,
-)
+from diffusers import AutoencoderKL, DDIMScheduler, UNet2DConditionModel
 from diffusers.image_processor import VaeImageProcessor
 from mimicbrush import MimicBrush_RefNet
 from models.depth_guider import DepthGuider
@@ -32,16 +22,14 @@ from models.depth_guider import DepthGuider
 from models.pipeline_mimicbrush import MimicBrushPipeline
 from models.ReferenceNet import ReferenceNet
 from omegaconf import OmegaConf
-from PIL import Image
-from safetensors.numpy import load_file, save_file
-from transformers import AutoConfig
 
 val_configs = OmegaConf.load("./configs/inference.yaml")
 
 # === import Depth Anything ===
+import sys
 
 sys.path.append("../depthanything")
-#! the above doesn't work, see the version in the server!
+sys.path.append("/home/nfs03/xingsy/MimicBrush/depthanything")
 
 from depthanything.depth_anything.util.transform import NormalizeImage, PrepareForNet, Resize
 from depthanything.fast_import import depth_anything_model
@@ -189,7 +177,6 @@ def infer_single(
     target_image_low = target_image
 
     target_mask = np.stack([target_mask, target_mask, target_mask], -1).astype(np.uint8) * 255
-    target_mask_np = target_mask.copy()
     target_mask = Image.fromarray(target_mask)
     target_mask = pad_img_to_square(target_mask, True)
 
@@ -215,7 +202,7 @@ def infer_single(
         image=target_image,
         mask_image=mask_pt,
         strength=1,
-        prompt="Monochrome, fossil, ancient",
+        prompt="Monochrome, fossil, blacken",
         guidance_scale=guidance_scale,
     )
 
@@ -259,13 +246,8 @@ def processRefImage(ref_image):
     start_point = (center_x, 0)
     end_point = (center_x, height - 1)
 
-    # 定义线的颜色 (BGR格式)，默认为红色
     color = (255, 255, 255)
-
-    # 定义线的粗细，默认为1像素
     thickness = 50
-
-    # 在图像上绘制线
     image_with_line = cv2.line(ref_image, start_point, end_point, color, thickness)
 
     return image_with_line
@@ -313,6 +295,7 @@ def diffuse(
     if mode == "axial_main":
         ref_paths = [os.path.join(ref_path, f"ref_axial_{x:08}.png") for x in range(num_refs)]
         ref_image = get_random_ref_image(ref_paths)
+        # ref_image = cv2.imread("/home/nfs03/xingsy/MimicBrush/fos_data/reference_aug_14th/pure_black.png")
     elif mode == "axial_ext":
         ref_paths = [os.path.join(ref_path, f"ref_axial_ext_{x:08}.png") for x in range(num_refs)]
         ref_image = get_random_ref_image(ref_paths)
@@ -323,24 +306,28 @@ def diffuse(
         transparent_mask = ref_image[:, :, 3] == 0  # alpha通道为0的像素
         ref_image[transparent_mask] = [255, 255, 255, 255]  # 一次性设置RGBA
         ref_image = cv2.cvtColor(ref_image, cv2.COLOR_RGBA2RGB)
-        target_width = abs(best_ref_poles["bbox"][0][0] - best_ref_poles["bbox"][1][0])
-        target_height = abs(best_ref_poles["bbox"][0][1] - best_ref_poles["bbox"][1][1])
-        original_height, original_width = ref_image.shape[:2]
-        original_ratio = original_width / original_height
-        target_ratio = target_width / target_height
+    else:
+        raise ValueError("Invalid mode")
 
-        # 计算新尺寸
-        if original_ratio < target_ratio:
-            # 原始图像更"瘦高"，需要放大宽度
-            new_width = int(original_height * target_ratio)
-            new_height = original_height
-        else:
-            # 原始图像更"矮胖"，需要放大高度
-            new_width = original_width
-            new_height = int(original_width / target_ratio)
+    target_width = abs(best_ref_poles["bbox"][0][0] - best_ref_poles["bbox"][1][0])
+    target_height = abs(best_ref_poles["bbox"][0][1] - best_ref_poles["bbox"][1][1])
+    original_height, original_width = ref_image.shape[:2]
+    original_ratio = original_width / original_height
+    target_ratio = target_width / target_height
 
-        # 使用INTER_CUBIC插值进行放大（保持高质量）
-        ref_image = cv2.resize(ref_image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
+    # 计算新尺寸
+    if original_ratio < target_ratio:
+        # 原始图像更"瘦高"，需要放大宽度
+        new_width = int(original_height * target_ratio)
+        new_height = original_height
+    else:
+        # 原始图像更"矮胖"，需要放大高度
+        new_width = original_width
+        new_height = int(original_width / target_ratio)
+
+    # 使用INTER_CUBIC插值进行放大（保持高质量）
+    ref_image = cv2.resize(ref_image, (new_width, new_height), interpolation=cv2.INTER_CUBIC)
+    if mode == "poles":
         ref_image = processRefImage(ref_image)
 
     if debug is not None:
@@ -352,7 +339,7 @@ def diffuse(
         img.copy(),
         mask.copy(),
         num_inference_steps=60,
-        guidance_scale=6,
+        guidance_scale=5.75,
         seed=0,
         enable_shape_control=True,
     )

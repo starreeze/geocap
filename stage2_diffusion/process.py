@@ -45,6 +45,8 @@ def generate_basic_mask(volution_memory: dict, filling: list, mode=None, debug=N
     plt.subplots_adjust(0, 0, 1, 1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
+
+    epsilon_theta = 0.03
     # volution_memory structure:
     # -1 -> initial chamber, (x,y) as the middle point
     # other numbers -> volutions, (x, y, angle) as the points of the volutions, sorted by angle[0:2pi~6.28]
@@ -52,9 +54,13 @@ def generate_basic_mask(volution_memory: dict, filling: list, mode=None, debug=N
         start_angle = fill["start_angle"]
         if start_angle < 0:
             start_angle += 2 * np.pi
+        start_angle -= epsilon_theta
+
         end_angle = fill["end_angle"]
         if end_angle < 0:
             end_angle += 2 * np.pi
+        end_angle += epsilon_theta
+
         start_volution = volution_memory[fill["start_volution"]]  # shape: x,y,a
         end_volution = volution_memory[fill["end_volution"]]
         if start_angle < end_angle:
@@ -272,7 +278,14 @@ def generate_one_img(
     )
     ext_mask = cv2.cvtColor(ext_mask, cv2.COLOR_BGR2GRAY)
     ext_mask = ext_mask[..., np.newaxis]
-    diffused_basic_img = np.where(ext_mask <= 128, diffused_basic_img_2, diffused_basic_img)
+    diffused_basic_img = np.where(
+        (
+            cv2.cvtColor(diffused_basic_img, cv2.COLOR_BGR2GRAY)
+            < cv2.cvtColor(diffused_basic_img_2, cv2.COLOR_BGR2GRAY)
+        )[:, :, np.newaxis],
+        diffused_basic_img,
+        diffused_basic_img_2,
+    )
 
     diffused_basic_img[basic_img_after[:, :, 3] > 0] = basic_img_after[basic_img_after[:, :, 3] > 0][:, :3]
 
@@ -294,7 +307,14 @@ def generate_one_img(
     )
     poles_mask = cv2.cvtColor(poles_mask, cv2.COLOR_BGR2GRAY)
     poles_mask = poles_mask[..., np.newaxis]
-    diffused_img = np.where(poles_mask <= 128, diffused_img, diffused_basic_img)
+    diffused_img = np.where(
+        (
+            cv2.cvtColor(diffused_basic_img, cv2.COLOR_BGR2GRAY)
+            < cv2.cvtColor(diffused_img, cv2.COLOR_BGR2GRAY)
+        )[:, :, np.newaxis],
+        diffused_basic_img,
+        diffused_img,
+    )
 
     diffused_img = redraw_basic_shapes(diffused_img, sample["shapes"])
     septa_overlayer, alpha_mask = generate_septa(sample["septa_folds"])
@@ -303,11 +323,11 @@ def generate_one_img(
     blended_img = np.where(alpha_mask == 255, septa_overlayer, diffused_img)
 
     blended_img = cv2.cvtColor(blended_img, cv2.COLOR_BGRA2GRAY)
-    final_img = post_processing(blended_img)
+    # final_img = post_processing(blended_img)
     img_path = f"{keyword}/{img_path}"
     if not os.path.exists(f"{keyword}"):
         os.mkdir(f"{keyword}")
-    cv2.imwrite(img_path, final_img)
+    cv2.imwrite(img_path, blended_img)
 
 
 def main():
