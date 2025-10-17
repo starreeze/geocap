@@ -1,6 +1,8 @@
 import json
 import sys
 
+from tqdm import tqdm
+from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
 from common.args import caption_args, data_args, run_args
@@ -14,13 +16,14 @@ class Paraphraser:
             model=model_path, max_model_len=8192, tensor_parallel_size=2, gpu_memory_utilization=0.8
         )
         self.sampling_params = SamplingParams(temperature=0.7, max_tokens=1024, top_p=0.8, top_k=20)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         # Initialize prompt
         self.sys_prompt = "You are a helpful assistant skilled in text paraphrasing."
         with open(caption_args.paraphrase_prompt_dir, "r") as f:
             self.user_prompt = f.read()
 
-    def _generate_paraphrase_prompt(self, texts: list[str]) -> list[list[dict[str, str]]]:
+    def generate_messages(self, texts: list[str]) -> list[list[dict[str, str]]]:
         """Generate the prompt for paraphrasing"""
         user_prompts = [f"{self.user_prompt.replace('{text}', text)}" for text in texts]
         messages = [
@@ -29,10 +32,11 @@ class Paraphraser:
         ]
         return messages
 
-    def __call__(self, texts: list[str]) -> list[str]:
+    def __call__(self, data_batch: list[str]) -> list[str]:
         """Paraphrase a single text input"""
-        # messages = self._generate_paraphrase_prompt(texts)
-        outputs = self.model.generate(texts, self.sampling_params)
+        messages_list = self.generate_messages(data_batch)
+        text = self.tokenizer.apply_chat_template(messages_list, tokenize=False, add_generation_prompt=True)
+        outputs = self.model.generate(text, self.sampling_params)
         paraphrased_outputs = []
         for output in outputs:
             generated_text = output.outputs[0].text
@@ -60,18 +64,17 @@ def main():
 
     # Extract and paraphrase outputs
     original_outputs = [caption["output"] for caption in captions]
+    bs = caption_args.caption_batchsize
+    total_steps = len(captions) // bs
 
-    # Paraphrase captions
-    paraphrased_outputs = paraphraser(original_outputs)
-
-    # Replace original outputs with paraphrased ones
-    caption_pairs = list(zip(captions, paraphrased_outputs))
-    for caption, paraphrased_output in caption_pairs:
-        caption["output"] = paraphrased_output
-
-    with open(output_path, "w") as f:
-        for caption in captions:
-            f.write(json.dumps(caption) + "\n")
+    with open(output_path, "a") as f:
+        for i in tqdm(range(0, len(captions), bs), total=total_steps, desc="Paraphrasing", position=2):
+            data_batch = original_outputs[i : i + bs]
+            paraphrased_outputs = paraphraser(data_batch)
+            for caption, paraphrased_output in zip(captions, paraphrased_outputs):
+                caption["output"] = paraphrased_output
+                f.write(json.dumps(caption) + "\n")
+                f.flush()
 
 
 if __name__ == "__main__":
