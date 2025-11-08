@@ -241,6 +241,7 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
                 new_detail[feature]["rating"] = score
 
             # Calculate scores for tunnel shape
+            ### 已使用LLM评估，不使用
             elif feature == "tunnel_shape":
                 height_output, width_output = extract_tunnel_shape(
                     output["tunnel_shape"], default_value="none"

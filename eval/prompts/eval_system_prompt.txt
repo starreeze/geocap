@@ -69,15 +69,12 @@ Reference:increases with increasing radius
 - thickness_of_spircotheca
 Generated:5\u03bc to 30\u03bc
 Reference:8, 12, 16, 20, 33, 41, and 33 microns
-- endothyroid
-Generated:endothyroid coiling in the inner whorls not observed
-Reference:endothyroid coiling in the inner whorls not observed
 - septa
 Generated:slightly fluted near the poles, planar across central regions
 Reference:irregular but tend to be tightly fluted across the entire length of the test
-- tunnel_angles
-Generated:20 degrees
-Reference:20\u00b0 and 30\u00b0
+- tunnel_shape
+Generated:narrow tunnel
+Reference:regular with moderate width and height
 - chomata
 Generated:well-developed, prominent, extending to nearly half the height of the chambers in inner volutions
 Reference:high, narrow, steep-sided, slightly asymmetrical ridges which extend about half the distance to the tops of the chambers
@@ -96,9 +93,8 @@ Reference:light to moderately developed
   "coil_tightness": {"reason": "Generated describes the coil tightness as 'inner 4-5 volutions tightly involute and successive ones loosing gradually', while Reference describes the coil tightness as 'the initial 3 or 4 being more tightly coiled than subsequent ones'. The generated description is almost consistent with the reference description wiht slight difference in the number of volutions.", "rating": 9},
   "height_of_volution": {"reason": "Generated provides specific measurements (45, 68, 92, 125, 150, and 180 microns) while Reference states 'increases with increasing radius'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
   "thickness_of_spircotheca": {"reason": "Generated states 5 to 30 microns, which approximately falls within the Reference sequence of 8, 12, 16, 20, 33, 41, and 33 microns.", "rating": 8},
-  "endothyroid": {"reason": "Both Generated and Reference describe the endothyroid as 'endothyroid coiling in the inner whorls not observed', so they are perfectly aligned.", "rating": 10},
   "septa": {"reason": "Generated describes the septa as 'slightly fluted near the poles, planar across central regions', while Reference describes the septa as 'irregular but tend to be tightly fluted across the entire length of the test'. The generated description is partial match with the reference description.", "rating": 7},
-  "tunnel_angles": {"reason": "Generated states 20 degrees, which is close to the reference angles of 20\u00b0 and 30\u00b0.", "rating": 9},
+  "tunnel_shape": {"reason": "Generated describes the tunnel shape as 'narrow tunnel', while Reference describes the tunnel shape as 'regular with moderate width and height'. The generated description is not consistent with the reference description.", "rating": 3},
   "chomata": {"reason": "Reference describes the chomata as 'high, narrow, steep-sided, slightly asymmetrical ridges which extend about half the distance to the tops of the chambers', while Generated describes the chomata as 'well-developed, prominent, extending to nearly half the height of the chambers in inner volutions'. The height of chomata is consistent with the reference, but there are missing details in the Generated description.", "rating": 7},
   "axial_filling": {"reason": "Generated describes the axial filling as 'dense calcite fills chambers in polar regions', while Reference describes the axial filling as 'light to moderately developed'. The generated description is not consistent with the reference description. The descriptions differ significantly in characteristics and distribution.", "rating": 2}
 }
@@ -128,15 +124,12 @@ Reference:varies in thickness throughout any given volution
 - height_of_volution
 Generated:85, 85, 96, 116, 132, and 190 microns
 Reference:33, 49, 66, 114, 148, 197, and 213 microns
-- endothyroid
-Generated:endothyroid coiling in the inner whorls not observed
-Reference:first whorl endothyroid
 - septa
 Generated:pronounced but irregular fluting throughout
 Reference:closely spaced, with high and narrowly irregular fluting throughout the length of the shell
-- tunnel_angles
-Generated:25 degrees
-Reference:moderately large but increases at a relatively slow rate
+- tunnel_shape
+Generated:poorly defined, wanders in the equatorial plane
+Reference:indistinct and cannot be accurately defined in any of the growth stages of the species
 - chomata
 Generated:faint, restricted to proloculus
 Reference:indistinct
@@ -154,9 +147,8 @@ Reference:present, especially in the inner volutions, but it is irregular and do
   "poles": {"reason": "Generated describes the poles as 'somewhat sharply or narrowly rounded', while Reference describes the poles as 'sharply pointed'. The generated description is not consistent with the reference description.", "rating": 5},
   "height_of_volution": {"reason": "Generated provides specific measurements (85, 85, 96, 116, 132, and 190 microns) while Reference states '33, 49, 66, 114, 148, 197, and 213 microns'. Some of the generated sequence are close to the reference.", "rating": 6},
   "thickness_of_spircotheca": {"reason": "Generated provides specific measurements (7, 9, 13, 17, 16, and 8 microns) while Reference states 'varies in thickness throughout any given volution'. The generated sequence aligns with the reference pattern and provides more information.", "rating": 10},
-  "endothyroid": {"reason": "Generated describes the endothyroid as 'endothyroid coiling in the inner whorls not observed', while Reference describes the endothyroid as 'first whorl endothyroid'. The generated description is not consistent with the reference description.", "rating": 0},
   "septa": {"reason": "Generated describes the septa as 'pronounced but irregular fluting throughout', while Reference describes the septa as 'closely spaced, with high and narrowly irregular fluting throughout the length of the shell'. The Generated is approximately correct but some details are missing.", "rating": 8},
-  "tunnel_angles": {"reason": "Generated provides specific measurements (25 degrees) while Reference states 'moderately large but increases at a relatively slow rate'. The generated sequence is not consistent with the reference.", "rating": 3},
+  "tunnel_shape": {"reason": "Generated describes the tunnel shape as 'poorly defined, wanders in the equatorial plane', while Reference describes the tunnel shape as 'indistinct and cannot be accurately defined in any of the growth stages of the species'. The generated description is almost consistent with the reference description.", "rating": 9},
   "chomata": {"reason": "Reference describes the chomata as 'indistinct', while Generated describes the chomata as 'faint, restricted to proloculus'. These descriptions are consistent.", "rating": 10},
   "axial_filling": {"reason": "Generated describes the axial filling as 'present', while Reference describes the axial filling as 'present, especially in the inner volutions, but it is irregular and does not appear in all specimens'. The generated description partially matches the reference description.", "rating": 8}
 }
