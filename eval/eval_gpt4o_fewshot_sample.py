@@ -23,17 +23,21 @@ def sample_few_shot(training_set: list[dict], num_fewshot: int = 2) -> list[dict
 
 
 def main():
-    num_fewshot = 2
+    num_fewshot = 8
+    model_id = "gemini-2.5-pro-preview-06-05"
+    # model_id = "gpt-4o-2024-11-20"
+    # model_id = "qwen3-vl-plus"
+    model_name = "".join(model_id.split("-")[:2])
     sys_prompt = "You are a helpful assistant. You will be provided with a fossil picture input and you should depict this picture. The user will provide you with the pixel information of the image and its actual length and width. You need to infer the real data and description based on the image and the user's input. Do not use sub-titles and lists to devide the output; instead, merge the paragraph into a whole. You do not need a conclusion, and you should try to mimic the given examples. You need to complete the output of 'Your turn' based on the examples."
 
     with open("dataset/stage3/no_vis/train.jsonl", "r") as f:
         training_set = [json.loads(line) for line in f]
 
-    generator = APIGenerator("gpt-4o-2024-11-20", max_tokens=2048, sys_prompt=sys_prompt, temperature=1.0)
+    generator = APIGenerator(model_id, max_tokens=8196, sys_prompt=sys_prompt, temperature=1.0)
 
     with open("dataset/stage3/no_vis/test.jsonl", "r") as f:
         with jsonlines.open(
-            f"eval_data/outputs/gpt4o_{num_fewshot}shot_sample.jsonl", mode="a", flush=True
+            f"eval_data/outputs/{model_name}_{num_fewshot}shot_sample.jsonl", mode="a", flush=True
         ) as writer:
             lines = list(f)
             pbar = tqdm(lines, desc="Generating responses")
@@ -51,7 +55,7 @@ def main():
                             user_prompt.append(("image", f"dataset/common/images/{value}"))
 
                 inputs = user_prompt + [
-                    ("text", f"Your turn:\n{data['input']}"),
+                    ("text", f"User: {data['input']}"),
                     ("image", f"dataset/common/images/{data['image']}"),
                     ("text", "Assistant:"),
                 ]

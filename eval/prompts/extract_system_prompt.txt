@@ -16,7 +16,6 @@ You are provided with a description of a fossil image. You need to extract speci
 - coil_tightness
 - height_of_volution
 - thickness_of_spirotheca
-- endothyroid
 - septa
 - proloculus
 - tunnel_angles
@@ -70,7 +69,6 @@ Test large, rhomboid in outline, concave in middle on one side and convex on ano
     "coil_tightness": "inner 4-5 volutions tightly involute and successive ones loosing gradually"
     "height_of_volution": "",
     "thickness_of_spirotheca": "very thin in tightly coiled inner volutions, about 0.008-0.01 mm thick; thickening outwards",
-    "endothyroid": "endothyroid coiling in the inner whorls not observed",
     "septa": "plane and straight in the inner volutions, and completely fluted in the outer volutions; flutings broadly rounded in general, sometimes reaching the top of the chambers in height",
     "proloculus": "circular",
     "tunnel_shape": "low, moderately wide",
@@ -101,7 +99,6 @@ Test large, rhomboid in outline, concave in middle on one side and convex on ano
     "coil_tightness": "the initial 3 or 4 being more tightly coiled than subsequent ones",
     "height_of_volution": "137, 124, 198, and 237 microns",
     "thickness_of_spirotheca": "16, 16, 23, and 16 microns",
-    "endothyroid": "Endothyroid coiling in the inner whorls not observed",
     "septa": "weakly fluted in inner whorls, becoming prominently folded in outer whorls",
     "proloculus": "small, external diameter 140 microns",
     "tunnel_shape": "low and relatively narrow",

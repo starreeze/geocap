@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--reference_path",
         type=str,
-        default="dataset/stage3/no_vis/add_default_value.jsonl",
+        default="dataset/stage3/no_vis/new_testset.jsonl",
         help="Path to the reference file",
     )
     args = parser.parse_args()
@@ -42,7 +42,7 @@ if __name__ == "__main__":
             print(f"Warning: No reference found for image {img_name}")
 
     # Save the evaluation data to a JSON file
-    output_file_name = generated_path.split("\\")[-1].replace(".jsonl", ".json")
+    output_file_name = generated_path.split("/")[-1].replace(".jsonl", ".json")
     origin_file_path = f"eval_data/origin_files/{output_file_name}"
     with open(origin_file_path, "w") as f:
         json.dump(eval_data, f, indent=2)

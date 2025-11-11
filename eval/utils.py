@@ -14,7 +14,7 @@ characteristics = [
     "coil_tightness",
     "height_of_volution",
     "thickness_of_spirotheca",
-    "endothyroid",
+    # "endothyroid",
     "septa",
     "proloculus",
     "tunnel_shape",
@@ -29,7 +29,7 @@ rule_based_eval_features = [
     "axis_shape",
     "number_of_volutions",
     "proloculus",
-    "tunnel_shape",
+    # "tunnel_shape",
     "tunnel_angles",
 ]
 
