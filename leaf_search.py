@@ -517,7 +517,12 @@ class LeafVeinDetector:
         参数:
         output_path: 输出图像路径
         """
-        if self.image is None or self.binary_mask is None or self.main_vein_path is None or self.branches is None:
+        if (
+            self.image is None
+            or self.binary_mask is None
+            or self.main_vein_path is None
+            or self.branches is None
+        ):
             print("错误: 检测结果不完整，无法可视化")
             return
 
