@@ -887,20 +887,20 @@ class Chomata(BaseFeature):
         develop_draft = self.standardRangeFilter(
             chomata_development_classes, len(self.chomata_shapes) / self.volution_num
         )
-        if self.size_all == "massive":
-            return develop_draft
-        elif self.size_all == "moderate":
-            if develop_draft == "well developed":
-                return "normally developed"
-            else:
-                return develop_draft
-        elif (self.size_all == "small") or (self.size_all == "absent"):
-            if (develop_draft == "well developed") or (develop_draft == "present only in some volutions"):
-                return "weakly developed"
-            else:
-                return develop_draft
-        else:
-            return develop_draft
+        # if self.size_all == "massive":
+        #     return develop_draft
+        # elif self.size_all == "moderate":
+        #     if develop_draft == "well developed":
+        #         return "normally developed"
+        #     else:
+        #         return develop_draft
+        # elif (self.size_all == "small") or (self.size_all == "absent"):
+        #     if (develop_draft == "well developed") or (develop_draft == "present only in some volutions"):
+        #         return "weakly developed"
+        #     else:
+        #         return develop_draft
+        # else:
+        return develop_draft
 
     def genUserInput(self):
         txt = "Chomata {block}. ".format(

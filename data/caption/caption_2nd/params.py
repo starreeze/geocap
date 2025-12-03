@@ -56,23 +56,20 @@ tunnel_shape_regular_priority = {"regular": 0, "irregular": 1}
 
 chomata_size_classes = {
     "absent": [0, 0.0001],
-    "small": [0.0001, 0.03],
-    "moderate": [0.03, 0.05],
-    "massive": [0.05, 9999],
+    "small": [0.0001, 0.054],
+    "massive": [0.054, 9999],
 }
 
 chomata_height_classes = {
     "absent": [0, 0.0001],
-    "low": [0.0001, 0.4],
-    "moderate": [0.4, 0.6],
+    "low": [0.0001, 0.6],
     "high": [0.6, 999],
 }
 
 chomata_width_classes = {
     "absent": [0, 0.0001],
-    "narrow": [0.0001, 0.1],
-    "moderate": [0.1, 0.2],
-    "broad": [0.2, 999],
+    "narrow": [0.0001, 0.09],
+    "broad": [0.09, 999],
 }
 
 chomata_development_classes = {
