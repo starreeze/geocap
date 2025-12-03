@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from sklearn.decomposition import PCA
 
 from common.args import feat_recog_args
 
@@ -222,3 +223,185 @@ def get_circle_points(center: tuple, radius: int, angle_range: list[int]) -> lis
     points_with_unique_x.sort(key=lambda x: x[0])
 
     return points_with_unique_x
+
+
+def simple_smooth(data, window_size=3):
+    if len(data) < window_size:
+        return data
+
+    smoothed = np.zeros_like(data)
+    half_window = window_size // 2
+
+    for i in range(len(data)):
+        start = max(0, i - half_window)
+        end = min(len(data), i + half_window + 1)
+        smoothed[i] = np.mean(data[start:end])
+
+    return smoothed
+
+
+def classify_ellipsoidal_vs_fusiform(contour):
+    """
+    Determine if the contour is more ellipsoidal or fusiform
+
+    Args:
+        contour: OpenCV contour, format: [[x, y], [x, y], ...]
+
+    Returns:
+        str: "ellipsoidal" 或 "fusiform"
+    """
+    # 将轮廓点转换为numpy数组
+    points = contour.reshape(-1, 2).astype(np.float32)
+
+    # 使用PCA找到主轴方向
+    pca = PCA(n_components=2)
+    pca.fit(points)
+
+    # 获取主轴方向向量
+    major_axis = pca.components_[0]
+
+    # 将点投影到主轴上
+    center = np.mean(points, axis=0)
+    centered_points = points - center
+    projections = np.dot(centered_points, major_axis)
+
+    # 计算轮廓的长轴长度
+    major_length = np.max(projections) - np.min(projections)
+
+    # 沿主轴方向均匀取样，分析轮廓宽度变化
+    num_samples = 25
+    sample_positions = np.linspace(np.min(projections), np.max(projections), num_samples)
+    widths = []
+
+    for pos in sample_positions:
+        # 找到投影位置附近的点
+        tolerance = major_length * 0.04  # 4%的容差
+        nearby_indices = np.where(np.abs(projections - pos) <= tolerance)[0]
+
+        if len(nearby_indices) > 0:
+            nearby_points = points[nearby_indices]
+            # 计算这些点到主轴的距离
+            distances_to_axis = []
+            for point in nearby_points:
+                # 计算点到主轴的距离
+                point_centered = point - center
+                proj_on_axis = np.dot(point_centered, major_axis) * major_axis
+                distance = np.linalg.norm(point_centered - proj_on_axis)
+                distances_to_axis.append(distance)
+
+            # 取最大距离作为该位置的宽度
+            widths.append(max(distances_to_axis) * 2)
+        else:
+            # 使用插值填充缺失值
+            if len(widths) > 0:
+                widths.append(widths[-1])
+            else:
+                widths.append(0)
+
+    # 分析宽度变化模式
+    widths = np.array(widths)
+    valid_widths = widths[widths > 0]
+
+    if len(valid_widths) < 5:
+        return "ellipsoidal"  # 数据不足时默认为椭圆
+
+    widths = valid_widths
+
+    # 对宽度进行平滑处理
+    smoothed_widths = simple_smooth(widths, window_size=3)
+
+    # 1. 分析端部与中部的宽度关系
+    # 取两端各20%和中间30%的区域
+    end_samples = max(2, len(widths) // 5)  # 20%
+    mid_samples = max(3, len(widths) // 3)  # 30%
+
+    # 两端宽度
+    left_end = np.mean(smoothed_widths[:end_samples])
+    right_end = np.mean(smoothed_widths[-end_samples:])
+    avg_end_width = (left_end + right_end) / 2
+
+    # 中部宽度
+    mid_start = len(smoothed_widths) // 2 - mid_samples // 2
+    mid_end = len(smoothed_widths) // 2 + mid_samples // 2
+    mid_width = np.mean(smoothed_widths[mid_start:mid_end])
+
+    # 端中比
+    end_to_mid_ratio = avg_end_width / mid_width if mid_width > 0 else 1.0
+
+    # 2. 分析形状的对称性和单调性
+    # 检查从端部到中部是否呈现单调增长模式
+    left_half = smoothed_widths[: len(smoothed_widths) // 2]
+    right_half = smoothed_widths[len(smoothed_widths) // 2 :][::-1]  # 反转右半部分
+
+    # 计算左半部分的单调性（应该递增）
+    left_increases = np.sum(np.diff(left_half) > 0)
+    left_total = len(np.diff(left_half))
+    left_monotonic = left_increases / left_total if left_total > 0 else 0
+
+    # 计算右半部分的单调性（反转后应该递增）
+    right_increases = np.sum(np.diff(right_half) > 0)
+    right_total = len(np.diff(right_half))
+    right_monotonic = right_increases / right_total if right_total > 0 else 0
+
+    # 总体单调性
+    overall_monotonicity = (left_monotonic + right_monotonic) / 2
+
+    # 3. 分析宽度变化的平滑程度
+    width_changes = np.diff(smoothed_widths)
+    smoothness = 1 - (np.std(width_changes) / np.mean(smoothed_widths)) if np.mean(smoothed_widths) > 0 else 0
+    smoothness = max(0, min(1, smoothness))  # 限制在[0,1]范围内
+
+    # 4. 计算椭圆拟合误差
+    # 椭圆应该更符合标准椭圆的宽度分布
+    # 生成理想椭圆的宽度分布用于比较
+    t = np.linspace(-1, 1, len(smoothed_widths))
+    ideal_ellipse_widths = np.sqrt(1 - t**2) * np.max(smoothed_widths)
+
+    # 归一化到相同的最大值
+    normalized_widths = smoothed_widths / np.max(smoothed_widths)
+    normalized_ideal = ideal_ellipse_widths / np.max(ideal_ellipse_widths)
+    ellipse_error = np.mean(np.abs(normalized_widths - normalized_ideal))
+
+    # 5. 综合评分
+    fusiform_score = 0
+    ellipsoidal_score = 0
+
+    # 端中比评分 - 纺锤形端部应该明显更窄
+    if end_to_mid_ratio < 0.3:
+        fusiform_score += 4
+    elif end_to_mid_ratio < 0.5:
+        fusiform_score += 3
+    elif end_to_mid_ratio < 0.7:
+        fusiform_score += 1
+    elif end_to_mid_ratio > 0.85:
+        ellipsoidal_score += 2
+
+    # 椭圆拟合误差评分 - 椭圆应该更符合标准椭圆（优先级高）
+    if ellipse_error < 0.05:
+        ellipsoidal_score += 4
+    elif ellipse_error < 0.1:
+        ellipsoidal_score += 3
+    elif ellipse_error < 0.15:
+        ellipsoidal_score += 1
+    elif ellipse_error > 0.25:
+        fusiform_score += 2
+
+    # 单调性评分 - 纺锤形应该有很好的单调性，但椭圆也可能有
+    if overall_monotonicity > 0.9 and end_to_mid_ratio < 0.6:
+        fusiform_score += 2
+    elif overall_monotonicity > 0.8 and end_to_mid_ratio < 0.5:
+        fusiform_score += 1
+    elif overall_monotonicity < 0.6:
+        ellipsoidal_score += 1
+
+    # 平滑度评分 - 纺锤形变化应该更平滑
+    if smoothness > 0.9:
+        fusiform_score += 1
+    elif smoothness < 0.5:
+        ellipsoidal_score += 1
+
+    # 最终判断
+    if fusiform_score > ellipsoidal_score:
+        return "fusiform"
+    else:
+        return "ellipsoidal"

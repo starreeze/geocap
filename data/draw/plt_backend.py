@@ -30,7 +30,7 @@ class Figure:
         gradient: bool = False,
     ) -> None:
         self.rules: list = rules["shapes"]
-        self.random_seed = random_seed if random_seed != None else random.randint(0, 2000000)
+        self.random_seed = random_seed if random_seed is not None else random.randint(0, 2000000)
         self.randomize = randomize
         self.line_weight = line_weight
         self.image = plt.figure(figsize=size, dpi=dpi)
@@ -71,12 +71,12 @@ class Figure:
             # print(f"{index+1}/{len(self.rules)}: Handling {rule['type']}")
             if self.xkcd:
                 with plt.xkcd():
-                    self.__handle(rule, randomize=self.randomize, color=color)
+                    self.__handle(rule, color=color)
             else:
-                self.__handle(rule, randomize=self.randomize, color=color)
+                self.__handle(rule, color=color)
         # print("All rules adapted.")
         if self.randomize:
-            n_white_line = int(random.gauss(10, 1)) if n_white_line == None else n_white_line
+            n_white_line = int(random.gauss(10, 1)) if n_white_line is None else n_white_line
             self.__add_white_line(n_white_line, white_line_radius)
         self.ax.axis("off")
         # Go to PIL. PIL works better here!
@@ -234,46 +234,67 @@ class Figure:
                 x2, y2 = (x1 + max_radius * np.cos(angle), y1 + max_radius * np.sin(angle))
                 self.ax.plot((x1, x2), (y1, y2), color="white", linewidth=draw_args.white_line_width)
 
-    def __handle(self, rule: "dict[str, Any]", randomize: bool, color: Any = None):
-        assert (color == None) or (
+    def __get_essential_info(self, shape, width, color, trans):
+        w = self.__get_width(shape, width)
+        c = self.__get_color(shape, color)
+        c = np.clip(c, 0, 1)
+        t = self.__get_transparency(shape, trans)
+        return w, c, t
+
+    def __get_width(self, shape, width: float):
+        try:
+            return shape["width"]
+        except Exception:
+            return 1.8 if width is None else width
+
+    def __get_color(self, shape, color):
+        try:
+            return shape["color"]
+        except Exception:
+            try:
+                if shape["fill_mode"] == "border":
+                    return (0, 0, 0, 1)
+                else:
+                    return (1, 1, 1, 1)
+            except Exception:
+                return (random.random(), random.random(), random.random()) if color is None else color
+
+    def __get_transparency(self, shape, trans):
+        try:
+            if shape["fill_mode"] == "no":
+                return (0, 0, 0, 0)
+            elif shape["fill_mode"] == "white":
+                return (1, 1, 1, 1)
+            elif shape["fill_mode"] == "black":
+                return (0, 0, 0, 1)
+            elif shape["fill_mode"] == "border":
+                return (0, 0, 0, 0)
+            else:
+                raise Exception("Invalid fill_mode arg")
+        except Exception:
+            return trans if trans is not None else (0, 0, 0, 0)
+
+    def __handle(self, rule: "dict[str, Any]", color: Any = None, width: Any = None, trans: Any = None):
+        assert (color is None) or (
             isinstance(color, list) and len(color) == 3
         ), f"Argument 'color' should be None or a 3-dimension tuple instead of {color}"
-        line_width = (
-            self.line_weight + random.randint(-self.line_weight // 2, self.line_weight // 2)
-            if randomize
-            else self.line_weight
-        )
-        if randomize:
-            self.randomized_line_width = line_width
+        shape = rule["type"]
+        width, color, trans = self.__get_essential_info(shape, width, color, trans)
         match rule["type"]:
             case "polygon":
                 points: list = rule["points"]
                 assert len(points) >= 3, "There should be more than 3 points within a polygon."
-                if rule["fill_mode"] == "no":
-                    trans = (0, 0, 0, 0)
-                elif rule["fill_mode"] == "white":
-                    trans = (1, 1, 1, 1)
-                elif rule["fill_mode"] == "black":
-                    trans = (0, 0, 0, 1)
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_polygon(points, line_width, color, trans)
+                self.__handle_polygon(points, width, color, trans)
 
             case "line":
                 points: list = rule["points"]
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
                 self.__handle_line(
                     (
                         (leftwise_endpoint[0], leftwise_endpoint[1]),
                         (rightwise_endpoint[0], rightwise_endpoint[1]),
                     ),
-                    line_width,
+                    width,
                     color,
                 )
 
@@ -282,38 +303,18 @@ class Figure:
                 leftwise_endpoint, rightwise_endpoint = self.__line_extend(points)
 
                 farwise = leftwise_endpoint if points[0][0] > points[1][0] else rightwise_endpoint
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_line(
-                    ((points[0][0], points[0][1]), (farwise[0], farwise[1])), line_width, color
-                )
+                self.__handle_line(((points[0][0], points[0][1]), (farwise[0], farwise[1])), width, color)
 
             case "segment":
                 points: list = rule["points"]
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_line(points, line_width, color)
+                self.__handle_line(points, width, color)
 
             case "ellipse":
                 ellipse_x, ellipse_y = rule["center"]
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
                 alpha = rule["rotation"] * 180 / np.pi
-                if rule["fill_mode"] == "no":
-                    trans = (0, 0, 0, 0)
-                elif rule["fill_mode"] == "white":
-                    trans = (1, 1, 1, 1)
-                elif rule["fill_mode"] == "black":
-                    trans = (0, 0, 0, 1)
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, line_width, color, trans)
+                self.__handle_ellipse(ellipse_x, ellipse_y, major, minor, alpha, width, color, trans)
 
             case "spiral":
                 # r = a + b\theta
@@ -325,22 +326,14 @@ class Figure:
                 max_theta: float = rule["max_theta"]
                 # clockwise: int = 1
                 spiral_x, spiral_y = rule["center"]
-                sin_params = rule["sin_params"]
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, line_width, color)
+
+                self.__handle_spiral(spiral_x, spiral_y, a, b, max_theta, width, color)
 
             case "spindle":
                 center_x, center_y = rule["center"]
                 major = rule["major_axis"]
                 minor = rule["minor_axis"]
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-                self.__handle_spindle(center_x, center_y, major, minor, line_width, color)
+                self.__handle_spindle(center_x, center_y, major, minor, width, color)
 
             case "fusiform_1":
                 x_offset = rule["x_offset"]
@@ -350,19 +343,8 @@ class Figure:
                 x_start = rule["x_start"]
                 x_end = rule["x_end"]
                 y_sim = rule["y_symmetric_axis"]
-
-                if rule["fill_mode"] == "no":
-                    trans = (0, 0, 0, 0)
-                elif rule["fill_mode"] == "white":
-                    trans = (1, 1, 1, 1)
-                elif rule["fill_mode"] == "black":
-                    trans = (0, 0, 0, 1)
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
                 self.__handle_fusiform_1(
-                    fc, x_offset, y_offset, eps, ome, phi, x_start, x_end, y_sim, color, trans, line_width
+                    fc, x_offset, y_offset, eps, ome, phi, x_start, x_end, y_sim, color, trans, width
                 )
 
             case "fusiform_2":
@@ -374,50 +356,82 @@ class Figure:
                 x_start = rule["x_start"]
                 x_end = rule["x_end"]
 
-                if rule["fill_mode"] == "no":
-                    trans = (0, 0, 0, 0)
-                elif rule["fill_mode"] == "white":
-                    trans = (1, 1, 1, 1)
-                elif rule["fill_mode"] == "black":
-                    trans = (0, 0, 0, 1)
-
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass
-
                 self.__handle_fusiform_2(
-                    fc, x_offset, y_offset, power, eps, ome, phi, x_start, x_end, color, trans, line_width
+                    fc, x_offset, y_offset, power, eps, ome, phi, x_start, x_end, color, trans, width
                 )
 
             case "curves":
                 curves = rule["control_points"]
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass  # keep the original data
                 for curve in curves:
-                    self.__handle_curve(curve, line_width)
+                    self.__handle_curve(curve, width, color)
 
             case "curve":
                 curve = rule["control_points"]
-                try:
-                    line_width = rule["width"]
-                except:
-                    pass  # keep the original data
-                self.__handle_curve(curve, line_width)
+
+                self.__handle_curve(curve, width, color)
+
+            case "sector":
+                center = rule["center"]
+                radius = rule["radius"]
+                start_angle = rule["start_angle"]
+                end_angle = rule["end_angle"]
+                self.__handle_sector(center, radius, start_angle, end_angle, color, trans, width)
+
+            case "star":
+                center = rule["center"]
+                outer_radius = rule["outer_radius"]
+                inner_radius = rule["inner_radius"]
+                num_points = rule["num_points"]
+                rotation = rule["rotation"]
+                self.__handle_star(
+                    center, outer_radius, inner_radius, num_points, rotation, color, trans, width
+                )
 
             case _:
                 raise ValueError(f"{rule['type']} is not any valid rule.")
 
     # It's very likely that 'patch' should be truncated and use plot instead to complete the change of width
+    def __handle_sector(
+        self,
+        center,
+        radius,
+        start_angle,
+        end_angle,
+        color: Any,
+        transparency: Any = None,
+        line_width: int = 1,
+    ):
+        self.ax.add_patch(
+            pch.Wedge(
+                center,
+                radius,
+                start_angle * 180 / np.pi,
+                end_angle * 180 / np.pi,
+                edgecolor=color,
+                facecolor=transparency,
+                linewidth=line_width * (self.shape[0] / 640),
+            )
+        )
+
+    def __handle_star(self, center, outer_radius, inner_radius, num_points, rotation, color, trans, width):
+        angle_step = 2 * np.pi / num_points
+
+        outer_angles = [rotation + i * angle_step for i in range(num_points)]
+        inner_angles = [angle + angle_step / 2 for angle in outer_angles]
+
+        vertices = []
+        for i in range(num_points):
+            x_outer = center[0] + outer_radius * np.cos(outer_angles[i])
+            y_outer = center[1] + outer_radius * np.sin(outer_angles[i])
+            vertices.append((x_outer, y_outer))
+
+            x_inner = center[0] + inner_radius * np.cos(inner_angles[i])
+            y_inner = center[1] + inner_radius * np.sin(inner_angles[i])
+            vertices.append((x_inner, y_inner))
+        star = pch.Polygon(vertices, closed=True, edgecolor=color, facecolor=trans, linewidth=width)
+        self.ax.add_patch(star)
 
     def __handle_line(self, points, line_width: int, color: Any):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
         if self.xkcd:
             self.ax.plot(
                 (points[0][0], points[1][0]),
@@ -455,11 +469,6 @@ class Figure:
         color: Any,
         transparency: tuple = (0, 0, 0, 0),
     ):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
         if major < minor:
             raise ValueError("The major axis is smaller than the minor axis, which is incorrect.")
 
@@ -495,11 +504,6 @@ class Figure:
         )
 
     def __handle_polygon(self, points: list, line_width: int, color: Any, trans: tuple = (0, 0, 0, 0)):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
         self.ax.add_patch(
             pch.Polygon(
                 points,
@@ -520,11 +524,6 @@ class Figure:
         line_width: int,
         color: Any,
     ):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
         theta = np.arange(0, max_theta, 0.01)
         x = (a + b * theta) * np.cos(theta)
         y = (a + b * theta) * np.sin(theta)
@@ -541,11 +540,6 @@ class Figure:
         line_width: int,
         color: Any,
     ):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
         theta = np.arange(0, 2 * 3.1416, 0.01)
         a = major_axis / 2
         b = minor_axis / 2
@@ -596,11 +590,6 @@ class Figure:
         trans,
         line_width,
     ):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
 
         def f(x):
             return 4 * focal_length * (x - x_offset) ** 2 + y_offset + eps * np.sin(omega * x + phi)
@@ -631,11 +620,6 @@ class Figure:
         trans,
         line_width,
     ):
-        color = (
-            (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
-            if color == None
-            else color
-        )
 
         x = np.linspace(x_start, x_end, 1000)
         x_left = x[:500]
@@ -659,8 +643,7 @@ class Figure:
         # """
         self.ax.plot(x, y1, x, y2, linewidth=line_width * (self.shape[0] / 640), color=color)
 
-    def __handle_curve(self, control_points, width: int = 5):
-        color = (random.random() / 2 + 0.5, random.random() / 2 + 0.5, random.random() / 2 + 0.5)
+    def __handle_curve(self, control_points, width: int = 5, color: tuple = (0, 0, 0, 0)):
         curve_points = []
         t_values = np.linspace(0, 1, 100)
         for t in t_values:

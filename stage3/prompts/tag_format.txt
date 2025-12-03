@@ -1,0 +1,59 @@
+# Task:
+You are provided with a description of a fossil image. You need to categorize and rearrange the description into different features.
+
+# Requirements:
+1. All possible features are as follows:
+    - size
+    - shape
+    - equator
+    - lateral slopes
+    - poles
+    - length
+    - width
+    - ratio
+    - number of volutions
+    - coil tightness
+    - heights of volutions
+    - endothyroid
+    - proloculus
+    - axis
+    - axial filling
+    - spirotheca
+    - septa
+    - chomata
+    - tunnel shape
+    - tunnel angle
+2. Group together the descriptions of the same feature
+3. Wrap the descriptions of a specific feature with <feature> and </feature> tags
+4. If a sentence does not contain any feature above, wrap the sentence with <others> and </others> tags. Make sure all sentences are wrapped with tags.
+5. Note that 'secondary deposits' is not belong to axial filling and should be wrapped with <others> tags
+
+# Examples:
+## Description:
+Shell large, elongate fusiform, with strongly curved axis of coiling and bluntly pointed poles; mature specimens have about 4.5 volutions, and measure 12.067 mm. in length and 3.828 mm. in diameter; first few whorls tightly coiled with sharply pointed poles, after which coiling becomes looser; height of volutions in the first to fifth volutions averages 288, 277, 492, 316 microns; form ratio 3.152.  \nSpirotheca thin in early volutions, and thickening rather abruptly at later ones; thickness of spirotheca of the first to fifth volutions averages 39, 37, 37, 56, 64 microns. Septa nearly plane in tightly coiled early volutions, becoming strongly fluted in more loosely coiled ones; septa folds high, commonly reaching tops of chambers.  \nProloculus moderate in size, its outside diameter 140 \u03bc. Tunnel moderately wide. Low, narrow chomata present except in outermost whorls.
+
+## Processed description:
+<size>Shell large,</size> <shape>elongate fusiform</shape> <poles>with bluntly pointed poles</poles> <axis>Axis of coiling strongly curved;</axis> <length>mature specimens measure 12.067 mm. in length</length> <width>and 3.828 mm. in diameter,</width> <ratio>form ratio 3.152;</ratio> <number of volutions>mature specimens have about 4.5 volutions,</number of volutions> <heights of volutions>first few whorls tightly coiled with sharply pointed poles, after which coiling becomes looser; height of volutions in the first to fifth volutions averages 288, 277, 492, 316 microns;</heights of volutions> <spirotheca>Spirotheca thin in early volutions, and thickening rather abruptly at later ones; thickness of spirotheca of the first to fifth volutions averages 39, 37, 37, 56, 64 microns.</spirotheca> <septa>Septa nearly plane in tightly coiled early volutions, becoming strongly fluted in more loosely coiled ones; septa folds high, commonly reaching tops of chambers.\n</septa> <proloculus>Proloculus moderate in size, its outside diameter 140 \u03bc.</proloculus> <tunnel shape>Tunnel moderately wide.</tunnel shape> <chomata>Low, narrow chomata present except in outermost whorls.</chomata>
+
+## Description:
+Shell of moderate size, fusiform in shape, featuring an inflated equatorial region, concave lateral slopes, and elongated, acutely pointed poles. Mature specimens consist of 7 whorls, with the initial 3.5 to 4 tightly coiled and subsequent volutions more loosely arranged. Dimensions average 7.205 mm in length and 2.585 mm in diameter. Whorl heights for the first to seventh volutions measure approximately 44, 268, 128, 121, 228, 276, and 326 microns. Form ratio 2.787.  \n\nSpirotheca thickness across the first to seventh volutions averages 41, 46, 21, 38, 70, 50, and 58 microns. Septa nearly flat in tightly coiled whorls but develop pronounced fluting from pole to pole in outer volutions. Septal folds in outer whorls elevated, often extending to chamber tops. Narrow axial band of secondary material present.  \n\nProloculus minute, with an external diameter of 140 \u03bc. Tunnel low and relatively narrow, with a tunnel angle of 34 degrees. Faint chomata observed exclusively in the first 3 to 4 volutions.
+
+## Processed description:
+<size>Shell of moderate size,</size> <shape>fusiform in shape,</shape> <equator>featuring an inflated equatorial region,</equator> <lateral slopes>>concave lateral slopes,</lateral slopes> <poles>and elongated, acutely pointed poles.</poles> <number of volutions>Mature specimens consist of 7 whorls,</number of volutions> <coil tightness>with the initial 3.5 to 4 tightly coiled and subsequent volutions more loosely arranged.</coil tightness> <length>Dimensions average 7.205 mm in length</length> <width>and 2.585 mm in diameter.</width> <heights of volutions>Whorl heights for the first to seventh volutions measure approximately 44, 268, 128, 121, 228, 276, and 326 microns.</heights of volutions> <ratio>Form ratio 2.787.</ratio>  <spirotheca>\n\nSpirotheca thickness across the first to seventh volutions averages 41, 46, 21, 38, 70, 50, and 58 microns.</spirotheca> <septa>Septa nearly flat in tightly coiled whorls but develop pronounced fluting from pole to pole in outer volutions. Septal folds in outer whorls elevated, often extending to chamber tops.</septa> <others>Narrow axial band of secondary material present.</others>  <proloculus>\n\nProloculus minute, with an external diameter of 140 \u03bc.</proloculus> <tunnel shape>Tunnel low and relatively narrow,</tunnel shape> <tunnel angle>with a tunnel angle of 34 degrees.</tunnel angle> <chomata>Faint chomata observed exclusively in the first 3 to 4 volutions.</chomata>
+
+## Description:
+Shell small, subcylindrical, with moderately acute poles. Mature specimens exhibiting 4.0 volutions, initial coils more tightly wound than subsequent ones. Dimensions measuring 4.422 mm in length and 1.694 mm in diameter. Form ratio 2.610. Spirotheca thickness averaging 16, 16, 23, 16 microns across first to fourth volutions. Septa weakly fluted in inner whorls, becoming prominently folded in outer whorls. Volution heights averaging 124, 198, 237 microns in first to fourth whorls. Substantial secondary deposits nearly occupying axial chamber zones.  \n\nProloculus minute, external diameter 140 microns. Tunnel shallow and relatively constricted; tunnel angles measuring 39\u00b0, 53\u00b0, and 49\u00b0 in first, second, and third volutions respectively. Narrow chomata restricted to initial whorls.
+
+## Processed description:
+<size>Shell small,</size> <shape>subcylindrical,</shape> <poles>with moderately acute poles.</poles> <number of volutions>Mature specimens exhibiting 4.0 volutions,</number of volutions> <coil tightness>initial coils more tightly wound than subsequent ones.<coil tightness> <heights of volutions>Volution heights averaging 124, 198, 237 microns in first to fourth whorls.</heights of volutions> <length>Dimensions measuring 4.422 mm in length</length> <width>and 1.694 mm in diameter.</width> <ratio> Form ratio 2.610.</ratio> <spirotheca>Spirotheca thickness averaging 16, 16, 23, 16 microns across first to fourth volutions.</spirotheca> <septa>Septa weakly fluted in inner whorls, becoming prominently folded in outer whorls.</septa>  <others>Substantial secondary deposits nearly occupying axial chamber zones.</others> <proloculus>Proloculus minute, external diameter 140 microns.</proloculus> <tunnel shape>Tunnel shallow and relatively constricted;</tunnel shape> <tunnel angle>tunnel angles measuring 39\u00b0, 53\u00b0, and 49\u00b0 in first, second, and third volutions respectively.</tunnel angle> <chomata>Narrow chomata restricted to initial whorls.</chomata>
+
+## Description:
+Shell minute, elongate fusiform, with relatively straight axis of coiling and bluntly rounded to pointed poles. Shells of 4 to 5 volutions attain a length of 0.74 to 1.47 mm. and a width of 0.28 to 0.36mm. giving a form ratio varying from 2.7 to 4.0.  \nThe proloculus is minute, measuring 27-35\u03bc. Juvenarium is endothyroid and coiled at an angle to the outer whorls. Spirotheca is thin. Septa are plain throughout the shell. The tunnel is relatively narrow and about half as high as the chambers in the outer volutions. Chomata are prominent in the outer volutions. Average tunnel angles in the first 3 volutions are 4, 7, and 13 degrees, respectively.
+
+## Processed description:
+<size>Shell minute,</size> <shape>elongate fusiform,</shape> <axis>with relatively straight axis of coiling</axis> <poles>and bluntly rounded to pointed poles.</poles> <number of volutions>Shells of 4 to 5 volutions </number of volutions> <length>attain a length of 0.74 to 1.47 mm.</length> <width>and a width of 0.28 to 0.36mm.</width> <ratio>giving a form ratio varying from 2.7 to 4.0.</ratio>  <proloculus>\nThe proloculus is minute, measuring 27-35\u03bc.</proloculus> <endothyroid>Juvenarium is endothyroid and coiled at an angle to the outer whorls.</endothyroid> <spirotheca>Spirotheca is thin.</spirotheca> <septa>Septa are plain throughout the shell.</septa> <tunnel shape>The tunnel is relatively narrow and about half as high as the chambers in the outer volutions.</tunnel shape> <chomata>Chomata are prominent in the outer volutions.</chomata> <tunnel angle>Average tunnel angles in the first 3 volutions are 4, 7, and 13 degrees, respectively.</tunnel angle>
+
+## Description:
+{text}
+
+## Processed description:
