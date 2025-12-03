@@ -68,6 +68,25 @@ class GSRule(ABC):
                 sin_params=data["sin_params"],
                 max_theta=data["max_theta"],
             )
+        elif shape_type == "sector":
+            return Sector(
+                center=data["center"],
+                radius=data["radius"],
+                start_angle=data["start_angle"],
+                end_angle=data["end_angle"],
+                special_info=data.get("special_info", ""),
+                fill_mode=data.get("fill_mode", "border"),
+            )
+        elif shape_type == "star":
+            return Star(
+                center=data["center"],
+                outer_radius=data["outer_radius"],
+                inner_radius=data["inner_radius"],
+                num_points=data["num_points"],
+                rotation=data.get("rotation", 0),
+                special_info=data.get("special_info", ""),
+                fill_mode=data.get("fill_mode", "border"),
+            )
         raise ValueError(f"Unknown shape type: {shape_type}")
 
 
@@ -246,6 +265,47 @@ class Polygon(GSRule):
         x3 = x0 - height * np.sin(r)
         y3 = y0 + height * np.cos(r)
         self.points = [(x0, y0), (x1, y1), (x2, y2), (x3, y3)]
+
+    def to_regular_pentagon(self, side_len: float, rotation: float):
+        """Generate a regular pentagon with given side length and rotation"""
+        self.special_info = "regular pentagon"
+        self.side_len = side_len
+
+        # Calculate the circumradius of the pentagon
+        # For a regular pentagon, circumradius = side_length / (2 * sin(π/5))
+        circumradius = side_len / (2 * np.sin(np.pi / 5))
+
+        x0, y0 = self.points[0]
+
+        # Generate 5 vertices of the regular pentagon
+        points = []
+        for i in range(5):
+            angle = rotation + i * 2 * np.pi / 5
+            x = x0 + circumradius * np.cos(angle)
+            y = y0 + circumradius * np.sin(angle)
+            points.append((x, y))
+
+        self.points = points
+
+    def to_regular_hexagon(self, side_len: float, rotation: float):
+        """Generate a regular hexagon with given side length and rotation"""
+        self.special_info = "regular hexagon"
+        self.side_len = side_len
+
+        # For a regular hexagon, circumradius = side_length
+        circumradius = side_len
+
+        x0, y0 = self.points[0]
+
+        # Generate 6 vertices of the regular hexagon
+        points = []
+        for i in range(6):
+            angle = rotation + i * 2 * np.pi / 6
+            x = x0 + circumradius * np.cos(angle)
+            y = y0 + circumradius * np.sin(angle)
+            points.append((x, y))
+
+        self.points = points
 
 
 @dataclass
@@ -447,6 +507,259 @@ class Spiral(GSRule):
     def radius(self, theta: float) -> float:
         epsilon, omega, phi = self.sin_params
         return self.initial_radius + (self.growth_rate + epsilon * np.sin(omega * theta + phi)) * theta
+
+
+@dataclass
+class Sector(GSRule):
+    """Sector (fan shape) - a region bounded by two radii and an arc"""
+
+    center: tuple[float, float]
+    radius: float
+    start_angle: float  # starting angle in radians
+    end_angle: float  # ending angle in radians
+    special_info: str = ""
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
+
+    def __post_init__(self):
+        # Ensure angles are in [0, 2π) range
+        self.start_angle = self.start_angle % (2 * np.pi)
+        self.end_angle = self.end_angle % (2 * np.pi)
+
+        # Calculate the angular span
+        if self.end_angle <= self.start_angle:
+            self.angular_span = self.end_angle + 2 * np.pi - self.start_angle
+        else:
+            self.angular_span = self.end_angle - self.start_angle
+
+        # Generate points for the sector boundary
+        self._generate_points()
+
+    def _generate_points(self):
+        """Generate points that define the sector boundary"""
+        # Vertices
+        self.arc_start_point = (
+            self.center[0] + self.radius * np.cos(self.start_angle),
+            self.center[1] + self.radius * np.sin(self.start_angle),
+        )
+        self.arc_end_point = (
+            self.center[0] + self.radius * np.cos(self.end_angle),
+            self.center[1] + self.radius * np.sin(self.end_angle),
+        )
+
+        # Number of points for the arc
+        arc_points = max(50, int(self.angular_span / (2 * np.pi) * 200))
+
+        # Generate arc points
+        if self.end_angle <= self.start_angle:
+            # Arc crosses 0 angle
+            theta_values = np.linspace(self.start_angle, self.start_angle + self.angular_span, arc_points)
+        else:
+            theta_values = np.linspace(self.start_angle, self.end_angle, arc_points)
+
+        # Arc points
+        arc_x = self.center[0] + self.radius * np.cos(theta_values)
+        arc_y = self.center[1] + self.radius * np.sin(theta_values)
+        arc_points_array = np.column_stack((arc_x, arc_y))
+
+        # Complete sector boundary: center -> start of arc -> arc -> end of arc -> center
+        self.points = np.vstack(
+            [[self.center], arc_points_array, [self.center]]  # center point  # arc points  # back to center
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"type": "sector"} | asdict(self)
+
+    def get_bbox(self) -> list[tuple[float, float]]:
+        # Get bounding box from all boundary points
+        return self.bbox_from_points(self.points.tolist())
+
+    def get_area(self) -> float:
+        """Calculate sector area: (1/2) * r² * θ"""
+        return 0.5 * self.radius**2 * self.angular_span
+
+    def get_centroid(self) -> tuple[float, float]:
+        """Calculate sector centroid"""
+        # For a sector, centroid is at (2/3) * r from center along the angle bisector
+        bisector_angle = self.start_angle + self.angular_span / 2
+        centroid_distance = (2 / 3) * self.radius * np.sin(self.angular_span / 2) / (self.angular_span / 2)
+
+        centroid_x = self.center[0] + centroid_distance * np.cos(bisector_angle)
+        centroid_y = self.center[1] + centroid_distance * np.sin(bisector_angle)
+
+        return (centroid_x, centroid_y)
+
+    def get_arc_point(self, t: Optional[float] = None) -> tuple[float, float]:
+        """Get a point on the arc. t should be in [0, 1] where 0 is start_angle and 1 is end_angle"""
+        if t is None:
+            t = np.random.uniform(0, 1)
+
+        t = np.clip(t, 0, 1)
+        angle = self.start_angle + t * self.angular_span  # type: ignore
+
+        x = self.center[0] + self.radius * np.cos(angle)
+        y = self.center[1] + self.radius * np.sin(angle)
+
+        return (x, y)
+
+    def get_radius_endpoint(self, at_start: bool = True) -> tuple[float, float]:
+        """Get the endpoint of a radius (either at start_angle or end_angle)"""
+        angle = self.start_angle if at_start else self.end_angle
+        x = self.center[0] + self.radius * np.cos(angle)
+        y = self.center[1] + self.radius * np.sin(angle)
+        return (x, y)
+
+    def contains_point(self, point: tuple[float, float]) -> bool:
+        """Check if a point is inside the sector"""
+        px, py = point
+        cx, cy = self.center
+
+        # Check if point is within radius
+        distance = np.sqrt((px - cx) ** 2 + (py - cy) ** 2)
+        if distance > self.radius:
+            return False
+
+        # Check if point is within angular range
+        point_angle = np.arctan2(py - cy, px - cx) % (2 * np.pi)
+
+        if self.end_angle <= self.start_angle:
+            # Sector crosses 0 angle
+            return point_angle >= self.start_angle or point_angle <= self.end_angle
+        else:
+            return self.start_angle <= point_angle <= self.end_angle
+
+    def get_angular_span_degrees(self) -> float:
+        """Get angular span in degrees"""
+        return np.degrees(self.angular_span)
+
+
+@dataclass
+class Star(GSRule):
+    """Star shape - a polygon with alternating outer and inner vertices"""
+
+    center: tuple[float, float]
+    outer_radius: float
+    inner_radius: float
+    num_points: int  # number of star points (e.g., 5 for a 5-pointed star)
+    rotation: float = 0  # rotation angle in radians
+    special_info: str = ""
+    fill_mode: Literal["no", "white", "black", "border"] = "border"
+
+    def __post_init__(self):
+        assert self.num_points >= 3, "Star must have at least 3 points"
+        assert self.outer_radius > self.inner_radius > 0, "Outer radius must be greater than inner radius"
+
+        # Generate star vertices
+        self._generate_star_points()
+
+    def _generate_star_points(self):
+        """Generate the vertices of the star"""
+        self.points = []
+
+        # Total number of vertices is 2 * num_points (alternating outer and inner)
+        total_vertices = 2 * self.num_points
+        angle_step = 2 * np.pi / total_vertices
+
+        for i in range(total_vertices):
+            angle = self.rotation + i * angle_step
+
+            # Alternate between outer and inner radius
+            if i % 2 == 0:
+                # Outer vertex
+                radius = self.outer_radius
+            else:
+                # Inner vertex
+                radius = self.inner_radius
+
+            x = self.center[0] + radius * np.cos(angle)
+            y = self.center[1] + radius * np.sin(angle)
+            self.points.append((x, y))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"type": "star"} | asdict(self)
+
+    def get_bbox(self) -> list[tuple[float, float]]:
+        return self.bbox_from_points(self.points)
+
+    def get_area(self) -> float:
+        """Calculate star area using the shoelace formula"""
+        n = len(self.points)
+        area = 0.0
+        for i in range(n):
+            x_i, y_i = self.points[i]
+            x_next, y_next = self.points[(i + 1) % n]
+            area += x_i * y_next - x_next * y_i
+        return abs(area) / 2.0
+
+    def get_centroid(self) -> tuple[float, float]:
+        """Calculate star centroid"""
+        # For a regular star, the centroid is at the center
+        return self.center
+
+    def get_outer_point(self, point_index: int) -> tuple[float, float]:
+        """Get the coordinates of a specific outer point (0-indexed)"""
+        if point_index < 0 or point_index >= self.num_points:
+            raise ValueError(f"Point index must be between 0 and {self.num_points - 1}")
+
+        # Outer points are at even indices
+        return self.points[point_index * 2]
+
+    def get_inner_point(self, point_index: int) -> tuple[float, float]:
+        """Get the coordinates of a specific inner point (0-indexed)"""
+        if point_index < 0 or point_index >= self.num_points:
+            raise ValueError(f"Point index must be between 0 and {self.num_points - 1}")
+
+        # Inner points are at odd indices
+        return self.points[point_index * 2 + 1]
+
+    def get_all_outer_points(self) -> list[tuple[float, float]]:
+        """Get all outer points of the star"""
+        return [self.points[i] for i in range(0, len(self.points), 2)]
+
+    def get_all_inner_points(self) -> list[tuple[float, float]]:
+        """Get all inner points of the star"""
+        return [self.points[i] for i in range(1, len(self.points), 2)]
+
+    def scale(self, outer_scale: float, inner_scale: Optional[float] = None):
+        """Scale the star by changing the radii"""
+        if inner_scale is None:
+            inner_scale = outer_scale
+
+        self.outer_radius *= outer_scale
+        self.inner_radius *= inner_scale
+        self._generate_star_points()
+
+    def rotate(self, angle: float):
+        """Rotate the star by the given angle (in radians)"""
+        self.rotation += angle
+        self._generate_star_points()
+
+    def contains_point(self, point: tuple[float, float]) -> bool:
+        """Check if a point is inside the star using ray casting algorithm"""
+        x, y = point
+        n = len(self.points)
+        inside = False
+
+        p1x, p1y = self.points[0]
+        for i in range(1, n + 1):
+            p2x, p2y = self.points[i % n]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+            p1x, p1y = p2x, p2y
+
+        return inside
+
+    def to_regular_star(self, num_points: int, outer_radius: float, inner_radius: float):
+        """Convert to a regular star with specified parameters"""
+        self.num_points = num_points
+        self.outer_radius = outer_radius
+        self.inner_radius = inner_radius
+        self.special_info = f"regular {num_points}-pointed star"
+        self._generate_star_points()
 
 
 @dataclass
@@ -772,7 +1085,7 @@ class CustomedShape(GSRule):
 class ShapeGenerator:
     def __init__(self, rule_args) -> None:
         self.rule_args = rule_args
-        self.opt_shapes = ["polygon", "line", "ellipse", "spiral"]
+        self.opt_shapes = ["polygon", "line", "ellipse", "spiral", "sector", "star"]
 
         self.shape_prob = []
 
@@ -781,7 +1094,7 @@ class ShapeGenerator:
             self.shape_prob.append(shape_prob)
         self.shape_prob = [x / sum(self.shape_prob) for x in self.shape_prob]
 
-    def __call__(self) -> Polygon | Line | Ellipse | Spiral:
+    def __call__(self) -> Polygon | Line | Ellipse | Spiral | Sector | Star:
         # Generate a shape(GSRule) randomly
         shape_type = np.random.choice(self.opt_shapes, p=self.shape_prob)
         if shape_type == "polygon":
@@ -792,6 +1105,10 @@ class ShapeGenerator:
             shape = self.generate_ellipse()
         elif shape_type == "spiral":
             shape = self.generate_spiral()
+        elif shape_type == "sector":
+            shape = self.generate_sector()
+        elif shape_type == "star":
+            shape = self.generate_star()
         else:
             raise ValueError("invalid type of shape")
         return shape
@@ -814,7 +1131,8 @@ class ShapeGenerator:
             polygon.to_simple_polygon()
 
         special_polygon = np.random.choice(
-            ["no", "square", "rectangle", "equilateral triangle"], p=[0.3, 0.2, 0.2, 0.3]
+            ["no", "square", "rectangle", "equilateral triangle", "regular pentagon", "regular hexagon"],
+            p=[0.5, 0.1, 0.1, 0.1, 0.1, 0.1],
         )
         if special_polygon == "square":
             side_len = uniform(0.1, 0.6)
@@ -836,6 +1154,14 @@ class ShapeGenerator:
             side_len = uniform(0.1, 0.6)
             rotation = uniform(0, 2 * np.pi)
             polygon.to_equilateral_triangle(side_len, rotation)
+        elif special_polygon == "regular pentagon":
+            side_len = uniform(0.1, 0.5)
+            rotation = uniform(0, 2 * np.pi)
+            polygon.to_regular_pentagon(side_len, rotation)
+        elif special_polygon == "regular hexagon":
+            side_len = uniform(0.1, 0.5)
+            rotation = uniform(0, 2 * np.pi)
+            polygon.to_regular_hexagon(side_len, rotation)
         elif len(points) == 3:
             polygon.special_info = "triangle"
 
@@ -922,6 +1248,81 @@ class ShapeGenerator:
         sin_params = [epsilon, omega, phi]
         return Spiral(center, initial_radius, growth_rate, sin_params, max_theta)
 
+    def generate_sector(
+        self,
+        center: Optional[tuple[float, float]] = None,
+        radius: float = 0.0,
+        start_angle: float = 0.0,
+        end_angle: float = 0.0,
+    ) -> Sector:
+        """Generate a sector (fan shape) with random or specified parameters"""
+        if center is not None and radius > 0:
+            # Use provided parameters
+            sector = Sector(center, radius, start_angle, end_angle)
+            return sector
+        else:
+            # Generate random parameters
+            center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
+            radius = uniform(0.1, 0.6)  # Reasonable radius range
+
+            # Generate angular span - can be anywhere from 30 degrees to 300 degrees
+            min_span = np.pi / 12  # 15 degrees
+            max_span = 5 * np.pi / 6  # 150 degrees
+            angular_span = uniform(min_span, max_span)
+
+            # Random starting angle
+            start_angle = uniform(0, 2 * np.pi)
+            end_angle = start_angle + angular_span
+
+            sector = Sector(center, radius, start_angle, end_angle)
+
+            # Ensure the sector has reasonable area
+            while sector.get_area() < 0.01:
+                radius = uniform(0.1, 0.4)
+                angular_span = uniform(min_span, max_span)
+                start_angle = uniform(0, 2 * np.pi)
+                end_angle = start_angle + angular_span
+                sector = Sector(center, radius, start_angle, end_angle)
+
+            return sector
+
+    def generate_star(
+        self,
+        center: Optional[tuple[float, float]] = None,
+        outer_radius: float = 0.0,
+        inner_radius: float = 0.0,
+        num_points: int = 0,
+        rotation: float = 0.0,
+    ) -> Star:
+        """Generate a star with random or specified parameters"""
+        if center is not None and outer_radius > 0 and inner_radius > 0 and num_points > 0:
+            # Use provided parameters
+            star = Star(center, outer_radius, inner_radius, num_points, rotation)
+            return star
+        else:
+            # Generate random parameters
+            center = (uniform(0.2, 0.8), uniform(0.2, 0.8))
+            outer_radius = uniform(0.15, 0.4)  # Reasonable outer radius range
+
+            # Inner radius should be smaller than outer radius
+            inner_radius = outer_radius * uniform(0.4, 0.7)  # 40% to 70% of outer radius
+
+            # Number of star points (5 or 6 points)
+            num_points = randint(5, 7)
+
+            # Random rotation
+            rotation = uniform(0, 2 * np.pi)
+
+            star = Star(center, outer_radius, inner_radius, num_points, rotation)
+
+            # Ensure the star has reasonable area
+            while star.get_area() < 0.01:
+                outer_radius = uniform(0.15, 0.4)
+                inner_radius = outer_radius * uniform(0.3, 0.7)
+                star = Star(center, outer_radius, inner_radius, num_points, rotation)
+
+            return star
+
     def generate_fusiform(self) -> Fusiform:
         focal_length = normal(0.3, 0.03)
         x_offset = normal(0.5, 0.01)
@@ -1007,8 +1408,8 @@ class ShapeGenerator:
         else:
             start_volution = randint(num_volutions - 3, num_volutions - 1)
         end_volution = num_volutions - 1
-        start_angle = -normal(0.3, 0.03) * np.pi
-        end_angle = normal(0.3, 0.03) * np.pi
+        start_angle = -normal(0.13, 0.01) * np.pi
+        end_angle = normal(0.13, 0.01) * np.pi
         for i in range(2):
             poles_folds.append(
                 {

@@ -3,24 +3,7 @@ import json
 from collections import defaultdict
 
 from common.args import fossil_eval_args
-
-characteristics = [
-    "overall_size",
-    "overall_shape",
-    "length",
-    "width",
-    "ratio",
-    "axis_shape",
-    "number_of_volutions",
-    "thickness_of_spirotheca",
-    "height_of_volution",
-    "septa_folds",
-    "proloculus",
-    "tunnel_shape",
-    "tunnel_angles",
-    "chomata",
-    "axial_filling",
-]
+from eval.utils import characteristics
 
 
 def feature_statistics():
@@ -38,7 +21,10 @@ def feature_statistics():
 
     average_score = 0
     for char in characteristics:
-        slice_tab[char]["rating"] = round(slice_tab[char]["rating"] / slice_tab[char]["valid_count"], 2)
+        if slice_tab[char]["valid_count"] > 0:
+            slice_tab[char]["rating"] = round(slice_tab[char]["rating"] / slice_tab[char]["valid_count"], 2)
+        else:
+            slice_tab[char]["rating"] = 0.0
         average_score += slice_tab[char]["rating"]
 
     # Write to CSV instead of JSONL

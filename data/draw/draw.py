@@ -96,7 +96,7 @@ def main():
     os.makedirs(data_args.figure_dir, exist_ok=True)
 
     if serial_version:
-        print("YES")
+        print("Serial Version Enabled")
         for idx, sample in tqdm(enumerate(samples), total=len(samples)):
             draw_figure(
                 sample,
