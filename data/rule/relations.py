@@ -1196,10 +1196,7 @@ class SeptaGenerator:
 
             thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
             thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
-            # chomata_type = np.random.choice(["ellipse", "polygon"])
-            # size = np.random.choice(["small", "big"])
-            chomata_type = "ellipse"
-            size = "big"
+            size = np.random.choice(["small", "big"])
 
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower
@@ -1225,10 +1222,10 @@ class SeptaGenerator:
     ) -> Ellipse:
         if size == "big":
             major_axis = uniform(0.7 * interval, 0.8 * interval)
-            minor_axis = uniform(0.6 * major_axis, major_axis)
+            minor_axis = uniform(0.5 * major_axis, 0.8 * major_axis)
         elif size == "small":
             major_axis = uniform(0.3 * interval, 0.5 * interval)
-            minor_axis = uniform(0.6 * major_axis, major_axis)
+            minor_axis = uniform(0.5 * major_axis, 0.8 * major_axis)
         # rotation = theta * normal(1, 0.1)
         rotation = uniform(0, np.pi)
 
