@@ -1,5 +1,4 @@
 import math
-import os
 
 import cv2
 import numpy as np
@@ -280,7 +279,7 @@ class LeafVeinDetector:
             # 如果不插入分割点，直接使用主脉节点
             search_points = self.main_vein_path
 
-        print(f"\n开始从主脉节点搜索分支...")
+        print("\n开始从主脉节点搜索分支...")
         print(f"主脉原始节点数: {len(self.main_vein_path)}")
         print(f"每段插入分割点数: {self.n_branch_node}")
         print(f"总搜索点数: {len(search_points)}")
@@ -363,7 +362,7 @@ class LeafVeinDetector:
         返回:
         filtered_branches: 移除重复后的分支字典
         """
-        print(f"\n开始后处理：移除重复叶脉...")
+        print("\n开始后处理：移除重复叶脉...")
         print(f"平均距离阈值: {self.duplicate_distance_threshold} 像素/节点")
 
         filtered_branches = {"left": [], "right": []}
