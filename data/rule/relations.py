@@ -1190,12 +1190,25 @@ class SeptaGenerator:
             elif i // step >= num_volutions - 1:  # no chomata on last volution
                 break
 
-            mid_angle = normal(0.5 * np.pi, 0.1)
             next_volution = volutions[i + step]
-            tunnel_angle = (tunnel_angles[i // step] / 180) * np.pi
+            tunnel_angle_rad = (tunnel_angles[i // step] / 180) * np.pi
 
-            thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
-            thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
+            # Regenerate mid_angle_rad if any angle is close to 90° or 270° (to avoid getDim issues)
+            critical_angles = [0.5 * np.pi, 1.5 * np.pi]
+            threshold = 0.05  # about 3 degrees
+            while True:
+                mid_angle_rad = normal(0.5 * np.pi, 0.01 * np.pi)
+                thetas_upper = [
+                    mid_angle_rad + 0.5 * tunnel_angle_rad,
+                    mid_angle_rad - 0.5 * tunnel_angle_rad,
+                ]
+                thetas_lower = [
+                    mid_angle_rad + np.pi + 0.5 * tunnel_angle_rad,
+                    mid_angle_rad + np.pi - 0.5 * tunnel_angle_rad,
+                ]
+                all_thetas = thetas_upper + thetas_lower
+                if all(min(abs(theta - ca) for ca in critical_angles) > threshold for theta in all_thetas):
+                    break
             size = np.random.choice(["small", "big"])
 
             if "concentric" in volution_type:
