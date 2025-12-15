@@ -10,7 +10,7 @@ from typing import Any, Mapping
 
 from PIL import Image
 from transformers import AutoTokenizer
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def _require(cond: bool, msg: str) -> None:
