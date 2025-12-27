@@ -9,6 +9,7 @@ import os
 from typing import Any, Mapping
 
 from PIL import Image
+from tqdm import tqdm
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -53,64 +54,12 @@ def _load_pil_image(image: Any):
     raise TypeError("Unsupported `image` type. Expected PIL.Image.Image, str path, or bytes.")
 
 
-def _build_llava_prompt(tokenizer: Any, user_prompt_text: str) -> str:
-    """
-    Build a LLaVA-style chat prompt with an `<image>` token.
-
-    Prefers `tokenizer.apply_chat_template` when available (HF chat template),
-    otherwise falls back to a simple 'USER/ASSISTANT' format.
-    """
-    _require(
-        isinstance(user_prompt_text, str) and user_prompt_text.strip() != "",
-        "`prompt` must be a non-empty string.",
-    )
-
-    # vLLM multimodal processors require a *recognized placeholder token* in the final prompt
-    # string to match the provided `multi_modal_data`. For LLaVA-family models this is typically
-    # the literal "<image>" token.
-    image_token = "<image>"
-
-    # Some HF LLaVA chat templates expect *structured* multimodal content instead of embedding
-    # "<image>" inside a plain string. Prefer that form when `apply_chat_template` exists, but
-    # ALWAYS validate that the rendered prompt still contains the placeholder token.
-    apply_chat_template = getattr(tokenizer, "apply_chat_template", None)
-    if callable(apply_chat_template):
-        # Try structured multimodal message first (Transformers-style).
-        messages = [
-            {
-                "role": "user",
-                "content": [{"type": "image"}, {"type": "text", "text": user_prompt_text.strip()}],
-            }
-        ]
-        try:
-            rendered = str(apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
-        except Exception:
-            # Fall back to plain-string content; some older tokenizers don't support structured content.
-            content = f"{image_token}\n{user_prompt_text.strip()}"
-            messages = [{"role": "user", "content": content}]
-            rendered = str(apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
-
-        if image_token not in rendered:
-            raise RuntimeError(
-                "Rendered chat prompt is missing the required '<image>' placeholder token, so vLLM "
-                "cannot align `multi_modal_data={'image': ...}` with the prompt. "
-                "Fix: ensure your tokenizer/chat template preserves '<image>' (or disable chat templating "
-                "and use the manual USER/ASSISTANT prompt), or use a model whose multimodal placeholder "
-                "matches vLLM's expectations."
-            )
-        return rendered
-
-    # Minimal fallback formatting (works reliably with vLLM's placeholder detection).
-    content = f"{image_token}\n{user_prompt_text.strip()}"
-    return f"USER: {content}\nASSISTANT:"
-
-
 class VllmLlava:
     """
-    vLLM-backed inference wrapper for **LLaVA-1.5** (image + text).
+    vLLM-backed inference wrapper for **LLaVA-1.5** family models (image + text).
 
     Each input item must provide:
-    - `prompt`: user prompt text (WITHOUT chat template; WITHOUT `<image>` token)
+    - `prompt`: user prompt text (WITHOUT chat template)
     - `image`: image path OR PIL image OR encoded bytes
     Any other fields are preserved in the output unchanged.
     """
@@ -118,7 +67,9 @@ class VllmLlava:
     def __init__(
         self,
         hf_model_path: str,
-        *,
+        has_image: bool = True,
+        model_image_token: str = "<image>",
+        dataset_image_token: str = "<image>",
         max_tokens: int = 1024,
         temperature: float = 0.2,
         top_p: float = 0.95,
@@ -150,8 +101,20 @@ class VllmLlava:
             _require(
                 isinstance(stop, list) and all(isinstance(s, str) for s in stop), "`stop` must be list[str]."
             )
+        if has_image:
+            _require(
+                isinstance(model_image_token, str) and model_image_token.strip() != "",
+                "`model_image_token` must be a non-empty string.",
+            )
+            _require(
+                isinstance(dataset_image_token, str) and dataset_image_token.strip() != "",
+                "`dataset_image_token` must be a non-empty string.",
+            )
 
         self.hf_model_path = hf_model_path
+        self.has_image = has_image
+        self.model_image_token = model_image_token
+        self.dataset_image_token = dataset_image_token
         self.max_tokens = int(max_tokens)
         self.temperature = float(temperature)
         self.top_p = float(top_p)
@@ -178,6 +141,33 @@ class VllmLlava:
 
         self.llm = LLM(**llm_kwargs)
 
+    def _build_llava_prompt(self, user_prompt_text: str) -> str:
+        """
+        Build a LLaVA-style chat prompt with an `<image>` token.
+
+        Prefers `tokenizer.apply_chat_template` when available (HF chat template),
+        otherwise falls back to a simple 'USER/ASSISTANT' format.
+        """
+        _require(
+            isinstance(user_prompt_text, str) and user_prompt_text.strip() != "",
+            "`prompt` must be a non-empty string.",
+        )
+        _require(
+            user_prompt_text.count(self.dataset_image_token) <= 1, "Currently only support single image VQA"
+        )
+
+        if self.has_image:
+            user_prompt_text = user_prompt_text.replace(self.dataset_image_token, self.model_image_token)
+            if self.model_image_token not in user_prompt_text:
+                user_prompt_text = f"{self.model_image_token}\n{user_prompt_text}"
+            messages = [{"role": "user", "content": [{"type": "text", "text": user_prompt_text}]}]
+        else:
+            messages = [{"role": "user", "content": user_prompt_text}]
+        rendered = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        if self.has_image:
+            assert self.model_image_token in rendered
+        return rendered
+
     def __call__(self, inputs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Inference with VLLM.
@@ -195,31 +185,25 @@ class VllmLlava:
                 - response: The raw response text from the model
                 - any other fields (unmodified)
         """
-        if not isinstance(inputs, list):
-            raise TypeError("`inputs` must be a list of dicts.")
-        if len(inputs) == 0:
-            return []
-
         # Build vLLM requests.
         requests: list[dict[str, Any]] = []
-        for i, item in enumerate(inputs):
+        for i, item in tqdm(enumerate(inputs), total=len(inputs), desc="Building vLLM requests"):
             if not isinstance(item, Mapping):
                 raise TypeError(f"inputs[{i}] must be a dict-like object.")
             if "prompt" not in item:
                 raise KeyError(f"inputs[{i}] missing required key: `prompt`.")
-            if "image" not in item:
-                raise KeyError(f"inputs[{i}] missing required key: `image`.")
 
             prompt_text = item["prompt"]
-            image_obj = item["image"]
 
             if not isinstance(prompt_text, str) or prompt_text.strip() == "":
                 raise TypeError(f"inputs[{i}]['prompt'] must be a non-empty string.")
-            prompt_str = _build_llava_prompt(self.tokenizer, prompt_text)
-            pil_image = _load_pil_image(image_obj)
-
-            # vLLM multimodal input (works with LLaVA-family in vLLM).
-            requests.append({"prompt": prompt_str, "multi_modal_data": {"image": pil_image}})
+            prompt_str = self._build_llava_prompt(prompt_text)
+            vllm_request: dict = {"prompt": prompt_str}
+            if "image" in item:
+                _require(self.has_image, "`has_image` must be True when `image` is provided.")
+                pil_image = _load_pil_image(item["image"])
+                vllm_request["multi_modal_data"] = {"image": pil_image}
+            requests.append(vllm_request)
 
         sp = SamplingParams(
             max_tokens=self.max_tokens,
@@ -255,14 +239,16 @@ class VllmLlava:
 
 
 def main():
-    vllm_llava = VllmLlava(hf_model_path="/home/nfs05/model/llava-hf/llava-1.5-7b-hf")
+    vllm_llava = VllmLlava(
+        hf_model_path="/home/nfs05/model/llava-hf/llava-1.5-7b-hf", gpu_memory_utilization=0.7
+    )
     inputs = [
         {
             "prompt": "Please describe the image in detail.",
             "image": "dataset/llava/figures/easy_00000000.jpg",
         },
         {
-            "prompt": "How many line segments are there in the image?",
+            "prompt": "How many line segments are there in the image?\n<image>",
             "image": "dataset/llava/figures/easy_00000001.jpg",
         },
     ]
