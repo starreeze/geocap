@@ -7,9 +7,10 @@ from common.args import fossil_eval_args, logger
 from common.llm import generator_mapping, model_path_mapping
 from eval.cal_score import statistics
 from eval.utils import (
+    calculate_axis_shape_rating,
+    calculate_chomata_rating,
     calculate_score,
     characteristics,
-    extract_axis_shape,
     extract_range_or_num,
     extract_tunnel_shape,
     find_first_json_block,
@@ -194,14 +195,14 @@ def main():
         return
 
     # Evaluation
-    detailed, fail = evaluater.evaluate(ex_o, ex_r, caption_batch)
-    with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "w") as f:
-        json.dump(detailed, f, indent=4)
+    # detailed, fail = evaluater.evaluate(ex_o, ex_r, caption_batch)
+    # with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "w") as f:
+    #     json.dump(detailed, f, indent=4)
 
     # ---------debug---------
-    # with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "r") as f:
-    #     detailed = json.load(f)
-    #     fail = False
+    with open(f"{fossil_eval_args.eval_result_dir}/detailed_score_list.json", "r") as f:
+        detailed = json.load(f)
+        fail = False
 
     # Replace the numerical features with manually caculated ones
     detailed = rule_based_eval(detailed, ex_o, ex_r)
@@ -240,51 +241,47 @@ def rule_based_eval(detailed_score_list, extracted_output_info, extracted_refere
                 ] = f"Rule-based eval with output:{output[feature]}->{pred_range}, reference:{reference[feature]}->{ref_range}"
                 new_detail[feature]["rating"] = score
 
+            # Calculate scores for chomata
+            elif feature == "chomata":
+                rating = calculate_chomata_rating(output["chomata"], reference["chomata"])
+                new_detail["chomata"]["rating"] = rating
+                new_detail["chomata"][
+                    "reason"
+                ] = f"Rule-based eval with output:{output['chomata']}, reference:{reference['chomata']}"
+
             # Calculate scores for tunnel shape
             ### 已使用LLM评估，不使用
-            elif feature == "tunnel_shape":
-                height_output, width_output = extract_tunnel_shape(
-                    output["tunnel_shape"], default_value="none"
-                )
-                height_reference, width_reference = extract_tunnel_shape(
-                    reference["tunnel_shape"], default_value="moderate"
-                )
-                rating = 0
-                if height_reference == height_output:
-                    rating += 5
-                elif height_output == "none":
-                    rating += 0
-                elif height_reference == "moderate":
-                    rating += 2
+            # elif feature == "tunnel_shape":
+            #     height_output, width_output = extract_tunnel_shape(
+            #         output["tunnel_shape"], default_value="none"
+            #     )
+            #     height_reference, width_reference = extract_tunnel_shape(
+            #         reference["tunnel_shape"], default_value="moderate"
+            #     )
+            #     rating = 0
+            #     if height_reference == height_output:
+            #         rating += 5
+            #     elif height_output == "none":
+            #         rating += 0
+            #     elif height_reference == "moderate":
+            #         rating += 2
 
-                if width_reference == width_output:
-                    rating += 5
-                elif width_output == "none":
-                    rating += 0
-                elif width_reference == "moderate":
-                    rating += 2
+            #     if width_reference == width_output:
+            #         rating += 5
+            #     elif width_output == "none":
+            #         rating += 0
+            #     elif width_reference == "moderate":
+            #         rating += 2
 
-                new_detail["tunnel_shape"]["rating"] = rating
-                new_detail["tunnel_shape"][
-                    "reason"
-                ] = f"Rule-based eval with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
+            #     new_detail["tunnel_shape"]["rating"] = rating
+            #     new_detail["tunnel_shape"][
+            #         "reason"
+            #     ] = f"Rule-based eval with output:{output['tunnel_shape']}, reference:{reference['tunnel_shape']}"
 
             # Calculate scores for axis shape
             elif feature == "axis_shape":
-                axis_output = extract_axis_shape(output["axis_shape"], default_value="none")
-                axis_reference = extract_axis_shape(reference["axis_shape"], default_value="straight")
-                if axis_reference == axis_output:
-                    new_detail["axis_shape"]["rating"] = 10
-                elif axis_output in ["convex", "concave", "curved"] and axis_reference in [
-                    "convex",
-                    "concave",
-                    "curved",
-                ]:
-                    new_detail["axis_shape"]["rating"] = 10
-                elif axis_output in ["irregular", "sinuous"] and axis_reference in ["irregular", "sinuous"]:
-                    new_detail["axis_shape"]["rating"] = 10
-                else:
-                    new_detail["axis_shape"]["rating"] = 0
+                rating = calculate_axis_shape_rating(output["axis_shape"], reference["axis_shape"])
+                new_detail["axis_shape"]["rating"] = rating
                 new_detail["axis_shape"][
                     "reason"
                 ] = f"Rule-based eval with output:{output['axis_shape']}, reference:{reference['axis_shape']}"

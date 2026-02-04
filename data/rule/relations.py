@@ -1190,16 +1190,26 @@ class SeptaGenerator:
             elif i // step >= num_volutions - 1:  # no chomata on last volution
                 break
 
-            mid_angle = normal(0.5 * np.pi, 0.1)
             next_volution = volutions[i + step]
-            tunnel_angle = (tunnel_angles[i // step] / 180) * np.pi
+            tunnel_angle_rad = (tunnel_angles[i // step] / 180) * np.pi
 
-            thetas_upper = [mid_angle + 0.5 * tunnel_angle, mid_angle - 0.5 * tunnel_angle]
-            thetas_lower = [mid_angle + np.pi + 0.5 * tunnel_angle, mid_angle + np.pi - 0.5 * tunnel_angle]
-            # chomata_type = np.random.choice(["ellipse", "polygon"])
-            # size = np.random.choice(["small", "big"])
-            chomata_type = "ellipse"
-            size = "big"
+            # Regenerate mid_angle_rad if any angle is close to 90° or 270° (to avoid getDim issues)
+            critical_angles = [0.5 * np.pi, 1.5 * np.pi]
+            threshold = 0.05  # about 3 degrees
+            while True:
+                mid_angle_rad = normal(0.5 * np.pi, 0.01 * np.pi)
+                thetas_upper = [
+                    mid_angle_rad + 0.5 * tunnel_angle_rad,
+                    mid_angle_rad - 0.5 * tunnel_angle_rad,
+                ]
+                thetas_lower = [
+                    mid_angle_rad + np.pi + 0.5 * tunnel_angle_rad,
+                    mid_angle_rad + np.pi - 0.5 * tunnel_angle_rad,
+                ]
+                all_thetas = thetas_upper + thetas_lower
+                if all(min(abs(theta - ca) for ca in critical_angles) > threshold for theta in all_thetas):
+                    break
+            size = np.random.choice(["small", "big"])
 
             if "concentric" in volution_type:
                 thetas = thetas_upper + thetas_lower
@@ -1209,19 +1219,35 @@ class SeptaGenerator:
 
             for theta in thetas:
                 interval, center = self.get_interval_center(volution, next_volution, theta)
-
-                if chomata_type == "ellipse":
-                    chomata = self.one_ellipse_septa(
-                        interval, center, fossil_center, theta, mode="inner", size=size, fill_mode="black"
-                    )
-                elif chomata_type == "polygon":
-                    chomata = self.one_polygon_septa(
-                        interval, center, theta, volution, next_volution, size=size, fill_mode="black"
-                    )
+                chomata = self.one_chomata(interval, center, fossil_center, theta, size=size)
                 chomata.special_info = f"chomata of volution {i//step}"
                 chomata_list.append(chomata)
 
         return chomata_list
+
+    def one_chomata(
+        self,
+        interval: float,
+        center: tuple[float, float],
+        fossil_center: tuple[float, float],
+        theta: float,
+        size: Literal["big", "small"] = "small",
+    ) -> Ellipse:
+        if size == "big":
+            major_axis = uniform(0.7 * interval, 0.8 * interval)
+            minor_axis = uniform(0.5 * major_axis, 0.8 * major_axis)
+        elif size == "small":
+            major_axis = uniform(0.3 * interval, 0.5 * interval)
+            minor_axis = uniform(0.5 * major_axis, 0.8 * major_axis)
+        # rotation = theta * normal(1, 0.1)
+        rotation = uniform(0, np.pi)
+
+        # margin = 0.5 * (interval - major_axis) * np.cos(rotation - theta)
+        margin = 0.5 * (interval - minor_axis)
+        vec_centers = np.array(fossil_center) - np.array(center)
+        chomata_center = np.array(center) + vec_centers * (margin / distance_2points(fossil_center, center))
+        ellipse = Ellipse(tuple(chomata_center), major_axis, minor_axis, rotation, fill_mode="black")
+        return ellipse
 
     def generate_septa(
         self,

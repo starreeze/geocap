@@ -31,6 +31,7 @@ rule_based_eval_features = [
     "proloculus",
     # "tunnel_shape",
     "tunnel_angles",
+    "chomata",
 ]
 
 
@@ -179,6 +180,91 @@ def calculate_score(ref_range: list[float] | str, pred_range: list[float] | str)
     return score_func(ref_low, ref_high, pred)
 
 
+def extract_chomata(text, default_develop_value="absent") -> tuple[str, str, str]:
+    develop_template = (
+        r"absent|indistinct|weakly|poorly|faint|slight|observed|present|heavy|well|distinct|strongly"
+    )
+    develop_map = {
+        "absent": "absent",
+        "indistinct": "absent",
+        "weakly": "weakly",
+        "poorly": "weakly",
+        "faint": "weakly",
+        "slight": "weakly",
+        "observed": "weakly",
+        "present": "weakly",
+        "heavy": "well",
+        "well": "well",
+        "distinct": "well",
+        "strongly": "well",
+    }
+    develop = re.search(develop_template, text)
+    if develop:
+        develop = develop_map[develop.group(0)]
+    else:
+        develop = default_develop_value
+    # Check for massive/small first as they affect both height and width
+    is_massive = bool(re.search(r"\bmassive\b", text))
+    is_small = bool(re.search(r"\b(small|tiny|minute)\b", text))
+
+    height_template = r"\b(high|medium height|moderate height|low)\b"
+    height_map = {"high": "high", "medium height": "moderate", "moderate height": "moderate", "low": "low"}
+    height = re.search(height_template, text)
+    if height:
+        height = height_map[height.group(0)]
+    elif is_massive:
+        height = "high"
+    elif is_small:
+        height = "low"
+    else:
+        height = "moderate"
+
+    width_template = r"\b(wide|broad|medium width|moderate width|narrow)\b"
+    width_map = {
+        "wide": "wide",
+        "broad": "wide",
+        "medium width": "moderate",
+        "moderate width": "moderate",
+        "narrow": "narrow",
+    }
+    width = re.search(width_template, text)
+    if width:
+        width = width_map[width.group(0)]
+    elif is_massive:
+        width = "wide"
+    elif is_small:
+        width = "narrow"
+    else:
+        width = "moderate"
+    return develop, height, width
+
+
+def calculate_chomata_rating(output, reference) -> float:
+    develop_output, height_output, width_output = extract_chomata(output, default_develop_value="none")
+    develop_reference, height_reference, width_reference = extract_chomata(
+        reference, default_develop_value="none"
+    )
+    rating = 0
+    # develop score
+    if develop_reference == develop_output:
+        rating += 4
+    elif develop_output == "absent" or develop_reference == "absent":
+        return 0
+    elif develop_reference == "none":
+        rating += 4
+    # height score
+    if height_output == height_reference:
+        rating += 3
+    elif height_output == "moderate" or height_reference == "moderate":
+        rating += 1
+    # width score
+    if width_output == width_reference:
+        rating += 3
+    elif width_output == "moderate" or width_reference == "moderate":
+        rating += 1
+    return rating
+
+
 def extract_tunnel_shape(text, default_value="moderate"):
     height_template = r"\b(high|medium height|moderate height|low)\b"
     height_map = {"high": "high", "medium height": "moderate", "moderate height": "moderate", "low": "low"}
@@ -202,6 +288,19 @@ def extract_axis_shape(text, default_value="straight"):
     axis = re.search(axis_template, text)
     axis = axis.group(0) if axis else default_value
     return axis
+
+
+def calculate_axis_shape_rating(output, reference) -> float:
+    axis_output = extract_axis_shape(output, default_value="none")
+    axis_reference = extract_axis_shape(reference, default_value="straight")
+    if axis_reference == axis_output:
+        return 10
+    elif axis_output in ["convex", "concave", "curved"] and axis_reference in ["convex", "concave", "curved"]:
+        return 10
+    elif axis_output in ["irregular", "sinuous"] and axis_reference in ["irregular", "sinuous"]:
+        return 10
+    else:
+        return 0
 
 
 # test extract_range_or_num
