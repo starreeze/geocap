@@ -96,32 +96,29 @@ def load_scale_from_data_json(img_name: str, data_json_path: str = "dataset/data
 
 if __name__ == "__main__":
     import argparse
+    import csv
 
     parser = argparse.ArgumentParser(
         description="计算化石图像的轮廓面积（基于透明通道）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  python get_full_area.py ./images ./output/area.json
-  python get_full_area.py ./images ./output/area.json --data-json ./dataset/data.json
+  python get_full_area.py ./images ./output/area.csv
+  python get_full_area.py ./images ./output/area.csv --data-json ./dataset/data.json
 
-输出格式 (JSON):
-  {
-    "image_name.png": {
-      "pixel_area": 123456.0,      // 像素面积
-      "real_area_mm2": 14.93       // 实际面积 (mm²)，需要比例尺
-    },
-    ...
-  }
+输出格式 (CSV):
+  image,pixel_area,real_area_mm2
+  image_name.png,123456.0,14.93
+  ...
 
 注意:
   - 图像必须带有透明通道 (RGBA)，非透明像素区域被视为化石区域
   - 比例尺从 data.json 中根据文件名自动查找
-  - 如果找不到比例尺，real_area_mm2 将为 null
+  - 如果找不到比例尺，real_area_mm2 将为空
 """,
     )
     parser.add_argument("image_dir", type=str, help="输入图像目录路径")
-    parser.add_argument("output_json", type=str, help="输出 JSON 文件路径")
+    parser.add_argument("output_csv", type=str, help="输出 CSV 文件路径")
     parser.add_argument(
         "--data-json",
         type=str,
@@ -132,7 +129,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     img_dir = Path(args.image_dir)
-    output_json = args.output_json
+    output_csv = args.output_csv
     data_json_path = args.data_json
 
     if not img_dir.exists():
@@ -143,7 +140,7 @@ if __name__ == "__main__":
     image_files = list(img_dir.glob("*.png")) + list(img_dir.glob("*.jpg"))
     print(f"找到 {len(image_files)} 张图片")
 
-    results = {}
+    results = []
     for i, img_path in enumerate(image_files):
         img_name = img_path.name
         print(f"[{i+1}/{len(image_files)}] {img_name}")
@@ -156,13 +153,21 @@ if __name__ == "__main__":
             print("  跳过: 未找到轮廓")
             continue
 
-        results[img_name] = {"pixel_area": pixel_area, "real_area_mm2": real_area}
+        results.append(
+            {
+                "image": img_name,
+                "pixel_area": pixel_area,
+                "real_area_mm2": real_area if real_area is not None else "",
+            }
+        )
 
     # 保存结果
-    output_path = Path(output_json)
+    output_path = Path(output_csv)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_json, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+    with open(output_csv, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["image", "pixel_area", "real_area_mm2"])
+        writer.writeheader()
+        writer.writerows(results)
 
-    print(f"\n结果已保存到: {output_json}")
+    print(f"\n结果已保存到: {output_csv}")
     print(f"成功处理: {len(results)} 张图片")
