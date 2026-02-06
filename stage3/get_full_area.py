@@ -9,58 +9,31 @@ import cv2
 import numpy as np
 
 
-def get_fossil_contour(img_path: str) -> np.ndarray | None:
+def get_fossil_area(img_path: str, pixel_per_mm: float | None = None) -> tuple[float, float | None]:
     """
-    获取化石图像的外轮廓（基于透明通道）
-
-    Parameters:
-        img_path: 图像路径（需要带透明通道，非透明像素为化石区域）
-
-    Returns:
-        轮廓点数组，如果未找到则返回 None
-    """
-    # 读取带透明通道的图像
-    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-    if img is None:
-        return None
-
-    # 检查是否有透明通道
-    if img.shape[2] != 4:
-        return None
-
-    # 使用 alpha 通道作为 mask
-    alpha = img[:, :, 3]
-
-    # 查找外轮廓
-    contours, _ = cv2.findContours(alpha, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-    if len(contours) == 0:
-        return None
-
-    # 返回面积最大的轮廓
-    return max(contours, key=cv2.contourArea)
-
-
-def get_fossil_area(
-    img_path: str, pixel_per_mm: float | None = None
-) -> tuple[np.ndarray | None, float, float | None]:
-    """
-    获取化石轮廓及其面积
+    获取化石面积（基于非透明像素数量）
 
     Parameters:
         img_path: 图像路径
         pixel_per_mm: 每像素对应的毫米数（比例尺），如果提供则计算实际面积
 
     Returns:
-        (轮廓点数组, 像素面积, 实际面积mm²)
-        如果未找到轮廓则返回 (None, 0.0, None)
+        (像素面积, 实际面积mm²)
+        如果未找到图像则返回 (0.0, None)
         如果未提供比例尺则实际面积为 None
     """
-    contour = get_fossil_contour(img_path)
-    if contour is None:
-        return None, 0.0, None
+    # 读取带透明通道的图像
+    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    if img is None:
+        return 0.0, None
 
-    pixel_area = cv2.contourArea(contour)
+    # 检查是否有透明通道
+    if len(img.shape) != 3 or img.shape[2] != 4:
+        return 0.0, None
+
+    # 使用 alpha 通道，统计非透明像素数量
+    alpha = img[:, :, 3]
+    pixel_area = float(np.count_nonzero(alpha))
 
     # 计算实际面积 (mm²)
     real_area = None
@@ -69,7 +42,7 @@ def get_fossil_area(
         # 面积 = 像素数 * (mm/pixel)²
         real_area = pixel_area * (pixel_per_mm**2)
 
-    return contour, pixel_area, real_area
+    return pixel_area, real_area
 
 
 def load_scale_from_data_json(img_name: str, data_json_path: str = "dataset/data.json") -> float | None:
@@ -148,9 +121,9 @@ if __name__ == "__main__":
         # 从 data.json 加载比例尺
         pixel_per_mm = load_scale_from_data_json(img_name, data_json_path)
 
-        contour, pixel_area, real_area = get_fossil_area(str(img_path), pixel_per_mm)
-        if contour is None:
-            print("  跳过: 未找到轮廓")
+        pixel_area, real_area = get_fossil_area(str(img_path), pixel_per_mm)
+        if pixel_area == 0.0:
+            print("  跳过: 未找到非透明像素")
             continue
 
         results.append(
